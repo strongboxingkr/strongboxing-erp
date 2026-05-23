@@ -1,0 +1,949 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import AppShell from "@/components/AppShell";
+import { apiFetch } from "@/lib/api";
+
+function addMonths(dateString: string, months: number) {
+  const date = new Date(dateString);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
+}
+
+const today = new Date().toISOString().slice(0, 10);
+const pageSize = 15;
+
+const makeDefaultForm = () => ({
+  member_id: null as any,
+  branch_name: "철산점",
+  name: "",
+  phone: "",
+  checkin_code: "",
+  pass_type: "PERIOD",
+  product_name: "",
+  remaining_count: 0,
+  start_date: today,
+  end_date: addMonths(today, 1),
+  status: "ACTIVE",
+  memo: "",
+});
+
+export default function MembersPage() {
+  const [members, setMembers] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const [page, setPage] = useState(1);
+
+  const [showForm, setShowForm] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [form, setForm] = useState(makeDefaultForm());
+
+  const [showHoldForm, setShowHoldForm] = useState(false);
+  const [holdMember, setHoldMember] = useState<any>(null);
+
+  const [showExtendForm, setShowExtendForm] = useState(false);
+  const [extendMember, setExtendMember] = useState<any>(null);
+
+  const [showSmsPreview, setShowSmsPreview] = useState(false);
+  const [smsMessage, setSmsMessage] = useState("");
+
+  const [extendForm, setExtendForm] = useState({
+    months: 1,
+    count: 1,
+    customMonths: "",
+    customCount: "",
+  });
+
+  const [holdForm, setHoldForm] = useState({
+    hold_start: today,
+    hold_end: today,
+    reason: "",
+  });
+
+  const getUser = () => {
+    if (typeof window === "undefined") return null;
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  };
+
+  const isAdminOrOwner =
+    user?.role === "ADMIN" || user?.role === "OWNER";
+
+  const loadBranches = async () => {
+    const res = await apiFetch("/api/settings?option_type=BRANCH");
+    const data = await res.json();
+    setBranches(data.rows || []);
+  };
+
+  const loadProducts = async () => {
+    const res = await apiFetch("/api/settings?option_type=PASS_PRODUCT");
+    const data = await res.json();
+    const rows = data.rows || [];
+    setProducts(rows);
+
+    if (rows.length > 0) {
+      setForm((prev) => ({
+        ...prev,
+        product_name: prev.product_name || rows[0].option_name,
+        pass_type: rows[0].option_value || "PERIOD",
+      }));
+    }
+  };
+
+  const loadMembers = async (currentUser = user) => {
+    let url = "/api/members";
+
+    if (
+      currentUser &&
+      currentUser.role !== "ADMIN" &&
+      currentUser.role !== "OWNER"
+    ) {
+      url += `?branch_name=${encodeURIComponent(currentUser.branch_name)}`;
+    }
+
+    if (search) {
+      url += `${url.includes("?") ? "&" : "?"}search=${encodeURIComponent(
+        search
+      )}`;
+    }
+
+    const res = await apiFetch(url);
+    const data = await res.json();
+
+    setMembers(data.rows || []);
+    setPage(1);
+  };
+
+  useEffect(() => {
+    const savedUser = getUser();
+    setUser(savedUser);
+    loadBranches();
+    loadProducts();
+    loadMembers(savedUser);
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const openAdd = () => {
+    const firstProduct = products[0];
+
+    setIsEdit(false);
+    setForm({
+      ...makeDefaultForm(),
+      branch_name:
+        user && user.role !== "ADMIN" && user.role !== "OWNER"
+          ? user.branch_name
+          : branches[0]?.option_name || "철산점",
+      product_name: firstProduct?.option_name || "",
+      pass_type: firstProduct?.option_value || "PERIOD",
+    });
+
+    setShowForm(true);
+    setShowHoldForm(false);
+    setShowExtendForm(false);
+    setShowSmsPreview(false);
+  };
+
+  const openEdit = (m: any) => {
+    setIsEdit(true);
+    setForm({
+      member_id: m.member_id,
+      branch_name: m.branch_name || "철산점",
+      name: m.name || "",
+      phone: m.phone || "",
+      checkin_code: m.checkin_code || "",
+      pass_type: m.pass_type || "PERIOD",
+      product_name: m.product_name || "",
+      remaining_count: m.remaining_count || 0,
+      start_date: m.start_date?.slice(0, 10) || today,
+      end_date: m.end_date?.slice(0, 10) || today,
+      status: m.status || "ACTIVE",
+      memo: m.memo || "",
+    });
+
+    setShowForm(true);
+    setShowHoldForm(false);
+    setShowExtendForm(false);
+    setShowSmsPreview(false);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleProductChange = (productName: string) => {
+    const product = products.find((p) => p.option_name === productName);
+    const passType = product?.option_value || "PERIOD";
+
+    setForm({
+      ...form,
+      product_name: productName,
+      pass_type: passType,
+      remaining_count: passType === "COUNT" ? form.remaining_count || 12 : 0,
+      end_date:
+        passType === "PERIOD" ? addMonths(form.start_date, 1) : form.end_date,
+    });
+  };
+
+  const saveMember = async () => {
+    const url = isEdit ? "/api/members/update" : "/api/members/add";
+
+    const targetForm = {
+      ...form,
+      branch_name: isAdminOrOwner ? form.branch_name : user?.branch_name,
+    };
+
+    const res = await apiFetch(url, {
+      method: "POST",
+      body: JSON.stringify(targetForm),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
+      setShowForm(false);
+      setIsEdit(false);
+      setForm(makeDefaultForm());
+      loadMembers(user);
+    } else {
+      alert(data.message || "저장 실패");
+    }
+  };
+
+  const openExtend = (m: any) => {
+    setExtendMember(m);
+
+    setExtendForm({
+      months: 1,
+      count: 1,
+      customMonths: "",
+      customCount: "",
+    });
+
+    setShowExtendForm(true);
+    setShowForm(false);
+    setShowHoldForm(false);
+    setShowSmsPreview(false);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const saveExtend = async () => {
+    if (!extendMember) return;
+
+    let nextEndDate = extendMember.end_date;
+    let nextCount = Number(extendMember.remaining_count || 0);
+
+    if (extendMember.pass_type === "PERIOD") {
+      const addValue = extendForm.customMonths
+        ? Number(extendForm.customMonths)
+        : extendForm.months;
+
+      nextEndDate = addMonths(extendMember.end_date, addValue);
+    } else {
+      const addValue = extendForm.customCount
+        ? Number(extendForm.customCount)
+        : extendForm.count;
+
+      nextCount += addValue;
+    }
+
+    const res = await apiFetch("/api/members/update", {
+      method: "POST",
+      body: JSON.stringify({
+        ...extendMember,
+        end_date: nextEndDate,
+        remaining_count: nextCount,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const message = `${extendMember.name} 회원님
+안녕하세요 스트롱복싱 ${extendMember.branch_name}입니다 🥊
+
+회원권 연장이 완료되었습니다.
+
+상품 : ${extendMember.product_name}
+
+${
+  extendMember.pass_type === "PERIOD"
+    ? `만료일 : ${nextEndDate}`
+    : `남은횟수 : ${nextCount}회`
+}
+
+감사합니다 😄`;
+
+      setSmsMessage(message);
+      setShowSmsPreview(true);
+      setShowExtendForm(false);
+      loadMembers(user);
+    } else {
+      alert(data.message || "연장 실패");
+    }
+  };
+
+  const openHold = (m: any) => {
+    setHoldMember(m);
+
+    setHoldForm({
+      hold_start: today,
+      hold_end: today,
+      reason: "",
+    });
+
+    setShowHoldForm(true);
+    setShowForm(false);
+    setShowExtendForm(false);
+    setShowSmsPreview(false);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const saveHold = async () => {
+    if (!holdMember) return;
+
+    const res = await apiFetch("/api/members/hold", {
+      method: "POST",
+      body: JSON.stringify({
+        member_id: holdMember.member_id,
+        hold_start: holdForm.hold_start,
+        hold_end: holdForm.hold_end,
+        reason: holdForm.reason,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("휴회 처리 완료!");
+      setShowHoldForm(false);
+      setHoldMember(null);
+      loadMembers(user);
+    } else {
+      alert(data.message || "휴회 처리 실패");
+    }
+  };
+
+  const getStatus = (m: any) => {
+    if (m.status === "REST") return { text: "휴회", color: "#f59e0b" };
+    if (m.status === "EXPIRED") return { text: "만료", color: "#ef4444" };
+
+    const end = new Date(m.end_date?.slice(0, 10));
+    const now = new Date();
+    const diff = (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (diff <= 7) return { text: "만료임박", color: "#ff4d6d" };
+
+    return { text: "정상", color: "#22c55e" };
+  };
+
+  const filtered = members.filter((m) => {
+    if (!search) return true;
+
+    return (
+      m.name?.includes(search) ||
+      m.phone?.includes(search) ||
+      m.product_name?.includes(search) ||
+      m.memo?.includes(search)
+    );
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pagedMembers = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  return (
+    <AppShell title="회원관리">
+      <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
+              회원관리
+            </h1>
+
+            <p style={{ color: "#888", marginTop: 8 }}>
+              총 {filtered.length}명 / {page}페이지
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <input
+              className="input"
+              placeholder="회원 검색"
+              style={{ width: 280 }}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") loadMembers(user);
+              }}
+            />
+
+            <button className="btn" onClick={openAdd}>
+              회원등록
+            </button>
+
+            <button className="btn secondary" onClick={() => loadMembers(user)}>
+              새로고침
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+          <h2>{isEdit ? "회원 수정" : "회원 등록"}</h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 12,
+            }}
+          >
+            {isAdminOrOwner ? (
+              <select
+                className="input"
+                value={form.branch_name}
+                onChange={(e) =>
+                  setForm({ ...form, branch_name: e.target.value })
+                }
+              >
+                {branches.map((b) => (
+                  <option key={b.option_id} value={b.option_name}>
+                    {b.option_name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="input" style={{ color: "#aaa" }}>
+                {user?.branch_name}
+              </div>
+            )}
+
+            <input
+              className="input"
+              placeholder="이름"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+
+            <input
+              className="input"
+              placeholder="전화번호"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+
+            <input
+              className="input"
+              placeholder="출석번호"
+              maxLength={4}
+              value={form.checkin_code}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  checkin_code: e.target.value
+                    .replace(/[^0-9]/g, "")
+                    .slice(0, 4),
+                })
+              }
+            />
+
+            <select
+              className="input"
+              value={form.product_name}
+              onChange={(e) => handleProductChange(e.target.value)}
+            >
+              {products.map((p) => (
+                <option key={p.option_id} value={p.option_name}>
+                  {p.option_name}
+                </option>
+              ))}
+            </select>
+
+            <div className="input" style={{ color: "#aaa" }}>
+              {form.pass_type === "COUNT" ? "횟수권" : "기간권"}
+            </div>
+
+            {form.pass_type === "COUNT" && (
+              <input
+                className="input"
+                type="number"
+                placeholder="남은횟수"
+                value={form.remaining_count}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    remaining_count: Number(e.target.value),
+                  })
+                }
+              />
+            )}
+
+            <input
+              className="input"
+              type="date"
+              value={form.start_date}
+              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+            />
+
+            <input
+              className="input"
+              type="date"
+              value={form.end_date}
+              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+            />
+
+            <textarea
+              className="input"
+              placeholder="메모"
+              value={form.memo}
+              onChange={(e) => setForm({ ...form, memo: e.target.value })}
+              style={{ gridColumn: "1 / 5", minHeight: 90 }}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <button className="btn" onClick={saveMember}>
+              {isEdit ? "수정 저장" : "회원 저장"}
+            </button>
+
+            <button className="btn secondary" onClick={() => setShowForm(false)}>
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showExtendForm && extendMember && (
+        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+          <h2>회원권 연장</h2>
+
+          <div style={{ color: "#aaa", marginBottom: 16 }}>
+            {extendMember.name} / {extendMember.product_name}
+          </div>
+
+          {extendMember.pass_type === "PERIOD" ? (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  marginBottom: 14,
+                }}
+              >
+                {[1, 3, 6].map((m) => (
+                  <button
+                    key={m}
+                    className={
+                      extendForm.months === m && !extendForm.customMonths
+                        ? "btn"
+                        : "btn secondary"
+                    }
+                    onClick={() =>
+                      setExtendForm({
+                        ...extendForm,
+                        months: m,
+                        customMonths: "",
+                      })
+                    }
+                  >
+                    +{m}개월
+                  </button>
+                ))}
+              </div>
+
+              <input
+                className="input"
+                type="number"
+                placeholder="직접 개월 입력"
+                value={extendForm.customMonths}
+                onChange={(e) =>
+                  setExtendForm({
+                    ...extendForm,
+                    customMonths: e.target.value,
+                  })
+                }
+              />
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  marginBottom: 14,
+                }}
+              >
+                {[1, 12, 24].map((c) => (
+                  <button
+                    key={c}
+                    className={
+                      extendForm.count === c && !extendForm.customCount
+                        ? "btn"
+                        : "btn secondary"
+                    }
+                    onClick={() =>
+                      setExtendForm({
+                        ...extendForm,
+                        count: c,
+                        customCount: "",
+                      })
+                    }
+                  >
+                    +{c}회
+                  </button>
+                ))}
+              </div>
+
+              <input
+                className="input"
+                type="number"
+                placeholder="직접 횟수 입력"
+                value={extendForm.customCount}
+                onChange={(e) =>
+                  setExtendForm({
+                    ...extendForm,
+                    customCount: e.target.value,
+                  })
+                }
+              />
+            </>
+          )}
+
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button className="btn" onClick={saveExtend}>
+              연장 저장
+            </button>
+
+            <button
+              className="btn secondary"
+              onClick={() => setShowExtendForm(false)}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showSmsPreview && (
+        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+          <h2>문자 미리보기</h2>
+
+          <textarea
+            className="input"
+            value={smsMessage}
+            onChange={(e) => setSmsMessage(e.target.value)}
+            style={{
+              minHeight: 220,
+              width: "100%",
+            }}
+          />
+
+          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+            <button
+              className="btn"
+              onClick={async () => {
+                const res = await apiFetch(
+                "/api/sms/send",
+                {
+                  method: "POST",
+                  body: JSON.stringify({
+                    branch_name:
+                      extendMember?.branch_name,
+                    message: smsMessage,
+                    is_test: true,
+                    test_phone:
+                      extendMember?.phone,
+                  }),
+                }
+              );
+
+              const data = await res.json();
+
+              if (data.success) {
+                alert("문자 발송 완료 😎");
+
+                setShowSmsPreview(
+                  false
+                );
+
+                setExtendMember(null);
+              } else {
+                alert(
+                  data.message ||
+                    "문자 발송 실패"
+                );
+              }
+                setShowSmsPreview(false);
+                setExtendMember(null);
+              }}
+            >
+              문자 보내기
+            </button>
+
+            <button
+              className="btn secondary"
+              onClick={() => {
+                setShowSmsPreview(false);
+                setExtendMember(null);
+              }}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showHoldForm && holdMember && (
+        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+          <h2>휴회 처리</h2>
+
+          <div style={{ color: "#aaa", marginBottom: 14 }}>
+            {holdMember.name} / 현재 만료일 {holdMember.end_date?.slice(0, 10)}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <input
+              className="input"
+              type="date"
+              value={holdForm.hold_start}
+              onChange={(e) =>
+                setHoldForm({ ...holdForm, hold_start: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              type="date"
+              value={holdForm.hold_end}
+              onChange={(e) =>
+                setHoldForm({ ...holdForm, hold_end: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              placeholder="휴회 사유"
+              value={holdForm.reason}
+              onChange={(e) =>
+                setHoldForm({ ...holdForm, reason: e.target.value })
+              }
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+            <button className="btn" onClick={saveHold}>
+              휴회 처리
+            </button>
+
+            <button
+              className="btn secondary"
+              onClick={() => setShowHoldForm(false)}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "grid", gap: 8 }}>
+        {pagedMembers.map((m) => {
+          const status = getStatus(m);
+
+          return (
+            <div
+              key={m.member_id}
+              className="card"
+              style={{
+                borderRadius: 16,
+                padding: "12px 16px",
+                cursor: "pointer",
+              }}
+              onClick={() => {
+                location.href = `/member-detail?member_id=${m.member_id}`;
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "200px 190px 150px 120px 90px auto",
+                  alignItems: "center",
+                  gap: 14,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 900 }}>{m.name}</div>
+                  <div style={{ color: "#777", fontSize: 13, marginTop: 4 }}>
+                    {m.phone}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontWeight: 800 }}>{m.product_name}</div>
+                  <div style={{ color: "#777", fontSize: 13, marginTop: 4 }}>
+                    {m.pass_type === "COUNT"
+                      ? `남은횟수 ${m.remaining_count}`
+                      : "기간권"}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ color: "#888", fontSize: 13 }}>만료일</div>
+                  <div
+                    style={{
+                      color: status.text === "만료임박" ? "#ff4d6d" : "#ddd",
+                      marginTop: 4,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {m.end_date?.slice(0, 10)}
+                  </div>
+                </div>
+
+                <div>
+                  <div
+                    style={{
+                      background: `${status.color}22`,
+                      color: status.color,
+                      padding: "6px 12px",
+                      borderRadius: 999,
+                      display: "inline-block",
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {status.text}
+                  </div>
+                </div>
+
+                <div style={{ color: "#888", fontSize: 13 }}>
+                  #{m.checkin_code}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    justifyContent: "flex-end",
+                    flexWrap: "wrap",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button className="btn secondary" onClick={() => openEdit(m)}>
+                    수정
+                  </button>
+
+                  <button className="btn" onClick={() => openExtend(m)}>
+                    연장
+                  </button>
+
+                  <button className="btn secondary" onClick={() => openHold(m)}>
+                    휴회
+                  </button>
+
+                  <button
+                    className="btn secondary"
+                    onClick={() => {
+                      location.href = `/member-detail?member_id=${m.member_id}`;
+                    }}
+                  >
+                    상세
+                  </button>
+                </div>
+              </div>
+
+              {m.memo && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#777",
+                    fontSize: 13,
+                    borderTop: "1px solid #1f2937",
+                    paddingTop: 8,
+                  }}
+                >
+                  {m.memo}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {filtered.length === 0 && (
+          <div
+            className="card"
+            style={{
+              borderRadius: 24,
+              textAlign: "center",
+              color: "#888",
+            }}
+          >
+            회원이 없습니다.
+          </div>
+        )}
+      </div>
+
+      {filtered.length > pageSize && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 8,
+            marginTop: 20,
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            className="btn secondary"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            이전
+          </button>
+
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              className={page === i + 1 ? "btn" : "btn secondary"}
+              onClick={() => setPage(i + 1)}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            className="btn secondary"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            다음
+          </button>
+        </div>
+      )}
+    </AppShell>
+  );
+}

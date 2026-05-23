@@ -1,0 +1,27 @@
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@next/font": "latest",
+    "date-holidays": "^3.29.0",
+    "googleapis": "^171.4.0",
+    "lucide-react": "latest",
+    "mysql2": "^3.22.3",
+    "next": "latest",
+    "react": "latest",
+    "react-calendar": "^6.0.1",
+    "react-dom": "latest",
+    "recharts": "^3.8.1",
+    "solapi": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}
