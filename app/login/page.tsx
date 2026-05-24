@@ -41,7 +41,8 @@ export default function LoginPage() {
     if (data.success) {
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      alert(`${data.user.name}님 로그인 성공`);
+      //alert(`${data.user.name}님 로그인 성공`);
+      alert(`${data.user.name}님 로그인 성공 / role: ${data.user.role}`);
 
       if (
         data.user.role === "OWNER" ||
