@@ -8,9 +8,9 @@ const today = new Date().toISOString().slice(0, 10);
 
 const menus = [
   ["회원관리", "/mobile-members"],
-  ["출석관리", "/attendance-live"],
-  ["결제관리", "/payments"],
-  ["CRM", "/crm"],
+  ["출석관리", "/mobile-attendance"],
+  ["결제관리", "/mobile-payments"],
+  ["CRM", "/mobile-crm"],
   ["네이버예약", "/naver-calendar"],
   ["문자관리", "/sms"],
   ["회원만료", "/member-expiring"],
@@ -281,7 +281,7 @@ export default function MobileBranchPage() {
         </Link>
 
         <Link
-          href="/attendance-live"
+          href="/mobile-attendance"
           style={{
             textAlign: "center",
             color: "white",
@@ -293,7 +293,7 @@ export default function MobileBranchPage() {
         </Link>
 
         <Link
-          href="/payments"
+          href="/mobile-payments"
           style={{
             textAlign: "center",
             color: "white",
@@ -305,7 +305,7 @@ export default function MobileBranchPage() {
         </Link>
 
         <Link
-          href="/crm"
+          href="/mobile-crm"
           style={{
             textAlign: "center",
             color: "#2ee59d",

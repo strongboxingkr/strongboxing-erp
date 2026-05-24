@@ -472,7 +472,7 @@ export default function MobileMembersPage() {
             >
               <div
                 onClick={() => {
-                  window.location.href = `/member-detail?member_id=${m.member_id}`;
+                  window.location.href = `/mobile-member-detail?member_id=${m.member_id}`;
                 }}
               >
                 <div
@@ -574,7 +574,7 @@ export default function MobileMembersPage() {
                 <button
                   className="btn secondary"
                   onClick={() => {
-                    window.location.href = `/member-detail?member_id=${m.member_id}`;
+                    window.location.href = `/mobile-member-detail?member_id=${m.member_id}`;
                   }}
                 >
                   상세

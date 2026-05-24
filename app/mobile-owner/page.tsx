@@ -29,9 +29,9 @@ const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
 const menus = [
   ["회원관리", "/mobile-members"],
-  ["출석관리", "/attendance-live"],
-  ["결제관리", "/payments"],
-  ["CRM", "/crm"],
+  ["출석관리", "/mobile-attendance"],
+  ["결제관리", "/mobile-payments"],
+  ["CRM", "/mobile-crm"],
   ["네이버예약", "/naver-calendar"],
   ["문자관리", "/sms"],
   ["재무요약", "/finance-summary"],
@@ -309,6 +309,7 @@ export default function MobileOwnerPage() {
           </ResponsiveContainer>
         </div>
       </div>
+      
       <div
         style={{
           position: "fixed",
@@ -349,7 +350,7 @@ export default function MobileOwnerPage() {
         </Link>
 
         <Link
-          href="/finance-summary"
+          href="/mobile-attendance"
           style={{
             textAlign: "center",
             color: "white",
@@ -357,11 +358,23 @@ export default function MobileOwnerPage() {
             fontSize: 12,
           }}
         >
-          매출
+          출석
         </Link>
 
         <Link
-          href="/crm"
+          href="/mobile-payments"
+          style={{
+            textAlign: "center",
+            color: "white",
+            textDecoration: "none",
+            fontSize: 12,
+          }}
+        >
+          결제
+        </Link>
+
+        <Link
+          href="/mobile-crm"
           style={{
             textAlign: "center",
             color: "white",
@@ -370,93 +383,6 @@ export default function MobileOwnerPage() {
           }}
         >
           상담
-        </Link>
-
-        <Link
-          href="/settings"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          설정
-        </Link>
-      </div>
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: "#0f172a",
-          borderTop: "1px solid #1f2937",
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          padding: "10px 0",
-          zIndex: 999,
-        }}
-      >
-        <Link
-          href="/mobile-owner"
-          style={{
-            textAlign: "center",
-            color: "#ff3b6b",
-            textDecoration: "none",
-            fontSize: 12,
-            fontWeight: 900,
-          }}
-        >
-          홈
-        </Link>
-
-        <Link
-          href="/mobile-members"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          회원
-        </Link>
-
-        <Link
-          href="/finance-summary"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          매출
-        </Link>
-
-        <Link
-          href="/crm"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          상담
-        </Link>
-
-        <Link
-          href="/settings"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          설정
         </Link>
       </div>
     </div>
