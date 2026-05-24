@@ -11,7 +11,7 @@ const menus = [
   ["출석관리", "/attendance-live"],
   ["결제관리", "/payments"],
   ["CRM", "/crm"],
-  ["네이버예약", "/naver-reservations"],
+  ["네이버예약", "/naver-calendar"],
   ["문자관리", "/sms"],
   ["회원만료", "/member-expiring"],
   ["일일마감", "/daily-closing"],

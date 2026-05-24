@@ -29,10 +29,15 @@ const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
 const menus = [
   ["회원관리", "/members"],
-  ["네이버예약", "/naver-reservations"],
+  ["출석관리", "/attendance-live"],
+  ["결제관리", "/payments"],
+  ["CRM", "/crm"],
+  ["네이버예약", "/naver-calendar"],
   ["문자관리", "/sms"],
   ["재무요약", "/finance-summary"],
   ["일일마감", "/daily-closing"],
+  ["직원관리", "/staff"],
+  ["권한관리", "/permissions"],
 ];
 
 export default function MobileOwnerPage() {
