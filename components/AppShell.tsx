@@ -78,9 +78,14 @@ export default function AppShell({
       return;
     }
 
-    const parsedUser = JSON.parse(savedUser);
-    setUser(parsedUser);
-    loadPermissions(parsedUser.role);
+    try {
+      const parsedUser = JSON.parse(savedUser);
+      setUser(parsedUser);
+      loadPermissions(parsedUser.role);
+    } catch (e) {
+      localStorage.removeItem("user");
+      location.href = "/login";
+    }
   }, []);
 
   const loadPermissions = async (role: string) => {

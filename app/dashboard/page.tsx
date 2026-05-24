@@ -4,16 +4,30 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
-const today = new Date()
-  .toISOString()
-  .slice(0, 10);
+const formatDate = (d: Date) => {
+  const year = d.getFullYear();
+
+  const month = String(
+    d.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    d.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const today = formatDate(
+  new Date()
+);
 
 const getMonthStart = () => {
   const d = new Date();
+
   d.setDate(1);
-  return d
-    .toISOString()
-    .slice(0, 10);
+
+  return formatDate(d);
 };
 
 const money = (v: any) =>
