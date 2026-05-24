@@ -7,7 +7,7 @@ import { apiFetch } from "@/lib/api";
 const today = new Date().toISOString().slice(0, 10);
 
 const menus = [
-  ["회원관리", "/members"],
+  ["회원관리", "/mobile-members"],
   ["출석관리", "/attendance-live"],
   ["결제관리", "/payments"],
   ["CRM", "/crm"],
@@ -269,7 +269,7 @@ export default function MobileBranchPage() {
         </Link>
 
         <Link
-          href="/members"
+          href="/mobile-members"
           style={{
             textAlign: "center",
             color: "white",

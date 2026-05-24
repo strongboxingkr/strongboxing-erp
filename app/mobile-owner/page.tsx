@@ -28,7 +28,7 @@ const getYesterday = () => {
 const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
 const menus = [
-  ["회원관리", "/members"],
+  ["회원관리", "/mobile-members"],
   ["출석관리", "/attendance-live"],
   ["결제관리", "/payments"],
   ["CRM", "/crm"],
@@ -221,10 +221,26 @@ export default function MobileOwnerPage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {menus.map(([title, href]) => (
-            <Link key={title} href={href} style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 20, padding: 20, textDecoration: "none" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "white" }}>{title}</div>
-              <div style={{ marginTop: 8, color: "#888", fontSize: 13 }}>바로 이동</div>
-            </Link>
+            <button
+              key={title}
+              onClick={() => {
+                window.location.href = href;
+              }}
+              style={{
+                background: "#111827",
+                border: "1px solid #1f2937",
+                borderRadius: 20,
+                padding: 20,
+                textAlign: "left",
+              }}
+            >
+  <div style={{ fontSize: 18, fontWeight: 900, color: "white" }}>
+    {title}
+  </div>
+  <div style={{ marginTop: 8, color: "#888", fontSize: 13 }}>
+    바로 이동
+  </div>
+</button>
           ))}
         </div>
       </div>
@@ -321,7 +337,7 @@ export default function MobileOwnerPage() {
         </Link>
 
         <Link
-          href="/members"
+          href="/mobile-members"
           style={{
             textAlign: "center",
             color: "white",
@@ -396,7 +412,7 @@ export default function MobileOwnerPage() {
         </Link>
 
         <Link
-          href="/members"
+          href="/mobile-members"
           style={{
             textAlign: "center",
             color: "white",
