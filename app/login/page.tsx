@@ -43,12 +43,14 @@ export default function LoginPage() {
 
       alert(`${data.user.name}님 로그인 성공`);
 
-      const isMobile =
-        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      window.location.replace(
-        isMobile ? "/mobile-branch" : "/dashboard"
-      );
+      if (
+        data.user.role === "OWNER" ||
+        data.user.role === "ADMIN"
+      ) {
+        window.location.replace("/mobile-owner");
+      } else {
+        window.location.replace("/mobile-branch");
+      }
     } else {
       alert(data.message || "로그인 실패");
     }
