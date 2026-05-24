@@ -8,6 +8,9 @@ const today = new Date().toISOString().slice(0, 10);
 
 const menus = [
   ["회원관리", "/members"],
+  ["출석관리", "/attendance-live"],
+  ["결제관리", "/payments"],
+  ["CRM", "/crm"],
   ["네이버예약", "/naver-reservations"],
   ["문자관리", "/sms"],
   ["회원만료", "/member-expiring"],
@@ -239,6 +242,82 @@ export default function MobileBranchPage() {
           </div>
         )}
       </div>
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "#0f172a",
+          borderTop: "1px solid #1f2937",
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          padding: "10px 0",
+          zIndex: 999,
+        }}
+      >
+        <Link
+          href="/mobile-branch"
+          style={{
+            textAlign: "center",
+            color: "white",
+            textDecoration: "none",
+            fontSize: 12,
+          }}
+        >
+          홈
+        </Link>
+
+        <Link
+          href="/members"
+          style={{
+            textAlign: "center",
+            color: "white",
+            textDecoration: "none",
+            fontSize: 12,
+          }}
+        >
+          회원
+        </Link>
+
+        <Link
+          href="/attendance-live"
+          style={{
+            textAlign: "center",
+            color: "white",
+            textDecoration: "none",
+            fontSize: 12,
+          }}
+        >
+          출석
+        </Link>
+
+        <Link
+          href="/payments"
+          style={{
+            textAlign: "center",
+            color: "white",
+            textDecoration: "none",
+            fontSize: 12,
+          }}
+        >
+          결제
+        </Link>
+
+        <Link
+          href="/crm"
+          style={{
+            textAlign: "center",
+            color: "#2ee59d",
+            textDecoration: "none",
+            fontSize: 12,
+            fontWeight: 900,
+          }}
+        >
+          상담
+        </Link>
+      </div>
+      
     </div>
   );
 }
