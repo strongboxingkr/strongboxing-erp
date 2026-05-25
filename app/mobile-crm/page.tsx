@@ -369,7 +369,7 @@ export default function MobileCrmPage() {
                     className="btn secondary"
                     onClick={() => {
                         window.location.href =
-                        `/mobile-members`;
+                        `/mobile-members?name=${encodeURIComponent(r.customer_name || "")}&phone=${encodeURIComponent(r.phone || "")}`;
                     }}
                     >
                     회원등록

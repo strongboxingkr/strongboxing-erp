@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
+const getQueryValue = (key: string) => {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.search);
+  return params.get(key) || "";
+};
+
 const formatDate = (d: Date) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -116,6 +122,25 @@ export default function MobileMembersPage() {
     }
 
     setUser(savedUser);
+
+    const queryName = getQueryValue("name");
+    const queryPhone = getQueryValue("phone");
+
+    if (queryName || queryPhone) {
+    setShowForm(true);
+    setIsEdit(false);
+
+    setForm((prev) => ({
+        ...prev,
+        name: queryName,
+        phone: queryPhone,
+        branch_name:
+        savedUser?.role === "ADMIN" || savedUser?.role === "OWNER"
+            ? prev.branch_name
+            : savedUser?.branch_name,
+    }));
+    }
+
     loadBranches();
     loadProducts();
     loadMembers(savedUser);

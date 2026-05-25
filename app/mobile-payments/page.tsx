@@ -131,9 +131,19 @@ export default function MobilePaymentsPage() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const memberId = params.get("member_id");
+
+    if (memberId) {
+        setForm((prev) => ({
+        ...prev,
+        member_id: memberId,
+        }));
+    }
+
     loadMembers();
     loadPayments();
-  }, []);
+    }, []);
 
   const filtered = members.filter((m) => {
     if (!search.trim()) return true;
