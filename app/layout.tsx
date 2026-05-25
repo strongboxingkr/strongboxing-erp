@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "STRONG ERP",
   description: "스트롱복싱 운영 ERP",
-  manifest: "/manifest.json",
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
