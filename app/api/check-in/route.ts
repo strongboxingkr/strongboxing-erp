@@ -26,7 +26,6 @@ export async function POST(req: Request) {
       [code]
     );
 
-    // 회원 없음
     if (rows.length === 0) {
       await pool.query(
         `
@@ -44,7 +43,28 @@ export async function POST(req: Request) {
 
     const member = rows[0];
 
-    // 휴회중
+    const today = new Date();
+    const todayText = today.toISOString().slice(0, 10);
+
+    const [todayCheckins]: any = await pool.query(
+      `
+      SELECT attendance_id
+      FROM attendance
+      WHERE member_id = ?
+        AND result = 'SUCCESS'
+        AND DATE(checkin_time) = ?
+      LIMIT 1
+      `,
+      [member.member_id, todayText]
+    );
+
+    if (todayCheckins.length > 0) {
+      return NextResponse.json({
+        success: false,
+        message: "오늘 이미 출석한 회원입니다.",
+      });
+    }
+
     if (member.status === "REST") {
       await pool.query(
         `
@@ -61,11 +81,14 @@ export async function POST(req: Request) {
       });
     }
 
-    const today = new Date();
-    const endDate = new Date(member.end_date);
+    const endDate = member.end_date
+      ? new Date(member.end_date)
+      : null;
 
-    // 만료
-    if (member.status === "EXPIRED" || endDate < today) {
+    if (
+      member.status === "EXPIRED" ||
+      (endDate && endDate < today)
+    ) {
       await pool.query(
         `
         INSERT INTO attendance
@@ -81,11 +104,10 @@ export async function POST(req: Request) {
       });
     }
 
-    let remainingCount = member.remaining_count;
+    let remainingCount = Number(member.remaining_count || 0);
 
-    // 횟수 부족
     if (member.pass_type === "COUNT") {
-      if (member.remaining_count <= 0) {
+      if (remainingCount <= 0) {
         await pool.query(
           `
           INSERT INTO attendance
@@ -110,10 +132,9 @@ export async function POST(req: Request) {
         [member.member_id]
       );
 
-      remainingCount = member.remaining_count - 1;
+      remainingCount = remainingCount - 1;
     }
 
-    // 출석 성공
     await pool.query(
       `
       INSERT INTO attendance
@@ -147,7 +168,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: false,
       message: "출석 처리 중 오류가 발생했습니다.",
-      error,
     });
   }
 }

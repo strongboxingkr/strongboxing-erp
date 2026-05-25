@@ -188,7 +188,22 @@ export default function MobileAttendancePage() {
                   fontWeight: 900,
                 }}
               >
+                <button
+                onClick={() => {
+                    window.location.href =
+                    `/mobile-member-detail?id=${r.member_id}`;
+                }}
+                style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "white",
+                    fontSize: 22,
+                    fontWeight: 900,
+                }}
+                >
                 {r.name}
+                </button>
               </div>
 
               <div
@@ -237,30 +252,30 @@ export default function MobileAttendancePage() {
         }}
       >
         <Link href="/mobile-branch" style={tabStyle}>
-          홈
+        홈
         </Link>
 
         <Link href="/mobile-members" style={tabStyle}>
-          회원
+        회원
         </Link>
 
         <Link
-          href="/mobile-attendance"
-          style={{
+        href="/mobile-attendance"
+        style={{
             ...tabStyle,
             color: "#2ee59d",
             fontWeight: 900,
-          }}
+        }}
         >
-          출석
+        출석
         </Link>
 
         <Link href="/mobile-payments" style={tabStyle}>
-          결제
+        결제
         </Link>
 
         <Link href="/mobile-crm" style={tabStyle}>
-          상담
+        상담
         </Link>
       </div>
     </div>

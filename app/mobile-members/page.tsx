@@ -559,7 +559,16 @@ export default function MobileMembersPage() {
                     <div style={{ color: "#777", fontSize: 12 }}>만료/횟수</div>
                     <b>
                       {m.pass_type === "COUNT"
-                        ? `${m.remaining_count || 0}회`
+                        ? `$<span
+                            style={{
+                                color:
+                                Number(m.remaining_count || 0) <= 3
+                                    ? "#ff4d6d"
+                                    : "#2ee59d",
+                            }}
+                            >
+                            {m.remaining_count || 0}회
+                            </span>`
                         : m.end_date?.slice(0, 10)}
                     </b>
                   </div>
@@ -582,29 +591,32 @@ export default function MobileMembersPage() {
 
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: 8,
-                  marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 8,
+                    marginTop: 14,
                 }}
-              >
-                <button className="btn secondary" onClick={() => openEdit(m)}>
-                  수정
-                </button>
-
-                <button className="btn" onClick={() => extendOneMonth(m)}>
-                  +연장
+                >
+                <button
+                    className="btn"
+                    onClick={() => {
+                    window.location.href =
+                        `/mobile-member-detail?member_id=${m.member_id}`;
+                    }}
+                >
+                    상세
                 </button>
 
                 <button
-                  className="btn secondary"
-                  onClick={() => {
-                    window.location.href = `/mobile-member-detail?member_id=${m.member_id}`;
-                  }}
+                    className="btn secondary"
+                    onClick={() => {
+                    window.location.href =
+                        `/mobile-payments?member_id=${m.member_id}&mode=extend`;
+                    }}
                 >
-                  상세
+                    연장
                 </button>
-              </div>
+                </div>
             </div>
           );
         })}
@@ -638,19 +650,30 @@ export default function MobileMembersPage() {
         }}
       >
         <Link href="/mobile-branch" style={tabStyle}>
-          홈
+        홈
         </Link>
-        <Link href="/mobile-members" style={{ ...tabStyle, color: "#2ee59d", fontWeight: 900 }}>
-          회원
+
+        <Link
+        href="/mobile-members"
+        style={{
+            ...tabStyle,
+            color: "#2ee59d",
+            fontWeight: 900,
+        }}
+        >
+        회원
         </Link>
-        <Link href="/attendance-live" style={tabStyle}>
-          출석
+
+        <Link href="/mobile-attendance" style={tabStyle}>
+        출석
         </Link>
-        <Link href="/payments" style={tabStyle}>
-          결제
+
+        <Link href="/mobile-payments" style={tabStyle}>
+        결제
         </Link>
-        <Link href="/crm" style={tabStyle}>
-          상담
+
+        <Link href="/mobile-crm" style={tabStyle}>
+        상담
         </Link>
       </div>
     </div>

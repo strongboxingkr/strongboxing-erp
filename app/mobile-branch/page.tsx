@@ -260,9 +260,10 @@ export default function MobileBranchPage() {
           href="/mobile-branch"
           style={{
             textAlign: "center",
-            color: "white",
+            color: "#2ee59d",
             textDecoration: "none",
             fontSize: 12,
+            fontWeight: 900,
           }}
         >
           홈
@@ -308,16 +309,14 @@ export default function MobileBranchPage() {
           href="/mobile-crm"
           style={{
             textAlign: "center",
-            color: "#2ee59d",
+            color: "white",
             textDecoration: "none",
             fontSize: 12,
-            fontWeight: 900,
           }}
         >
           상담
         </Link>
       </div>
-      
     </div>
   );
 }

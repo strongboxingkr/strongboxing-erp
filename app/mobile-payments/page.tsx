@@ -537,30 +537,30 @@ export default function MobilePaymentsPage() {
         }}
       >
         <Link href="/mobile-branch" style={tabStyle}>
-          홈
+        홈
         </Link>
 
         <Link href="/mobile-members" style={tabStyle}>
-          회원
+        회원
         </Link>
 
         <Link href="/mobile-attendance" style={tabStyle}>
-          출석
+        출석
         </Link>
 
         <Link
-          href="/mobile-payments"
-          style={{
+        href="/mobile-payments"
+        style={{
             ...tabStyle,
             color: "#2ee59d",
             fontWeight: 900,
-          }}
+        }}
         >
-          결제
+        결제
         </Link>
 
         <Link href="/mobile-crm" style={tabStyle}>
-          상담
+        상담
         </Link>
       </div>
     </div>

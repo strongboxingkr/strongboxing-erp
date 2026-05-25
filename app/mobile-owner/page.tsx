@@ -328,7 +328,7 @@ export default function MobileOwnerPage() {
           href="/mobile-owner"
           style={{
             textAlign: "center",
-            color: "#ff3b6b",
+            color: "#2ee59d",
             textDecoration: "none",
             fontSize: 12,
             fontWeight: 900,

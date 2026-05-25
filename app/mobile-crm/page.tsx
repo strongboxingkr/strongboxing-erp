@@ -366,14 +366,14 @@ export default function MobileCrmPage() {
                     </button>
 
                     <button
-                    className="btn secondary"
-                    onClick={() => {
-                        window.location.href =
-                        `/mobile-members?name=${encodeURIComponent(r.customer_name || "")}&phone=${encodeURIComponent(r.phone || "")}`;
-                    }}
-                    >
-                    회원등록
-                    </button>
+                className="btn secondary"
+                onClick={() => {
+                    window.location.href =
+                    `/mobile-members?name=${encodeURIComponent(r.customer_name || "")}&phone=${encodeURIComponent(r.phone || "")}`;
+                }}
+                >
+                회원등록
+                </button>
                 </div>
                 </div>
           ))}
@@ -401,30 +401,30 @@ export default function MobileCrmPage() {
         }}
       >
         <Link href="/mobile-branch" style={tabStyle}>
-          홈
+        홈
         </Link>
 
         <Link href="/mobile-members" style={tabStyle}>
-          회원
+        회원
         </Link>
 
         <Link href="/mobile-attendance" style={tabStyle}>
-          출석
+        출석
         </Link>
 
         <Link href="/mobile-payments" style={tabStyle}>
-          결제
+        결제
         </Link>
 
         <Link
-          href="/mobile-crm"
-          style={{
+        href="/mobile-crm"
+        style={{
             ...tabStyle,
             color: "#2ee59d",
             fontWeight: 900,
-          }}
+        }}
         >
-          상담
+        상담
         </Link>
       </div>
     </div>
