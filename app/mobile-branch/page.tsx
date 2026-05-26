@@ -242,6 +242,29 @@ export default function MobileBranchPage() {
           </div>
         )}
       </div>
+
+      <div
+        style={{
+          position: "fixed",
+          bottom: 70,
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          zIndex: 998,
+        }}
+      >
+        <Link
+          href="/dashboard"
+          style={{
+            color: "#777",
+            fontSize: 13,
+            textDecoration: "underline",
+          }}
+        >
+          PC버전 보기
+        </Link>
+      </div>
+      
       <div
         style={{
           position: "fixed",
@@ -256,25 +279,6 @@ export default function MobileBranchPage() {
           zIndex: 999,
         }}
       >
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: 24,
-            marginBottom: 70,
-          }}
-        >
-          <Link
-            href="/dashboard"
-            style={{
-              color: "#888",
-              fontSize: 13,
-              textDecoration: "underline",
-            }}
-          >
-            PC버전 보기
-          </Link>
-        </div>
-
         <Link
           href="/mobile-branch"
           style={{
