@@ -55,6 +55,7 @@ function detectBranch(text: string) {
 
 function detectStatus(text: string) {
   if (text.includes("취소")) return "취소";
+  if (text.includes("변경")) return "예약변경";
   if (text.includes("노쇼")) return "노쇼";
   if (text.includes("확정")) return "예약확정";
   if (text.includes("접수")) return "예약접수";
@@ -135,10 +136,7 @@ function pickReservationDateTime(text: string) {
 }
 
 function pickProduct(text: string) {
-  const patterns = [
-    /예약상품\s*\n?\s*([^\n]+)/,
-    /상품\s*\n?\s*([^\n]+)/,
-  ];
+  const patterns = [/예약상품\s*\n?\s*([^\n]+)/, /상품\s*\n?\s*([^\n]+)/];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
@@ -174,11 +172,13 @@ export async function GET() {
     const list = await gmail.users.messages.list({
       userId: "me",
       q: '"네이버 예약" newer_than:7d',
-      maxResults: 30,
+      maxResults: 50,
     });
 
     const messages = list.data.messages || [];
     let insertedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
 
     for (const msg of messages) {
       const detail = await gmail.users.messages.get({
@@ -195,17 +195,6 @@ export async function GET() {
       const fullTextRaw = `${subject}\n${snippet}\n${body}`;
       const fullText = cleanText(fullTextRaw);
 
-      const [alreadyRows]: any = await pool.query(
-        `
-        SELECT COUNT(*) cnt
-        FROM naver_reservations
-        WHERE source_email_id = ?
-        `,
-        [msg.id]
-      );
-
-      if (alreadyRows[0].cnt > 0) continue;
-
       const branch_name = detectBranch(fullText);
       const status = detectStatus(fullText);
       const customer_name = pickName(fullText).slice(0, 50);
@@ -216,6 +205,72 @@ export async function GET() {
         pickReservationDateTime(fullText);
 
       const reservation_product = pickProduct(fullText).slice(0, 100);
+
+      const memo = [
+        `메일제목: ${subject}`,
+        `예약신청일시: ${requested_at || "-"}`,
+        `이용일시원문: ${reservation_raw || "-"}`,
+        "",
+        fullText,
+      ]
+        .join("\n")
+        .slice(0, 1500);
+
+      const [sameEmailRows]: any = await pool.query(
+        `
+        SELECT reservation_id
+        FROM naver_reservations
+        WHERE source_email_id = ?
+        LIMIT 1
+        `,
+        [msg.id]
+      );
+
+      if (sameEmailRows.length > 0) {
+        skippedCount++;
+        continue;
+      }
+
+      const [sameReservationRows]: any = await pool.query(
+        `
+        SELECT *
+        FROM naver_reservations
+        WHERE phone = ?
+          AND reservation_date = ?
+          AND reservation_time = ?
+        ORDER BY reservation_id DESC
+        LIMIT 1
+        `,
+        [phone, reservation_date, reservation_time]
+      );
+
+      if (sameReservationRows.length > 0) {
+        await pool.query(
+          `
+          UPDATE naver_reservations
+          SET
+            branch_name = ?,
+            customer_name = ?,
+            reservation_product = ?,
+            status = ?,
+            source_email_id = ?,
+            memo = ?
+          WHERE reservation_id = ?
+          `,
+          [
+            branch_name,
+            customer_name,
+            reservation_product,
+            status,
+            msg.id,
+            memo,
+            sameReservationRows[0].reservation_id,
+          ]
+        );
+
+        updatedCount++;
+        continue;
+      }
 
       await pool.query(
         `
@@ -242,15 +297,7 @@ export async function GET() {
           reservation_product,
           status,
           msg.id,
-          [
-            `메일제목: ${subject}`,
-            `예약신청일시: ${requested_at || "-"}`,
-            `이용일시원문: ${reservation_raw || "-"}`,
-            "",
-            fullText,
-          ]
-            .join("\n")
-            .slice(0, 1500),
+          memo,
         ]
       );
 
@@ -261,6 +308,8 @@ export async function GET() {
       success: true,
       checked: messages.length,
       inserted: insertedCount,
+      updated: updatedCount,
+      skipped: skippedCount,
     });
   } catch (error) {
     console.error(error);

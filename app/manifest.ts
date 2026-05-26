@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "STRONG ERP",
     short_name: "STRONG",
     description: "스트롱복싱 운영 관리 시스템",
-    start_url: "/dashboard",
+    start_url: "/login",
     display: "standalone",
     background_color: "#08090d",
     theme_color: "#08090d",

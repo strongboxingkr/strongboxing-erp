@@ -44,21 +44,20 @@ export default function LoginPage() {
         alert(`${data.user.name}님 로그인 성공`);
 
         const isMobile =
-          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        if (!isMobile) {
-          window.location.replace("/dashboard");
-        } else if (
-          data.user.role === "OWNER" ||
-          data.user.role === "ADMIN"
-        ) {
+      if (isMobile) {
+        if (data.user.role === "OWNER" || data.user.role === "ADMIN") {
           window.location.replace("/mobile-owner");
         } else {
           window.location.replace("/mobile-branch");
         }
       } else {
-        alert(data.message || "로그인 실패");
+        window.location.replace("/dashboard");
       }
+    } else {
+      alert(data.message || "로그인 실패");
+    }
   };
 
   return (
