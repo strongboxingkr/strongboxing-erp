@@ -39,22 +39,26 @@ export default function LoginPage() {
     const data = await res.json();
 
     if (data.success) {
-      localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user));
 
-      //alert(`${data.user.name}님 로그인 성공`);
-      alert(`${data.user.name}님 로그인 성공 / role: ${data.user.role}`);
+        alert(`${data.user.name}님 로그인 성공`);
 
-      if (
-        data.user.role === "OWNER" ||
-        data.user.role === "ADMIN"
-      ) {
-        window.location.replace("/mobile-owner");
+        const isMobile =
+          /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (!isMobile) {
+          window.location.replace("/dashboard");
+        } else if (
+          data.user.role === "OWNER" ||
+          data.user.role === "ADMIN"
+        ) {
+          window.location.replace("/mobile-owner");
+        } else {
+          window.location.replace("/mobile-branch");
+        }
       } else {
-        window.location.replace("/mobile-branch");
+        alert(data.message || "로그인 실패");
       }
-    } else {
-      alert(data.message || "로그인 실패");
-    }
   };
 
   return (
