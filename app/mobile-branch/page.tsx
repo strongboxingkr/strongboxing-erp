@@ -245,18 +245,15 @@ export default function MobileBranchPage() {
 
       <div
         style={{
-          position: "fixed",
-          bottom: 70,
-          left: 0,
-          right: 0,
           textAlign: "center",
-          zIndex: 998,
+          paddingTop: 30,
+          paddingBottom: 90,
         }}
       >
         <Link
           href="/dashboard"
           style={{
-            color: "#777",
+            color: "#666",
             fontSize: 13,
             textDecoration: "underline",
           }}
@@ -264,7 +261,7 @@ export default function MobileBranchPage() {
           PC버전 보기
         </Link>
       </div>
-      
+
       <div
         style={{
           position: "fixed",
