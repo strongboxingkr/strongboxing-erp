@@ -57,7 +57,51 @@ export async function GET(req: Request) {
       FROM attendance
       WHERE member_id = ?
       ORDER BY checkin_time DESC
+      LIMIT 100
+      `,
+      [member_id]
+    );
+
+    const [notes]: any = await pool.query(
+      `
+      SELECT *
+      FROM member_notes
+      WHERE member_id = ?
+      ORDER BY created_at DESC, note_id DESC
+      LIMIT 100
+      `,
+      [member_id]
+    );
+
+    const [holds]: any = await pool.query(
+      `
+      SELECT *
+      FROM member_holds
+      WHERE member_id = ?
+      ORDER BY created_at DESC, hold_id DESC
       LIMIT 50
+      `,
+      [member_id]
+    );
+
+    const [files]: any = await pool.query(
+      `
+      SELECT *
+      FROM member_files
+      WHERE member_id = ?
+      ORDER BY created_at DESC, file_id DESC
+      LIMIT 50
+      `,
+      [member_id]
+    );
+
+    const [histories]: any = await pool.query(
+      `
+      SELECT *
+      FROM member_histories
+      WHERE member_id = ?
+      ORDER BY created_at DESC, history_id DESC
+      LIMIT 100
       `,
       [member_id]
     );
@@ -67,6 +111,10 @@ export async function GET(req: Request) {
       member,
       payments,
       attendance,
+      notes,
+      holds,
+      files,
+      histories,
     });
   } catch (error) {
     return NextResponse.json({

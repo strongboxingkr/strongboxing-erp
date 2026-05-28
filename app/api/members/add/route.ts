@@ -16,6 +16,15 @@ export async function POST(req: Request) {
       start_date,
       end_date,
       memo,
+
+      locker_no,
+      member_no,
+      gender,
+      birth_date,
+      emergency_contact,
+      address,
+      join_date,
+      staff_name,
     } = body;
 
     if (!name || !phone || !checkin_code || !branch_name) {
@@ -32,14 +41,14 @@ export async function POST(req: Request) {
       });
     }
 
-    const phone_last4 = phone.slice(-4);
+    const phoneLast4 = String(phone).slice(-4);
 
     const [dupRows]: any = await pool.query(
       `
       SELECT member_id, name
       FROM members
       WHERE branch_name = ?
-      AND checkin_code = ?
+        AND checkin_code = ?
       LIMIT 1
       `,
       [branch_name, checkin_code]
@@ -52,13 +61,13 @@ export async function POST(req: Request) {
       });
     }
 
-    await pool.query(
+    const [result]: any = await pool.query(
       `
-      INSERT INTO members
-      (
+      INSERT INTO members (
         branch_name,
         name,
         phone,
+        emergency_contact,
         phone_last4,
         checkin_code,
         product_name,
@@ -67,28 +76,73 @@ export async function POST(req: Request) {
         start_date,
         end_date,
         status,
-        memo
+        memo,
+        locker_no,
+        member_no,
+        gender,
+        birth_date,
+        address,
+        join_date,
+        staff_name
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         branch_name,
         name,
         phone,
-        phone_last4,
+        emergency_contact || null,
+        phoneLast4,
         checkin_code,
-        product_name,
-        pass_type,
-        remaining_count,
-        start_date,
-        end_date,
+        product_name || null,
+        pass_type || "PERIOD",
+        remaining_count || 0,
+        start_date || null,
+        end_date || null,
         memo || "",
+        locker_no || null,
+        member_no || null,
+        gender || null,
+        birth_date || null,
+        address || null,
+        join_date || start_date || null,
+        staff_name || null,
+      ]
+    );
+
+    const memberId = result.insertId;
+
+    await pool.query(
+      `
+      INSERT INTO member_histories (
+        member_id,
+        member_name,
+        action_type,
+        action_memo,
+        old_value,
+        new_value,
+        created_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        memberId,
+        name,
+        "REGISTER",
+        "회원 등록",
+        null,
+        JSON.stringify({
+          member_id: memberId,
+          ...body,
+        }),
+        staff_name || "관리자",
       ]
     );
 
     return NextResponse.json({
       success: true,
       message: "회원 등록 완료",
+      member_id: memberId,
     });
   } catch (error) {
     console.error(error);

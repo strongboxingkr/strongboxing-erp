@@ -14,11 +14,11 @@ export async function GET(req: Request) {
 
     if (isAdminOrOwner(user.role)) {
       if (branch_name && branch_name !== "전체") {
-        branchCondition = " AND m.branch_name = ? ";
+        branchCondition = " AND COALESCE(a.branch_name, m.branch_name) = ? ";
         params.push(branch_name);
       }
     } else {
-      branchCondition = " AND m.branch_name = ? ";
+      branchCondition = " AND COALESCE(a.branch_name, m.branch_name) = ? ";
       params.push(user.branch_name);
     }
 
@@ -26,12 +26,16 @@ export async function GET(req: Request) {
       `
       SELECT
         a.attendance_id,
+        a.member_id,
+        COALESCE(a.member_name, m.name) AS name,
+        COALESCE(a.branch_name, m.branch_name) AS branch_name,
+        a.pass_type AS attendance_pass_type,
+        a.used_count,
         a.checkin_time,
         a.result,
-        m.member_id,
-        m.name,
+        a.memo,
+
         m.phone,
-        m.branch_name,
         m.product_name,
         m.pass_type,
         m.remaining_count,
@@ -39,8 +43,8 @@ export async function GET(req: Request) {
       FROM attendance a
       JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-      AND a.result = 'SUCCESS'
-      ${branchCondition}
+        AND a.result = 'SUCCESS'
+        ${branchCondition}
       ORDER BY a.checkin_time DESC
       `,
       params
@@ -49,14 +53,14 @@ export async function GET(req: Request) {
     const [branchRows]: any = await pool.query(
       `
       SELECT
-        m.branch_name,
+        COALESCE(a.branch_name, m.branch_name) AS branch_name,
         COUNT(*) AS count
       FROM attendance a
       JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-      AND a.result = 'SUCCESS'
-      ${branchCondition}
-      GROUP BY m.branch_name
+        AND a.result = 'SUCCESS'
+        ${branchCondition}
+      GROUP BY COALESCE(a.branch_name, m.branch_name)
       ORDER BY count DESC
       `,
       params

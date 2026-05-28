@@ -71,10 +71,7 @@ function pickName(text: string) {
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
-
-    if (match?.[1]) {
-      return match[1].replace(/\s+/g, "").trim();
-    }
+    if (match?.[1]) return match[1].replace(/\s+/g, "").trim();
   }
 
   return "미확인";
@@ -206,6 +203,13 @@ export async function GET() {
 
       const reservation_product = pickProduct(fullText).slice(0, 100);
 
+      if (!reservation_date || !reservation_time) {
+        skippedCount++;
+        continue;
+      }
+
+      const startDateTime = `${reservation_date} ${reservation_time}:00`;
+
       const memo = [
         `메일제목: ${subject}`,
         `예약신청일시: ${requested_at || "-"}`,
@@ -216,41 +220,34 @@ export async function GET() {
         .join("\n")
         .slice(0, 1500);
 
-      const [sameEmailRows]: any = await pool.query(
-        `
-        SELECT reservation_id
-        FROM naver_reservations
-        WHERE source_email_id = ?
-        LIMIT 1
-        `,
-        [msg.id]
-      );
-
-      if (sameEmailRows.length > 0) {
-        skippedCount++;
-        continue;
-      }
-
       const [sameReservationRows]: any = await pool.query(
         `
         SELECT *
         FROM naver_reservations
-        WHERE phone = ?
-          AND reservation_date = ?
-          AND reservation_time = ?
+        WHERE source_email_id = ?
+           OR (
+                phone = ?
+            AND reservation_date = ?
+            AND reservation_time = ?
+           )
         ORDER BY reservation_id DESC
         LIMIT 1
         `,
-        [phone, reservation_date, reservation_time]
+        [msg.id, phone, reservation_date, reservation_time]
       );
 
       if (sameReservationRows.length > 0) {
+        const reservationId = sameReservationRows[0].reservation_id;
+
         await pool.query(
           `
           UPDATE naver_reservations
           SET
             branch_name = ?,
             customer_name = ?,
+            phone = ?,
+            reservation_date = ?,
+            reservation_time = ?,
             reservation_product = ?,
             status = ?,
             source_email_id = ?,
@@ -260,19 +257,100 @@ export async function GET() {
           [
             branch_name,
             customer_name,
+            phone,
+            reservation_date,
+            reservation_time,
             reservation_product,
             status,
             msg.id,
             memo,
-            sameReservationRows[0].reservation_id,
+            reservationId,
           ]
         );
+
+        const [calendarRows]: any = await pool.query(
+          `
+          SELECT event_id
+          FROM calendar_events
+          WHERE source_type = ?
+            AND (
+              source_id = ?
+              OR source_id = ?
+            )
+          LIMIT 1
+          `,
+          ["NAVER_RESERVATION", msg.id, String(reservationId)]
+        );
+
+        if (calendarRows.length > 0) {
+          await pool.query(
+            `
+            UPDATE calendar_events
+            SET
+              branch_name = ?,
+              event_type = ?,
+              title = ?,
+              customer_name = ?,
+              phone = ?,
+              start_datetime = ?,
+              memo = ?,
+              status = ?,
+              source_id = ?
+            WHERE event_id = ?
+            `,
+            [
+              branch_name,
+              "NAVER",
+              `네이버예약 - ${customer_name}`,
+              customer_name,
+              phone,
+              startDateTime,
+              memo,
+              status,
+              msg.id,
+              calendarRows[0].event_id,
+            ]
+          );
+        } else {
+          await pool.query(
+            `
+            INSERT INTO calendar_events
+            (
+              branch_name,
+              event_type,
+              title,
+              customer_name,
+              phone,
+              start_datetime,
+              end_datetime,
+              memo,
+              status,
+              source_type,
+              source_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+              branch_name,
+              "NAVER",
+              `네이버예약 - ${customer_name}`,
+              customer_name,
+              phone,
+              startDateTime,
+              null,
+              memo,
+              status,
+              "NAVER_RESERVATION",
+              msg.id,
+            ]
+          );
+        }
 
         updatedCount++;
         continue;
       }
 
-      await pool.query(
+      const [insertResult]: any = await pool.query(
         `
         INSERT INTO naver_reservations
         (
@@ -298,6 +376,39 @@ export async function GET() {
           status,
           msg.id,
           memo,
+        ]
+      );
+
+      await pool.query(
+        `
+        INSERT INTO calendar_events
+        (
+          branch_name,
+          event_type,
+          title,
+          customer_name,
+          phone,
+          start_datetime,
+          end_datetime,
+          memo,
+          status,
+          source_type,
+          source_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          branch_name,
+          "NAVER",
+          `네이버예약 - ${customer_name}`,
+          customer_name,
+          phone,
+          startDateTime,
+          null,
+          memo,
+          status,
+          "NAVER_RESERVATION",
+          msg.id || String(insertResult.insertId),
         ]
       );
 

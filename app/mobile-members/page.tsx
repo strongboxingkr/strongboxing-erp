@@ -27,19 +27,24 @@ function addMonths(dateString: string, months: number) {
 
 const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
-const makeDefaultForm = () => ({
-  member_id: null as any,
-  branch_name: "철산점",
-  name: "",
-  phone: "",
-  checkin_code: "",
-  pass_type: "PERIOD",
-  product_name: "",
-  remaining_count: 0,
-  start_date: today,
-  end_date: addMonths(today, 1),
-  status: "ACTIVE",
-  memo: "",
+const makeDefaultForm = () => ({ 
+    member_id: null as any, 
+    branch_name: "철산점", 
+    name: "", 
+    phone: "", 
+    checkin_code: "", 
+    pass_type: "PERIOD", 
+    product_name: "", 
+    remaining_count: 0, 
+    start_date: today, 
+    end_date: addMonths(today, 1), 
+    status: "ACTIVE", memo: "", 
+    locker_no: "", member_no: "", 
+    gender: "", birth_date: "", 
+    emergency_contact: "", 
+    address: "", 
+    join_date: today, 
+    staff_name: "", 
 });
 
 export default function MobileMembersPage() {
@@ -170,19 +175,27 @@ export default function MobileMembersPage() {
   const openEdit = (m: any) => {
     setIsEdit(true);
 
-    setForm({
-      member_id: m.member_id,
-      branch_name: m.branch_name || "철산점",
-      name: m.name || "",
-      phone: m.phone || "",
-      checkin_code: m.checkin_code || "",
-      pass_type: m.pass_type || "PERIOD",
-      product_name: m.product_name || "",
-      remaining_count: m.remaining_count || 0,
-      start_date: m.start_date?.slice(0, 10) || today,
-      end_date: m.end_date?.slice(0, 10) || today,
-      status: m.status || "ACTIVE",
-      memo: m.memo || "",
+    setForm({ 
+        member_id: m.member_id, 
+        branch_name: m.branch_name || "철산점", 
+        name: m.name || "", 
+        phone: m.phone || "", 
+        checkin_code: m.checkin_code || "", 
+        pass_type: m.pass_type || "PERIOD", 
+        product_name: m.product_name || "", 
+        remaining_count: m.remaining_count || 0, 
+        start_date: m.start_date?.slice(0, 10) || today, 
+        end_date: m.end_date?.slice(0, 10) || today, 
+        status: m.status || "ACTIVE", 
+        memo: m.memo || "", 
+        locker_no: m.locker_no || "", 
+        member_no: m.member_no || "", 
+        gender: m.gender || "", 
+        birth_date: m.birth_date?.slice(0, 10) || "", 
+        emergency_contact: m.emergency_contact || "", 
+        address: m.address || "", 
+        join_date: m.join_date?.slice(0, 10) || "", 
+        staff_name: m.staff_name || "", 
     });
 
     setShowForm(true);
@@ -424,6 +437,77 @@ export default function MobileMembersPage() {
             }
           />
 
+          <input 
+            className="input" 
+            placeholder="회원번호" 
+            value={form.member_no} 
+            onChange={(e) => 
+              setForm({ ...form, 
+              member_no: e.target.value, 
+              }) 
+            } 
+          /> 
+          
+          <input 
+            className="input" 
+            placeholder="락카번호" 
+            value={form.locker_no} 
+            onChange={(e) => 
+              setForm({ ...form, 
+              locker_no: e.target.value, 
+              }) 
+            } 
+           /> 
+           
+           <select 
+             className="input" 
+             value={form.gender} 
+             onChange={(e) => 
+               setForm({ ...form, 
+               gender: e.target.value, 
+               }) 
+             } 
+            > 
+            
+            <option value="">성별</option> 
+            <option value="남">남</option> 
+            <option value="여">여</option> 
+            
+            </select> 
+
+            <input 
+              className="input" 
+              type="date" 
+              value={form.birth_date} 
+              onChange={(e) => 
+                setForm({ ...form, 
+                birth_date: e.target.value, 
+               }) 
+              } 
+            />
+            
+            <input 
+              className="input" 
+              placeholder="비상연락처" 
+              value={form.emergency_contact} 
+              onChange={(e) => 
+                setForm({ ...form, 
+                emergency_contact: e.target.value, 
+                }) 
+              } 
+            /> 
+            
+            <input 
+              className="input" 
+              placeholder="담당자" 
+              value={form.staff_name} 
+              onChange={(e) => 
+                setForm({ ...form, 
+                staff_name: e.target.value, 
+                }) 
+              } 
+            />
+
           <select
             className="input"
             value={form.product_name}
@@ -545,10 +629,25 @@ export default function MobileMembersPage() {
                     <b>{m.branch_name}</b>
                   </div>
 
-                  <div>
-                    <div style={{ color: "#777", fontSize: 12 }}>출석번호</div>
-                    <b>#{m.checkin_code || "-"}</b>
-                  </div>
+                  <div> 
+                    <div style={{ color: "#777", fontSize: 12 }}>출석번호</div> 
+                    <b>#{m.checkin_code || "-"}</b> 
+                 </div> 
+                
+                 <div> 
+                    <div style={{ color: "#777", fontSize: 12 }}>회원번호</div> 
+                    <b>{m.member_no || "-"}</b> 
+                 </div> 
+                
+                 <div> 
+                    <div style={{ color: "#777", fontSize: 12 }}>락카</div> 
+                    <b>{m.locker_no || "-"}</b> 
+                 </div> 
+                 
+                 <div> 
+                    <div style={{ color: "#777", fontSize: 12 }}>담당자</div> 
+                    <b>{m.staff_name || "-"}</b> 
+                 </div>
 
                   <div>
                     <div style={{ color: "#777", fontSize: 12 }}>상품</div>
@@ -556,22 +655,27 @@ export default function MobileMembersPage() {
                   </div>
 
                   <div>
-                    <div style={{ color: "#777", fontSize: 12 }}>만료/횟수</div>
+                    <div style={{ color: "#777", fontSize: 12 }}>
+                        만료/횟수
+                    </div>
+
                     <b>
-                      {m.pass_type === "COUNT"
-                        ? `$<span
+                        {m.pass_type === "COUNT" ? (
+                        <span
                             style={{
-                                color:
+                            color:
                                 Number(m.remaining_count || 0) <= 3
-                                    ? "#ff4d6d"
-                                    : "#2ee59d",
+                                ? "#ff4d6d"
+                                : "#2ee59d",
                             }}
-                            >
+                        >
                             {m.remaining_count || 0}회
-                            </span>`
-                        : m.end_date?.slice(0, 10)}
+                        </span>
+                        ) : (
+                        m.end_date?.slice(0, 10)
+                        )}
                     </b>
-                  </div>
+                    </div>
                 </div>
 
                 {m.memo && (

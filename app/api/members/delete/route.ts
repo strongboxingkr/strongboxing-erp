@@ -7,12 +7,11 @@ export async function POST(req: Request) {
     const { member_id } = body;
 
     await pool.query(
-      "DELETE FROM attendance WHERE member_id = ?",
-      [member_id]
-    );
-
-    await pool.query(
-      "DELETE FROM members WHERE member_id = ?",
+      `
+      UPDATE members
+      SET status = 'DELETED'
+      WHERE member_id = ?
+      `,
       [member_id]
     );
 

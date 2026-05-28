@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@next/font": "latest",
+    "bcryptjs": "^3.0.3",
     "date-holidays": "^3.29.0",
     "googleapis": "^171.4.0",
     "lucide-react": "latest",
@@ -19,6 +20,7 @@
     "solapi": "^6.0.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

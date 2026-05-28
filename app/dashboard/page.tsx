@@ -904,7 +904,67 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+    <div
+        className="card"
+        style={{
+          borderRadius: 24,
+          marginTop: 18,
+        }}
+      >
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 18,
+          }}
+        >
+          관리자 기능
+        </h2>
 
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: mobile
+              ? "1fr"
+              : "1fr 1fr",
+            gap: 14,
+          }}
+        >
+          <a
+            href="/users/pending"
+            style={{
+              textDecoration: "none",
+            }}
+          >
+            <div
+              style={{
+                background: "#111827",
+                borderRadius: 20,
+                padding: 20,
+                border: "1px solid #273244",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 900,
+                  color: "#2ee59d",
+                }}
+              >
+                회원가입 승인
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#888",
+                }}
+              >
+                신규 관장/직원 승인관리
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
     </AppShell>
   );
 }
