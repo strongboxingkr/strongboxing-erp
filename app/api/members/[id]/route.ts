@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function PUT(
   req: Request,
@@ -46,6 +47,25 @@ export async function PUT(
     }
 
     const oldMember = oldRows[0];
+
+    const user = getUserFromRequest(req);
+
+    if (!isAdminOrOwner(user.role) && oldMember.branch_name !== user.branch_name) {
+    return NextResponse.json(
+        { success: false, message: "다른 지점 회원은 수정할 수 없습니다." },
+        { status: 403 }
+    );
+    }
+
+    if (!isAdminOrOwner(user.role) && oldMember.branch_name !== user.branch_name) {
+    return NextResponse.json(
+        {
+        success: false,
+        message: "해당 지점 회원만 수정/삭제할 수 있습니다.",
+        },
+        { status: 403 }
+    );
+    }
 
     await pool.query(
       `
@@ -158,6 +178,28 @@ export async function DELETE(
     }
 
     const oldMember = oldRows[0];
+
+    const user = getUserFromRequest(req);
+
+    if (!isAdminOrOwner(user.role) && oldMember.branch_name !== user.branch_name) {
+    return NextResponse.json(
+        { success: false, message: "다른 지점 회원은 수정할 수 없습니다." },
+        { status: 403 }
+    );
+    }
+
+    if (
+    !isAdminOrOwner(user.role) &&
+    oldMember.branch_name !== user.branch_name
+    ) {
+    return NextResponse.json(
+        {
+        success: false,
+        message: "다른 지점 회원은 삭제할 수 없습니다.",
+        },
+        { status: 403 }
+    );
+    }
 
     await pool.query(
       `

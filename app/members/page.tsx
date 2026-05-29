@@ -344,6 +344,26 @@ ${
     }
   };
 
+  const deleteMember = async (m: any) => {
+    if (!confirm(`${m.name} 회원을 삭제 처리할까요?`)) return;
+
+    const res = await apiFetch("/api/members/delete", {
+      method: "POST",
+      body: JSON.stringify({
+        member_id: m.member_id,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert("회원 삭제 완료");
+      loadMembers(user);
+    } else {
+      alert(data.message || "회원 삭제 실패");
+    }
+  };
+
   const getStatus = (m: any) => {
     if (m.status === "REST") return { text: "휴회", color: "#f59e0b" };
     if (m.status === "EXPIRED") return { text: "만료", color: "#ef4444" };
@@ -965,6 +985,14 @@ ${
                     }}
                   >
                     상세
+                  </button>
+
+                  <button
+                    className="btn secondary"
+                    onClick={() => deleteMember(m)}
+                    style={{ color: "#ff4d6d" }}
+                  >
+                    삭제
                   </button>
                 </div>
               </div>

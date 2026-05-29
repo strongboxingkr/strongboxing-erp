@@ -248,31 +248,53 @@ export default function MobileMembersPage() {
 
   const extendOneMonth = async (m: any) => {
     const nextEndDate =
-      m.pass_type === "PERIOD"
+        m.pass_type === "PERIOD"
         ? addMonths(m.end_date?.slice(0, 10) || today, 1)
         : m.end_date?.slice(0, 10);
 
     const nextCount =
-      m.pass_type === "COUNT" ? Number(m.remaining_count || 0) + 1 : m.remaining_count;
+        m.pass_type === "COUNT"
+        ? Number(m.remaining_count || 0) + 1
+        : m.remaining_count;
 
     const res = await apiFetch("/api/members/update", {
-      method: "POST",
-      body: JSON.stringify({
+        method: "POST",
+        body: JSON.stringify({
         ...m,
         end_date: nextEndDate,
         remaining_count: nextCount,
-      }),
+        }),
     });
 
     const json = await res.json();
 
     if (json.success) {
-      alert("연장 완료!");
-      loadMembers(user);
+        alert("연장 완료!");
+        loadMembers(user);
     } else {
-      alert(json.message || "연장 실패");
+        alert(json.message || "연장 실패");
     }
-  };
+    };
+
+    const deleteMember = async (m: any) => {
+    if (!confirm(`${m.name} 회원을 삭제 처리할까요?`)) return;
+
+    const res = await apiFetch("/api/members/delete", {
+        method: "POST",
+        body: JSON.stringify({
+        member_id: m.member_id,
+        }),
+    });
+
+    const json = await res.json();
+
+    if (json.success) {
+        alert("회원 삭제 완료");
+        loadMembers(user);
+    } else {
+        alert(json.message || "회원 삭제 실패");
+    }
+    };
 
   const getStatus = (m: any) => {
     if (m.status === "REST") return { text: "휴회", color: "#f59e0b" };
@@ -696,7 +718,7 @@ export default function MobileMembersPage() {
               <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: "1fr 1fr 1fr",
                     gap: 8,
                     marginTop: 14,
                 }}
@@ -719,6 +741,14 @@ export default function MobileMembersPage() {
                     }}
                 >
                     연장
+                </button>
+
+                <button
+                className="btn secondary"
+                onClick={() => deleteMember(m)}
+                style={{ color: "#ff4d6d" }}
+                >
+                삭제
                 </button>
                 </div>
             </div>

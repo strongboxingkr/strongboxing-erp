@@ -8,7 +8,8 @@ export async function POST(req: Request) {
 
     const [rows]: any = await pool.query(
       `
-      SELECT user_id, login_id, password_hash, name, role, branch_name, use_yn
+      SELECT user_id, login_id, password_hash, name, role,
+             branch_name, allowed_branches, use_yn
       FROM users
       WHERE login_id = ?
       LIMIT 1
@@ -30,17 +31,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "비밀번호 불일치" });
     }
 
-    let finalBranch = user.branch_name;
+    let finalBranch = branch_name;
+
+    if (!finalBranch) {
+      return NextResponse.json({
+        success: false,
+        message: "지점을 선택해주세요.",
+      });
+    }
 
     if (user.role !== "ADMIN" && user.role !== "OWNER") {
-      if (!branch_name) {
+      const allowed = (user.allowed_branches || "")
+        .split(",")
+        .map((v: string) => v.trim());
+
+      if (!allowed.includes(finalBranch)) {
         return NextResponse.json({
           success: false,
-          message: "지점을 선택해주세요.",
+          message: "접속 권한이 없는 지점입니다.",
         });
       }
-
-      finalBranch = branch_name;
     }
 
     return NextResponse.json({
