@@ -429,6 +429,24 @@ export default function MemberDetailPage() {
                     data.member.phone
                   }
                 </div>
+
+                <div
+                  style={{
+                    marginTop: 20,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4,1fr)",
+                    gap: 12,
+                  }}
+                >
+                  <Info label="회원번호" value={data.member.member_no || "-"} />
+                  <Info label="출석번호" value={data.member.checkin_code || "-"} />
+                  <Info label="락카번호" value={data.member.locker_no || "-"} />
+                  <Info label="담당자" value={data.member.staff_name || "-"} />
+                  <Info label="성별" value={data.member.gender || "-"} />
+                  <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
+                  <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
+                  <Info label="가입일" value={data.member.join_date?.slice(0, 10) || "-"} />
+                </div>
               </div>
 
               <div
@@ -708,5 +726,25 @@ export default function MemberDetailPage() {
         </>
       )}
     </AppShell>
+  );
+}
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: any;
+}) {
+  return (
+    <div
+      style={{
+        background: "#111827",
+        borderRadius: 16,
+        padding: 14,
+      }}
+    >
+      <div style={{ color: "#888", fontSize: 13 }}>{label}</div>
+      <div style={{ marginTop: 6, fontWeight: 900 }}>{value}</div>
+    </div>
   );
 }

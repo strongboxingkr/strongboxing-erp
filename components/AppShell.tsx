@@ -25,6 +25,7 @@ const menuGroups = [
   {
     title: "📅 예약/상담",
     items: [
+      ["통합 예약", "/calendar"],
       ["네이버 예약", "/naver-reservations"],
       ["예약 캘린더", "/naver-calendar"],
       ["상담 CRM", "/crm"],

@@ -1046,15 +1046,46 @@ ${
             이전
           </button>
 
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <button
-              key={i}
-              className={page === i + 1 ? "btn" : "btn secondary"}
-              onClick={() => setPage(i + 1)}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {(() => {
+            const groupSize = 10;
+            const currentGroup = Math.floor((page - 1) / groupSize);
+            const startPage = currentGroup * groupSize + 1;
+            const endPage = Math.min(startPage + groupSize - 1, totalPages);
+
+            return (
+              <>
+                <button
+                  className="btn secondary"
+                  disabled={startPage === 1}
+                  onClick={() => setPage(Math.max(1, startPage - groupSize))}
+                >
+                  ◀◀
+                </button>
+
+                {Array.from({ length: endPage - startPage + 1 }).map((_, i) => {
+                  const pageNum = startPage + i;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      className={page === pageNum ? "btn" : "btn secondary"}
+                      onClick={() => setPage(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  className="btn secondary"
+                  disabled={endPage === totalPages}
+                  onClick={() => setPage(Math.min(totalPages, startPage + groupSize))}
+                >
+                  ▶▶
+                </button>
+              </>
+            );
+          })()}
 
           <button
             className="btn secondary"
