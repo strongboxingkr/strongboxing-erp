@@ -39,6 +39,7 @@ export default function MembersPage() {
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<any>(null);
   const [page, setPage] = useState(1);
+  const [branch, setBranch] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -378,15 +379,18 @@ ${
   };
 
   const filtered = members.filter((m) => {
-    if (!search) return true;
+    const matchBranch =
+      !branch || m.branch_name === branch;
 
-    return (
+    const matchSearch =
+      !search ||
       m.name?.includes(search) ||
       m.phone?.includes(search) ||
       m.product_name?.includes(search) ||
-      m.memo?.includes(search)
-    );
-  });
+      m.memo?.includes(search);
+
+    return matchBranch && matchSearch;
+});
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pagedMembers = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -414,6 +418,19 @@ ${
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <select
+              className="input"
+              style={{ width: 140 }}
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+            >
+              <option value="">전체 지점</option>
+              <option value="철산점">철산점</option>
+              <option value="목동점">목동점</option>
+              <option value="신정점">신정점</option>
+              <option value="개봉점">개봉점</option>
+            </select>
+
             <input
               className="input"
               placeholder="회원 검색"
@@ -910,6 +927,16 @@ ${
               >
                 <div>
                   <div style={{ fontSize: 20, fontWeight: 900 }}>{m.name}</div>
+                  <div
+                    style={{
+                      color: "#60a5fa",
+                      fontSize: 12,
+                      marginTop: 2,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {m.branch_name}
+                  </div>
                   <div style={{ color: "#777", fontSize: 13, marginTop: 4 }}>
                     {m.phone}
                   </div>
