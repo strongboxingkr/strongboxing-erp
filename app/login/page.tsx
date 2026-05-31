@@ -7,7 +7,6 @@ export default function LoginPage() {
 
   const [login_id, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [branch_name, setBranchName] = useState("철산점");
 
   const [signupForm, setSignupForm] = useState({
     name: "",
@@ -28,8 +27,6 @@ export default function LoginPage() {
     setBranches(data.rows || []);
 
     if (data.rows?.length > 0) {
-      setBranchName(data.rows[0].option_name);
-
       setSignupForm((prev) => ({
         ...prev,
         requested_branch: data.rows[0].option_name,
@@ -156,21 +153,6 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-
-            <select
-              className="input"
-              value={branch_name}
-              onChange={(e) => setBranchName(e.target.value)}
-            >
-              {branches.map((b) => (
-                <option
-                  key={b.option_id}
-                  value={b.option_name}
-                >
-                  {b.option_name}
-                </option>
-              ))}
-            </select>
 
             <button className="btn" onClick={login}>
               로그인
