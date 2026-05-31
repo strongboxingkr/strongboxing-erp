@@ -50,7 +50,6 @@ export default function LoginPage() {
       body: JSON.stringify({
         login_id,
         password,
-        branch_name,
       }),
     });
 
