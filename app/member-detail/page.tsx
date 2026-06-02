@@ -773,6 +773,265 @@ export default function MemberDetailPage() {
               </div>
             </div>
           )}
+
+          {tab === "PAY" && (
+            <div
+              className="card"
+              style={{
+                borderRadius: 24,
+                marginBottom: 18,
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>
+                결제내역
+              </h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "120px 1fr 120px 120px",
+                  gap: 12,
+                  padding: "10px 12px",
+                  color: "#888",
+                  fontWeight: 700,
+                  borderBottom:
+                    "1px solid #374151",
+                }}
+              >
+                <div>결제일</div>
+                <div>상품</div>
+                <div>금액</div>
+                <div>수단</div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  marginTop: 10,
+                }}
+              >
+                {payments.map((p) => (
+                  <div
+                    key={p.payment_id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "120px 1fr 120px 120px",
+                      gap: 12,
+                      background: "#111827",
+                      borderRadius: 12,
+                      padding: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      {p.payment_date?.slice(
+                        0,
+                        10
+                      )}
+                    </div>
+
+                    <div>
+                      {p.product_name ||
+                        "-"}
+                    </div>
+
+                    <div
+                      style={{
+                        fontWeight: 900,
+                      }}
+                    >
+                      {money(
+                        p.final_amount
+                      )}
+                    </div>
+
+                    <div>
+                      {
+                        p.payment_method
+                      }
+                    </div>
+                  </div>
+                ))}
+
+                {payments.length ===
+                  0 && (
+                  <div
+                    style={{
+                      color: "#888",
+                    }}
+                  >
+                    결제내역이
+                    없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {tab === "NOTE" && (
+            <div
+              className="card"
+              style={{
+                borderRadius: 24,
+                marginBottom: 18,
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>
+                상담 / 메모
+              </h2>
+
+              <textarea
+                className="input"
+                value={memo}
+                onChange={(e) =>
+                  setMemo(e.target.value)
+                }
+                placeholder="회원 메모"
+                style={{
+                  width: "100%",
+                  minHeight: 100,
+                }}
+              />
+
+              <button
+                className="btn"
+                onClick={saveMemo}
+                style={{
+                  marginTop: 10,
+                }}
+              >
+                메모 저장
+              </button>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "160px 1fr auto",
+                  gap: 12,
+                  marginTop: 20,
+                }}
+              >
+                <select
+                  className="input"
+                  value={
+                    noteForm.note_type
+                  }
+                  onChange={(e) =>
+                    setNoteForm({
+                      ...noteForm,
+                      note_type:
+                        e.target.value,
+                    })
+                  }
+                >
+                  <option>
+                    상담
+                  </option>
+
+                  <option>
+                    문의
+                  </option>
+
+                  <option>
+                    주의사항
+                  </option>
+
+                  <option>
+                    기타
+                  </option>
+                </select>
+
+                <input
+                  className="input"
+                  placeholder="상담 내용 입력"
+                  value={
+                    noteForm.content
+                  }
+                  onChange={(e) =>
+                    setNoteForm({
+                      ...noteForm,
+                      content:
+                        e.target.value,
+                    })
+                  }
+                />
+
+                <button
+                  className="btn"
+                  onClick={addNote}
+                >
+                  추가
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 8,
+                  marginTop: 18,
+                }}
+              >
+                {notes.map((n) => (
+                  <div
+                    key={n.note_id}
+                    style={{
+                      background:
+                        "#111827",
+                      borderRadius: 12,
+                      padding: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 900,
+                      }}
+                    >
+                      {n.note_type}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 6,
+                        whiteSpace:
+                          "pre-wrap",
+                      }}
+                    >
+                      {n.content}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#666",
+                        fontSize: 12,
+                      }}
+                    >
+                      {n.created_at
+                        ? new Date(
+                            n.created_at
+                          ).toLocaleString()
+                        : ""}
+                    </div>
+                  </div>
+                ))}
+
+                {notes.length ===
+                  0 && (
+                  <div
+                    style={{
+                      color: "#888",
+                    }}
+                  >
+                    상담기록이
+                    없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </AppShell>
