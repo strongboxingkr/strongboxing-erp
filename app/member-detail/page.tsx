@@ -16,6 +16,9 @@ export default function MemberDetailPage() {
   const [files, setFiles] = useState<any[]>([]);
 
   const [checkins, setCheckins] = useState<any[]>([]);
+  const [tab, setTab] = useState("INFO");
+  const [histories, setHistories] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
 
   const [uploading, setUploading] =
     useState(false);
@@ -71,6 +74,18 @@ export default function MemberDetailPage() {
 
       setFiles(json.rows || []);
     };
+
+    const loadHistories = async (id: string) => {
+    const res = await apiFetch(`/api/member-histories?member_id=${id}`);
+    const json = await res.json();
+    setHistories(json.rows || []);
+  };
+
+  const loadPayments = async (id: string) => {
+    const res = await apiFetch(`/api/payments?member_id=${id}`);
+    const json = await res.json();
+    setPayments(json.rows || []);
+  };
 
   const uploadFile = async (
     e: any
@@ -166,6 +181,8 @@ export default function MemberDetailPage() {
       loadNotes(memberId);
       loadFiles(memberId);
       loadCheckins(memberId);
+      loadHistories(memberId);
+      loadPayments(memberId);
 
     } else {
       alert(
@@ -487,242 +504,275 @@ export default function MemberDetailPage() {
           <div
             className="card"
             style={{
-              borderRadius: 24,
+              borderRadius: 18,
               marginBottom: 18,
+              padding: 12,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
             }}
           >
-            <h2
-              style={{
-                marginTop: 0,
-              }}
-            >
-              입관서 / 회원자료
-            </h2>
+            {[
+              ["INFO", "기본정보"],
+              ["PAY", "결제내역"],
+              ["ATT", "출석기록"],
+              ["NOTE", "상담/메모"],
+              ["FILE", "입관서/파일"],
+              ["HISTORY", "변경이력"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                className={tab === key ? "btn" : "btn secondary"}
+                onClick={() => setTab(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
+          {tab === "FILE" && (
             <div
+              className="card"
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "160px 1fr auto",
-                gap: 12,
+                borderRadius: 24,
                 marginBottom: 18,
               }}
             >
-              <select
-                className="input"
-                value={
-                  fileForm.file_type
-                }
-                onChange={(e) =>
-                  setFileForm({
-                    ...fileForm,
-                    file_type:
-                      e.target
-                        .value,
-                  })
-                }
-              >
-                <option>
-                  입관서
-                </option>
-
-                <option>
-                  개인정보동의서
-                </option>
-
-                <option>
-                  인바디
-                </option>
-
-                <option>
-                  회원사진
-                </option>
-
-                <option>
-                  기타
-                </option>
-              </select>
-
-              <input
-                className="input"
-                placeholder="메모"
-                value={
-                  fileForm.memo
-                }
-                onChange={(e) =>
-                  setFileForm({
-                    ...fileForm,
-                    memo:
-                      e.target
-                        .value,
-                  })
-                }
-              />
-
-              <label
-                className="btn"
+              <h2
                 style={{
-                  cursor:
-                    "pointer",
+                  marginTop: 0,
                 }}
               >
-                {uploading
-                  ? "업로드중..."
-                  : "사진 업로드"}
+                입관서 / 회원자료
+              </h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "160px 1fr auto",
+                  gap: 12,
+                  marginBottom: 18,
+                }}
+              >
+                <select
+                  className="input"
+                  value={
+                    fileForm.file_type
+                  }
+                  onChange={(e) =>
+                    setFileForm({
+                      ...fileForm,
+                      file_type:
+                        e.target
+                          .value,
+                    })
+                  }
+                >
+                  <option>
+                    입관서
+                  </option>
+
+                  <option>
+                    개인정보동의서
+                  </option>
+
+                  <option>
+                    인바디
+                  </option>
+
+                  <option>
+                    회원사진
+                  </option>
+
+                  <option>
+                    기타
+                  </option>
+                </select>
 
                 <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  hidden
-                  onChange={
-                    uploadFile
+                  className="input"
+                  placeholder="메모"
+                  value={
+                    fileForm.memo
+                  }
+                  onChange={(e) =>
+                    setFileForm({
+                      ...fileForm,
+                      memo:
+                        e.target
+                          .value,
+                    })
                   }
                 />
-              </label>
-            </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fill,minmax(220px,1fr))",
-                gap: 14,
-              }}
-            >
-              {files.map((f) => (
-                <a
-                  key={f.file_id}
-                  href={f.file_url}
-                  target="_blank"
+                <label
+                  className="btn"
                   style={{
-                    background:
-                      "#111827",
-                    borderRadius: 18,
-                    padding: 14,
-                    textDecoration:
-                      "none",
-                    color: "white",
+                    cursor:
+                      "pointer",
                   }}
                 >
-                  <div
+                  {uploading
+                    ? "업로드중..."
+                    : "사진 업로드"}
+
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    hidden
+                    onChange={
+                      uploadFile
+                    }
+                  />
+                </label>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fill,minmax(220px,1fr))",
+                  gap: 14,
+                }}
+              >
+                {files.map((f) => (
+                  <a
+                    key={f.file_id}
+                    href={f.file_url}
+                    target="_blank"
                     style={{
-                      fontWeight: 900,
-                      fontSize: 18,
+                      background:
+                        "#111827",
+                      borderRadius: 18,
+                      padding: 14,
+                      textDecoration:
+                        "none",
+                      color: "white",
                     }}
                   >
-                    {
-                      f.file_type
-                    }
-                  </div>
+                    <div
+                      style={{
+                        fontWeight: 900,
+                        fontSize: 18,
+                      }}
+                    >
+                      {
+                        f.file_type
+                      }
+                    </div>
 
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color:
+                          "#888",
+                        fontSize: 13,
+                      }}
+                    >
+                      {
+                        f.file_name
+                      }
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color:
+                          "#aaa",
+                        fontSize: 13,
+                        whiteSpace:
+                          "pre-wrap",
+                      }}
+                    >
+                      {f.memo}
+                    </div>
+                  </a>
+                ))}
+
+                {files.length ===
+                  0 && (
                   <div
                     style={{
-                      marginTop: 8,
                       color:
                         "#888",
-                      fontSize: 13,
                     }}
                   >
-                    {
-                      f.file_name
-                    }
+                    업로드된 파일이
+                    없습니다.
                   </div>
-
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color:
-                        "#aaa",
-                      fontSize: 13,
-                      whiteSpace:
-                        "pre-wrap",
-                    }}
-                  >
-                    {f.memo}
-                  </div>
-                </a>
-              ))}
-
-              {files.length ===
-                0 && (
-                <div
-                  style={{
-                    color:
-                      "#888",
-                  }}
-                >
-                  업로드된 파일이
-                  없습니다.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div
-            className="card"
-            style={{
-              borderRadius: 24,
-              marginBottom: 18,
-            }}
-          >
-            <h2
-              style={{
-                marginTop: 0,
-              }}
-            >
-              최근 출석 기록
-            </h2>
-
+          {tab === "ATT" && (
             <div
+              className="card"
               style={{
-                display: "grid",
-                gap: 10,
+                borderRadius: 24,
+                marginBottom: 18,
               }}
             >
-              {checkins.map((c) => (
-                <div
-                  key={c.attendance_id}
-                  style={{
-                    background: "#111827",
-                    borderRadius: 16,
-                    padding: 14,
-                  }}
-                >
+              <h2
+                style={{
+                  marginTop: 0,
+                }}
+              >
+                최근 출석 기록
+              </h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                {checkins.map((c) => (
                   <div
+                    key={c.attendance_id}
                     style={{
-                      fontWeight: 900,
+                      background: "#111827",
+                      borderRadius: 16,
+                      padding: 14,
                     }}
                   >
-                    {new Date(
-                      c.checkin_time
-                    ).toLocaleString()}
-                  </div>
+                    <div
+                      style={{
+                        fontWeight: 900,
+                      }}
+                    >
+                      {new Date(
+                        c.checkin_time
+                      ).toLocaleString()}
+                    </div>
 
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#888",
+                        fontSize: 13,
+                      }}
+                    >
+                      출석 완료
+                    </div>
+                  </div>
+                ))}
+
+                {checkins.length ===
+                  0 && (
                   <div
                     style={{
-                      marginTop: 6,
                       color: "#888",
-                      fontSize: 13,
                     }}
                   >
-                    출석 완료
+                    출석 기록이
+                    없습니다.
                   </div>
-                </div>
-              ))}
-
-              {checkins.length ===
-                0 && (
-                <div
-                  style={{
-                    color: "#888",
-                  }}
-                >
-                  출석 기록이
-                  없습니다.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </AppShell>

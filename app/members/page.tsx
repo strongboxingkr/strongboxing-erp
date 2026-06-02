@@ -415,6 +415,29 @@ ${
             <p style={{ color: "#888", marginTop: 8 }}>
               총 {filtered.length}명 / {page}페이지
             </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "120px 180px 220px 180px 120px 120px auto",
+                gap: 14,
+                padding: "12px 16px",
+                marginTop: 16,
+                borderBottom: "1px solid #374151",
+                color: "#9ca3af",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              <div>회원번호</div>
+              <div>회원명</div>
+              <div>상품</div>
+              <div>전화번호</div>
+              <div>만료일</div>
+              <div>상태</div>
+              <div>관리</div>
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -920,13 +943,25 @@ ${
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "200px 190px 150px 120px 90px auto",
+                  gridTemplateColumns: "120px 180px 220px 180px 120px 120px auto",
                   alignItems: "center",
                   gap: 14,
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 900 }}>{m.name}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    {m.name}
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#888",
+                      fontSize: 12,
+                      marginTop: 2,
+                    }}
+                  >
+                    회원번호 {m.member_no || "-"}
+                  </div>
                   <div
                     style={{
                       color: "#60a5fa",
