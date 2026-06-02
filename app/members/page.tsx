@@ -422,7 +422,7 @@ ${
                 gridTemplateColumns:
                   "120px 180px 220px 180px 120px 120px auto",
                 gap: 14,
-                padding: "12px 16px",
+                padding: "8px 12px",
                 marginTop: 16,
                 borderBottom: "1px solid #374151",
                 color: "#9ca3af",
@@ -932,8 +932,8 @@ ${
               key={m.member_id}
               className="card"
               style={{
-                borderRadius: 16,
-                padding: "12px 16px",
+                borderRadius: 10,
+                padding: "8px 12px",
                 cursor: "pointer",
               }}
               onClick={() => {
@@ -949,7 +949,7 @@ ${
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 900 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800 }}>
                     {m.name}
                   </div>
 
@@ -978,7 +978,9 @@ ${
                 </div>
 
                 <div>
-                  <div style={{ fontWeight: 800 }}>{m.product_name}</div>
+                  <div style={{ fontSize: 13 }}>
+                    {m.product_name}
+                  </div>
                   <div style={{ color: "#777", fontSize: 13, marginTop: 4 }}>
                     {m.pass_type === "COUNT"
                       ? `남은횟수 ${m.remaining_count}`
@@ -1058,20 +1060,6 @@ ${
                   </button>
                 </div>
               </div>
-
-              {m.memo && (
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#777",
-                    fontSize: 13,
-                    borderTop: "1px solid #1f2937",
-                    paddingTop: 8,
-                  }}
-                >
-                  {m.memo}
-                </div>
-              )}
             </div>
           );
         })}
