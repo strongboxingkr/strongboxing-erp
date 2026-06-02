@@ -1156,7 +1156,7 @@ export default function MemberDetailPage() {
               </div>
             </div>
           )}
-          
+
           {tab === "HISTORY" && (
             <div
               className="card"
@@ -1254,12 +1254,13 @@ function Info({
     <div
       style={{
         background: "#111827",
-        borderRadius: 16,
-        padding: 14,
+        borderRadius: 8,
+        padding: "8px 10px",
+        minHeight: 42,
       }}
     >
-      <div style={{ color: "#888", fontSize: 13 }}>{label}</div>
-      <div style={{ marginTop: 6, fontWeight: 900 }}>{value}</div>
+      <div style={{ color: "#888", fontSize: 12 }}>{label}</div>
+      <div style={{ marginTop: 3, fontWeight: 800, fontSize: 13 }}>{value}</div>
     </div>
   );
 }
