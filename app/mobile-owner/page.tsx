@@ -246,35 +246,6 @@ export default function MobileOwnerPage() {
         )}
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>빠른 메뉴</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {menus.map(([title, href]) => (
-            <button
-              key={title}
-              onClick={() => {
-                window.location.href = href;
-              }}
-              style={{
-                background: "#111827",
-                border: "1px solid #1f2937",
-                borderRadius: 20,
-                padding: 20,
-                textAlign: "left",
-              }}
-            >
-  <div style={{ fontSize: 18, fontWeight: 900, color: "white" }}>
-    {title}
-  </div>
-  <div style={{ marginTop: 8, color: "#888", fontSize: 13 }}>
-    바로 이동
-  </div>
-</button>
-          ))}
-        </div>
-      </div>
-
       <div
         className="card"
         style={{
