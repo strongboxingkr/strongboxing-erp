@@ -929,32 +929,9 @@ ${
           borderRadius: 16,
           padding: 0,
           overflow: "hidden",
+          marginBottom: 18,
         }}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "110px 150px 110px 1fr 90px 130px 90px 300px",
-            gap: 10,
-            padding: "10px 14px",
-            borderBottom: "1px solid #374151",
-            color: "#9ca3af",
-            fontSize: 13,
-            fontWeight: 800,
-            alignItems: "center",
-          }}
-        >
-          <div>회원번호</div>
-          <div>회원명</div>
-          <div>지점</div>
-          <div>상품</div>
-          <div>남은횟수</div>
-          <div>만료일</div>
-          <div>상태</div>
-          <div style={{ textAlign: "right" }}>관리</div>
-        </div>
-
         {pagedMembers.map((m) => {
           const status = getStatus(m);
 
@@ -964,9 +941,9 @@ ${
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "110px 150px 110px 1fr 90px 130px 90px 300px",
+                  "110px 140px 100px 1fr 80px 120px 80px 260px",
                 gap: 10,
-                padding: "9px 14px",
+                padding: "8px 14px",
                 borderBottom: "1px solid #1f2937",
                 alignItems: "center",
                 cursor: "pointer",
@@ -980,25 +957,19 @@ ${
                 {m.member_no || m.checkin_code || "-"}
               </div>
 
-              <div style={{ fontWeight: 900, fontSize: 14 }}>
-                {m.name}
-              </div>
+              <div style={{ fontWeight: 900 }}>{m.name}</div>
 
               <div style={{ color: "#60a5fa", fontWeight: 700 }}>
                 {m.branch_name}
               </div>
 
-              <div>
-                {m.product_name || "-"}
+              <div>{m.product_name || "-"}</div>
+
+              <div style={{ color: "#e5e7eb", fontWeight: 700 }}>
+                {m.pass_type === "COUNT" ? Number(m.remaining_count || 0) : "-"}
               </div>
 
-              <div style={{ color: "#ddd" }}>
-                {m.pass_type === "COUNT"
-                  ? Number(m.remaining_count || 0)
-                  : "-"}
-              </div>
-
-              <div style={{ fontWeight: 800 }}>
+              <div style={{ color: "#e5e7eb", fontWeight: 800 }}>
                 {m.end_date?.slice(0, 10) || "-"}
               </div>
 
@@ -1025,67 +996,18 @@ ${
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  className="btn secondary"
-                  onClick={() => openEdit(m)}
-                  style={{ padding: "5px 7px", fontSize: 12 }}
-                >
-                  수정
-                </button>
-
-                <button
-                  className="btn"
-                  onClick={() => openExtend(m)}
-                  style={{ padding: "5px 7px", fontSize: 12 }}
-                >
-                  연장
-                </button>
-
-                <button
-                  className="btn secondary"
-                  onClick={() => openHold(m)}
-                  style={{ padding: "5px 7px", fontSize: 12 }}
-                >
-                  휴회
-                </button>
-
-                <button
-                  className="btn secondary"
-                  onClick={() => {
-                    location.href = `/member-detail?member_id=${m.member_id}`;
-                  }}
-                  style={{ padding: "5px 7px", fontSize: 12 }}
-                >
-                  상세
-                </button>
-
-                <button
-                  className="btn secondary"
-                  onClick={() => deleteMember(m)}
-                  style={{
-                    padding: "5px 7px",
-                    fontSize: 12,
-                    color: "#ff4d6d",
-                  }}
-                >
-                  삭제
-                </button>
+                <button className="btn secondary" onClick={() => openEdit(m)} style={{ padding: "5px 7px", fontSize: 12 }}>수정</button>
+                <button className="btn" onClick={() => openExtend(m)} style={{ padding: "5px 7px", fontSize: 12 }}>연장</button>
+                <button className="btn secondary" onClick={() => openHold(m)} style={{ padding: "5px 7px", fontSize: 12 }}>휴회</button>
+                <button className="btn secondary" onClick={() => { location.href = `/member-detail?member_id=${m.member_id}`; }} style={{ padding: "5px 7px", fontSize: 12 }}>상세</button>
+                <button className="btn secondary" onClick={() => deleteMember(m)} style={{ padding: "5px 7px", fontSize: 12, color: "#ff4d6d" }}>삭제</button>
               </div>
             </div>
           );
         })}
-        
-      </div>
 
         {filtered.length === 0 && (
-          <div
-            className="card"
-            style={{
-              borderRadius: 24,
-              textAlign: "center",
-              color: "#888",
-            }}
-          >
+          <div style={{ padding: 24, textAlign: "center", color: "#888" }}>
             회원이 없습니다.
           </div>
         )}
