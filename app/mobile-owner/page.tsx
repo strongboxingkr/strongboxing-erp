@@ -45,7 +45,8 @@ export default function MobileOwnerPage() {
   const [chartRows, setChartRows] = useState<any[]>([]);
 
   const [datePreset, setDatePreset] = useState("TODAY");
-  const [baseDate, setBaseDate] = useState(today);
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [branch, setBranch] = useState("전체");
 
   const [showConsult, setShowConsult] = useState(false);
@@ -61,7 +62,7 @@ export default function MobileOwnerPage() {
   });
 
   const load = async () => {
-    let url = `/api/dashboard?start_date=${baseDate}&end_date=${baseDate}`;
+    let url = `/api/dashboard?start_date=${startDate}&end_date=${endDate}`;
 
     if (branch !== "전체") {
       url += `&branch_name=${encodeURIComponent(branch)}`;
@@ -133,15 +134,39 @@ export default function MobileOwnerPage() {
   };
 
   useEffect(() => {
-    if (datePreset === "TODAY") setBaseDate(today);
-    if (datePreset === "YESTERDAY") setBaseDate(getYesterday());
-  }, [datePreset]);
+      if (datePreset === "TODAY") {
+        setStartDate(today);
+        setEndDate(today);
+      }
+
+      if (datePreset === "YESTERDAY") {
+        const y = getYesterday();
+        setStartDate(y);
+        setEndDate(y);
+      }
+
+      if (datePreset === "LAST7") {
+        const d = new Date();
+        d.setDate(d.getDate() - 6);
+
+        setStartDate(d.toISOString().slice(0, 10));
+        setEndDate(today);
+      }
+
+      if (datePreset === "LAST30") {
+        const d = new Date();
+        d.setDate(d.getDate() - 29);
+
+        setStartDate(d.toISOString().slice(0, 10));
+        setEndDate(today);
+      }
+    }, [datePreset]);
 
   useEffect(() => {
     load();
     const timer = setInterval(load, 15000);
     return () => clearInterval(timer);
-  }, [baseDate, branch]);
+  }, [startDate, endDate, branch]);
 
   if (!data) return <div className="mobile">로딩중...</div>;
 
@@ -160,7 +185,12 @@ export default function MobileOwnerPage() {
       </div>
 
       <div className="card" style={{ padding: 24, borderRadius: 28, background: "linear-gradient(135deg, rgba(255,32,78,0.25), rgba(17,24,39,1))", marginBottom: 20 }}>
-        <div style={{ color: "#ffd5df", fontSize: 14 }}>{baseDate} {branch}</div>
+        <div style={{ color: "#ffd5df", fontSize: 14 }}>
+          {startDate === endDate
+          ? startDate
+          : `${startDate} ~ ${endDate}`}{" "}
+        {branch}
+        </div>
         <div style={{ marginTop: 10, fontSize: 18, color: "#ddd" }}>오늘 총매출</div>
         <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900 }}>{money(data.sales)}</div>
 
@@ -245,20 +275,65 @@ export default function MobileOwnerPage() {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div
+        className="card"
+        style={{
+          marginBottom: 20,
+          borderRadius: 22,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 18,
+            fontWeight: 900,
+            marginBottom: 12,
+          }}
+        >
+          조회 조건
+        </div>
+
         <div style={{ display: "grid", gap: 10 }}>
-          <select className="input" value={datePreset} onChange={(e) => setDatePreset(e.target.value)}>
+          <select
+            className="input"
+            value={datePreset}
+            onChange={(e) => setDatePreset(e.target.value)}
+          >
             <option value="TODAY">오늘</option>
             <option value="YESTERDAY">어제</option>
+            <option value="LAST7">최근 7일</option>
+            <option value="LAST30">최근 30일</option>
             <option value="CUSTOM">직접선택</option>
           </select>
 
-          <input className="input" type="date" value={baseDate} onChange={(e) => {
-            setDatePreset("CUSTOM");
-            setBaseDate(e.target.value);
-          }} />
+          {datePreset === "CUSTOM" && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 10,
+              }}
+            >
+              <input
+                className="input"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
 
-          <select className="input" value={branch} onChange={(e) => setBranch(e.target.value)}>
+              <input
+                className="input"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          )}
+
+          <select
+            className="input"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+          >
             {branches.map((b) => (
               <option key={b}>{b}</option>
             ))}
