@@ -923,150 +923,159 @@ ${
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div
+        className="card"
+        style={{
+          borderRadius: 16,
+          padding: 0,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "110px 150px 110px 1fr 90px 130px 90px 300px",
+            gap: 10,
+            padding: "10px 14px",
+            borderBottom: "1px solid #374151",
+            color: "#9ca3af",
+            fontSize: 13,
+            fontWeight: 800,
+            alignItems: "center",
+          }}
+        >
+          <div>회원번호</div>
+          <div>회원명</div>
+          <div>지점</div>
+          <div>상품</div>
+          <div>남은횟수</div>
+          <div>만료일</div>
+          <div>상태</div>
+          <div style={{ textAlign: "right" }}>관리</div>
+        </div>
+
         {pagedMembers.map((m) => {
           const status = getStatus(m);
 
           return (
             <div
               key={m.member_id}
-              className="card"
               style={{
-                borderRadius: 10,
-                padding: "8px 12px",
+                display: "grid",
+                gridTemplateColumns:
+                  "110px 150px 110px 1fr 90px 130px 90px 300px",
+                gap: 10,
+                padding: "9px 14px",
+                borderBottom: "1px solid #1f2937",
+                alignItems: "center",
                 cursor: "pointer",
+                fontSize: 13,
               }}
               onClick={() => {
                 location.href = `/member-detail?member_id=${m.member_id}`;
               }}
             >
+              <div style={{ color: "#aaa" }}>
+                {m.member_no || m.checkin_code || "-"}
+              </div>
+
+              <div style={{ fontWeight: 900, fontSize: 14 }}>
+                {m.name}
+              </div>
+
+              <div style={{ color: "#60a5fa", fontWeight: 700 }}>
+                {m.branch_name}
+              </div>
+
+              <div>
+                {m.product_name || "-"}
+              </div>
+
+              <div style={{ color: "#ddd" }}>
+                {m.pass_type === "COUNT"
+                  ? Number(m.remaining_count || 0)
+                  : "-"}
+              </div>
+
+              <div style={{ fontWeight: 800 }}>
+                {m.end_date?.slice(0, 10) || "-"}
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    background: `${status.color}22`,
+                    color: status.color,
+                    padding: "4px 8px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 900,
+                  }}
+                >
+                  {status.text}
+                </span>
+              </div>
+
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "120px 180px 220px 180px 120px 120px auto",
-                  alignItems: "center",
-                  gap: 14,
+                  display: "flex",
+                  gap: 4,
+                  justifyContent: "flex-end",
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 800 }}>
-                    {m.name}
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#888",
-                      fontSize: 12,
-                      marginTop: 2,
-                    }}
-                  >
-                    회원번호 {m.member_no || "-"}
-                  </div>
-                  <div
-                    style={{
-                      color: "#60a5fa",
-                      fontSize: 12,
-                      marginTop: 2,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {m.branch_name}
-                  </div>
-                  <div style={{ color: "#777", fontSize: 13, marginTop: 4 }}>
-                    {m.phone}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 13 }}>
-                    {m.product_name}
-                  </div>
-                  <div style={{ color: "#777", fontSize: 13, marginTop: 4 }}>
-                    {m.pass_type === "COUNT"
-                      ? `남은횟수 ${m.remaining_count}`
-                      : "기간권"}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ color: "#888", fontSize: 13 }}>만료일</div>
-                  <div
-                    style={{
-                      color: status.text === "만료임박" ? "#ff4d6d" : "#ddd",
-                      marginTop: 4,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {m.end_date?.slice(0, 10)}
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      background: `${status.color}22`,
-                      color: status.color,
-                      padding: "6px 12px",
-                      borderRadius: 999,
-                      display: "inline-block",
-                      fontSize: 13,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {status.text}
-                  </div>
-                </div>
-
-                <div style={{ color: "#888", fontSize: 13 }}>
-                  #{m.checkin_code}
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    justifyContent: "flex-end",
-                    flexWrap: "nowrap",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  className="btn secondary"
+                  onClick={() => openEdit(m)}
+                  style={{ padding: "5px 7px", fontSize: 12 }}
                 >
-                  <button className="btn secondary" onClick={() => openEdit(m)}
-                    style={{ padding: "6px 8px", fontSize: 12 }}>
-                    수정
-                  </button>
+                  수정
+                </button>
 
-                  <button className="btn" onClick={() => openExtend(m)}
-                    style={{ padding: "6px 8px", fontSize: 12 }}>
-                    연장
-                  </button>
+                <button
+                  className="btn"
+                  onClick={() => openExtend(m)}
+                  style={{ padding: "5px 7px", fontSize: 12 }}
+                >
+                  연장
+                </button>
 
-                  <button className="btn secondary" onClick={() => openHold(m)}
-                    style={{ padding: "6px 8px", fontSize: 12 }}>
-                    휴회
-                  </button>
+                <button
+                  className="btn secondary"
+                  onClick={() => openHold(m)}
+                  style={{ padding: "5px 7px", fontSize: 12 }}
+                >
+                  휴회
+                </button>
 
-                  <button
-                    className="btn secondary"
-                    onClick={() => {
-                      location.href = `/member-detail?member_id=${m.member_id}`;
-                    }}
-                    style={{ padding: "6px 8px", fontSize: 12 }}
-                  >
-                    상세
-                  </button>
+                <button
+                  className="btn secondary"
+                  onClick={() => {
+                    location.href = `/member-detail?member_id=${m.member_id}`;
+                  }}
+                  style={{ padding: "5px 7px", fontSize: 12 }}
+                >
+                  상세
+                </button>
 
-                  <button
-                    className="btn secondary"
-                    onClick={() => deleteMember(m)}
-                    style={{ padding: "6px 8px", fontSize: 12, color: "#ff4d6d" }}
-                  >
-                    삭제
-                  </button>
-                </div>
+                <button
+                  className="btn secondary"
+                  onClick={() => deleteMember(m)}
+                  style={{
+                    padding: "5px 7px",
+                    fontSize: 12,
+                    color: "#ff4d6d",
+                  }}
+                >
+                  삭제
+                </button>
               </div>
             </div>
           );
         })}
+        
+      </div>
 
         {filtered.length === 0 && (
           <div
