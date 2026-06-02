@@ -1032,6 +1032,212 @@ export default function MemberDetailPage() {
               </div>
             </div>
           )}
+          {tab === "INFO" && (
+            <div
+              className="card"
+              style={{
+                borderRadius: 24,
+                marginBottom: 18,
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>
+                기본정보
+              </h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(4,1fr)",
+                  gap: 12,
+                }}
+              >
+                <Info
+                  label="지점"
+                  value={
+                    data.member
+                      .branch_name || "-"
+                  }
+                />
+
+                <Info
+                  label="회원명"
+                  value={
+                    data.member.name ||
+                    "-"
+                  }
+                />
+
+                <Info
+                  label="전화번호"
+                  value={
+                    data.member.phone ||
+                    "-"
+                  }
+                />
+
+                <Info
+                  label="비상연락처"
+                  value={
+                    data.member
+                      .emergency_contact ||
+                    "-"
+                  }
+                />
+
+                <Info
+                  label="회원번호"
+                  value={
+                    data.member
+                      .member_no || "-"
+                  }
+                />
+
+                <Info
+                  label="출석번호"
+                  value={
+                    data.member
+                      .checkin_code ||
+                    "-"
+                  }
+                />
+
+                <Info
+                  label="락카번호"
+                  value={
+                    data.member
+                      .locker_no || "-"
+                  }
+                />
+
+                <Info
+                  label="담당자"
+                  value={
+                    data.member
+                      .staff_name || "-"
+                  }
+                />
+
+                <Info
+                  label="성별"
+                  value={
+                    data.member.gender ||
+                    "-"
+                  }
+                />
+
+                <Info
+                  label="생년월일"
+                  value={
+                    data.member.birth_date?.slice(
+                      0,
+                      10
+                    ) || "-"
+                  }
+                />
+
+                <Info
+                  label="가입일"
+                  value={
+                    data.member.join_date?.slice(
+                      0,
+                      10
+                    ) || "-"
+                  }
+                />
+
+                <Info
+                  label="상태"
+                  value={
+                    data.member.status ||
+                    "-"
+                  }
+                />
+              </div>
+            </div>
+          )}
+          
+          {tab === "HISTORY" && (
+            <div
+              className="card"
+              style={{
+                borderRadius: 24,
+                marginBottom: 18,
+              }}
+            >
+              <h2 style={{ marginTop: 0 }}>
+                변경이력
+              </h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                {histories.map((h) => (
+                  <div
+                    key={h.history_id}
+                    style={{
+                      background: "#111827",
+                      borderRadius: 14,
+                      padding: 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 900,
+                        fontSize: 15,
+                      }}
+                    >
+                      {h.history_type ||
+                        h.action_type ||
+                        "변경"}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#aaa",
+                        whiteSpace:
+                          "pre-wrap",
+                      }}
+                    >
+                      {h.memo ||
+                        h.action_memo ||
+                        "-"}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#666",
+                        fontSize: 12,
+                      }}
+                    >
+                      {h.created_at
+                        ? new Date(
+                            h.created_at
+                          ).toLocaleString()
+                        : ""}
+                    </div>
+                  </div>
+                ))}
+
+                {histories.length ===
+                  0 && (
+                  <div
+                    style={{
+                      color: "#888",
+                    }}
+                  >
+                    변경이력이
+                    없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </AppShell>
