@@ -1024,21 +1024,24 @@ ${
                 <div
                   style={{
                     display: "flex",
-                    gap: 6,
+                    gap: 4,
                     justifyContent: "flex-end",
-                    flexWrap: "wrap",
+                    flexWrap: "nowrap",
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button className="btn secondary" onClick={() => openEdit(m)}>
+                  <button className="btn secondary" onClick={() => openEdit(m)}
+                    style={{ padding: "6px 8px", fontSize: 12 }}>
                     수정
                   </button>
 
-                  <button className="btn" onClick={() => openExtend(m)}>
+                  <button className="btn" onClick={() => openExtend(m)}
+                    style={{ padding: "6px 8px", fontSize: 12 }}>
                     연장
                   </button>
 
-                  <button className="btn secondary" onClick={() => openHold(m)}>
+                  <button className="btn secondary" onClick={() => openHold(m)}
+                    style={{ padding: "6px 8px", fontSize: 12 }}>
                     휴회
                   </button>
 
@@ -1047,6 +1050,7 @@ ${
                     onClick={() => {
                       location.href = `/member-detail?member_id=${m.member_id}`;
                     }}
+                    style={{ padding: "6px 8px", fontSize: 12 }}
                   >
                     상세
                   </button>
@@ -1054,7 +1058,7 @@ ${
                   <button
                     className="btn secondary"
                     onClick={() => deleteMember(m)}
-                    style={{ color: "#ff4d6d" }}
+                    style={{ padding: "6px 8px", fontSize: 12, color: "#ff4d6d" }}
                   >
                     삭제
                   </button>
