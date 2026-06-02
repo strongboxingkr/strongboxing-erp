@@ -420,7 +420,7 @@ ${
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "120px 180px 220px 180px 120px 120px auto",
+                "120px 180px 120px 220px 100px 120px 120px auto",
                 gap: 14,
                 padding: "8px 12px",
                 marginTop: 16,
@@ -432,8 +432,9 @@ ${
             >
               <div>회원번호</div>
               <div>회원명</div>
+              <div>지점</div>
               <div>상품</div>
-              <div>전화번호</div>
+              <div>잔여횟수</div>
               <div>만료일</div>
               <div>상태</div>
               <div>관리</div>
@@ -941,7 +942,7 @@ ${
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "110px 140px 100px 1fr 80px 120px 80px 260px",
+                  "120px 160px 100px 160px 100px 120px 100px 260px",
                 gap: 10,
                 padding: "8px 14px",
                 borderBottom: "1px solid #1f2937",
@@ -966,11 +967,9 @@ ${
               <div>{m.product_name || "-"}</div>
 
               <div style={{ color: "#e5e7eb", fontWeight: 700 }}>
-                {m.pass_type === "COUNT" ? Number(m.remaining_count || 0) : "-"}
-              </div>
-
-              <div style={{ color: "#e5e7eb", fontWeight: 800 }}>
-                {m.end_date?.slice(0, 10) || "-"}
+                {m.pass_type === "COUNT"
+                  ? `${m.remaining_count || 0}회`
+                  : "-"}
               </div>
 
               <div>
