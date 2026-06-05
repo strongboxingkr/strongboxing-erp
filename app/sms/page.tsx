@@ -41,6 +41,32 @@ export default function SmsPage() {
   const [message, setMessage] = useState("");
   const [testPhone, setTestPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [targetSearch, setTargetSearch] = useState("");
+
+  const filteredTargets = targets.filter((t) => {
+  const q = targetSearch.trim();
+
+    if (!q) return true;
+
+    return (
+      t.name?.includes(q) ||
+      t.phone?.includes(q) ||
+      t.checkin_code?.includes(q) ||
+      t.member_no?.includes(q)
+    );
+  });
+
+  const sendableCount = targets.filter(
+    (t) => selectedIds.includes(t.member_id) && t.phone
+  ).length;
+
+  const noPhoneTargets = targets.filter(
+    (t) => selectedIds.includes(t.member_id) && !t.phone
+  );
+
+  const excludedTargets = targets.filter(
+    (t) => !selectedIds.includes(t.member_id)
+  );
 
   const selectedCount = selectedIds.length;
   const excludedCount = targets.length - selectedCount;
@@ -211,6 +237,35 @@ export default function SmsPage() {
             <div
               style={{
                 display: "grid",
+                gridTemplateColumns: "1fr auto",
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
+              <input
+                className="input"
+                placeholder="회원명 / 전화번호 / 출석번호 검색"
+                value={targetSearch}
+                onChange={(e) => setTargetSearch(e.target.value)}
+              />
+
+              <button
+                className="btn secondary"
+                onClick={() => {
+                  const ids = targets
+                    .filter((t) => Number(t.attendance_sms_enabled || 0) === 1)
+                    .map((t) => t.member_id);
+
+                  setSelectedIds(ids);
+                }}
+              >
+                출석 알림문자 ON만
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
                 gap: 12,
                 marginBottom: 14,
@@ -218,7 +273,7 @@ export default function SmsPage() {
             >
               <div className="card">
                 <h3>전체 대상</h3>
-                <div className="num">{targets.length}명</div>
+                <div className="num">{filteredTargets.length}명</div>
               </div>
 
               <div className="card">
@@ -243,13 +298,15 @@ export default function SmsPage() {
                     <th>선택</th>
                     <th>이름</th>
                     <th>전화번호</th>
+                    <th>출석번호</th>
+                    <th>보호자문자</th>
                     <th>회원권</th>
                     <th>만료일</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {targets.map((t) => (
+                  {filteredTargets.map((t) => (
                     <tr key={t.member_id}>
                       <td>
                         <input
@@ -258,16 +315,34 @@ export default function SmsPage() {
                           onChange={() => toggle(t.member_id)}
                         />
                       </td>
+
                       <td style={{ fontWeight: 900 }}>{t.name}</td>
-                      <td>{t.phone}</td>
-                      <td>{t.product_name}</td>
-                      <td>{t.end_date?.slice(0, 10)}</td>
+                      <td
+                        style={{
+                          color: t.phone ? undefined : "#ff4d6d",
+                          fontWeight: t.phone ? undefined : 700,
+                        }}
+                      >
+                        {t.phone || "번호없음"}
+                      </td>
+                      <td>{t.checkin_code || "-"}</td>
+
+                      <td>
+                        {Number(t.attendance_sms_enabled || 0) === 1 ? (
+                          <span style={{ color: "#2ee59d", fontWeight: 900 }}>ON</span>
+                        ) : (
+                          <span style={{ color: "#666" }}>OFF</span>
+                        )}
+                      </td>
+
+                      <td>{t.product_name || "-"}</td>
+                      <td>{t.end_date?.slice(0, 10) || "-"}</td>
                     </tr>
                   ))}
 
                   {targets.length === 0 && (
                     <tr>
-                      <td colSpan={5} style={{ color: "#aaa", textAlign: "center" }}>
+                      <td colSpan={7} style={{ color: "#aaa", textAlign: "center" }}>
                         발송 대상이 없습니다.
                       </td>
                     </tr>
@@ -337,6 +412,20 @@ export default function SmsPage() {
             </div>
 
             <div>
+              <div style={{ color: "#aaa", fontSize: 13 }}>실제 발송가능</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#2ee59d" }}>
+                {sendableCount}명
+              </div>
+            </div>
+
+            <div>
+              <div style={{ color: "#aaa", fontSize: 13 }}>번호없음</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#ff4d6d" }}>
+                {noPhoneTargets.length}명
+              </div>
+            </div>
+
+            <div>
               <div style={{ color: "#aaa", fontSize: 13 }}>예상비용</div>
               <div style={{ fontSize: 22, fontWeight: 900, color: "#2ee59d" }}>
                 약 {cost.toLocaleString()}원
@@ -358,6 +447,37 @@ export default function SmsPage() {
           >
             {message || "문자 미리보기"}
           </div>
+
+          {excludedTargets.length > 0 && (
+          <div
+            style={{
+              background: "#111827",
+              borderRadius: 14,
+              padding: 12,
+              marginBottom: 12,
+              maxHeight: 120,
+              overflow: "auto",
+              color: "#aaa",
+              fontSize: 13,
+            }}
+          >
+            <div style={{ color: "#ff4d6d", fontWeight: 900, marginBottom: 6 }}>
+              제외회원 {excludedTargets.length}명
+            </div>
+
+            {excludedTargets.slice(0, 20).map((t) => (
+              <div key={t.member_id}>
+                - {t.name} / {t.phone || "번호없음"}
+              </div>
+            ))}
+
+            {excludedTargets.length > 20 && (
+              <div style={{ marginTop: 6 }}>
+                외 {excludedTargets.length - 20}명
+              </div>
+            )}
+          </div>
+        )}
 
           <input
             className="input"
