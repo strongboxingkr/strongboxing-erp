@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       address,
       join_date,
       staff_name,
+      attendance_sms_enabled,
     } = body;
 
     if (!name || !phone || !checkin_code || !branch_name) {
@@ -83,9 +84,10 @@ export async function POST(req: Request) {
         birth_date,
         address,
         join_date,
-        staff_name
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)
+        staff_name,
+        attendance_sms_enabled
+        )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         branch_name,

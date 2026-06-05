@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       address,
       join_date,
       staff_name,
+      attendance_sms_enabled,
     } = body;
 
     if (!member_id) {
@@ -79,7 +80,8 @@ export async function POST(req: Request) {
         emergency_contact = ?,
         address = ?,
         join_date = ?,
-        staff_name = ?
+        staff_name = ?,
+        attendance_sms_enabled = ?
       WHERE member_id = ?
       `,
       [
@@ -103,6 +105,7 @@ export async function POST(req: Request) {
         address ?? oldMember.address,
         join_date || oldMember.join_date,
         staff_name ?? oldMember.staff_name,
+        attendance_sms_enabled ?? oldMember.attendance_sms_enabled ?? 0,
         member_id,
       ]
     );
