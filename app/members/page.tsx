@@ -15,21 +15,26 @@ const pageSize = 15;
 
 const makeDefaultForm = () => ({ 
   member_id: null as any, 
-  branch_name: "철산점", 
-  name: "", phone: "", 
+  branch_name: "", 
+  name: "",
+  phone: "", 
   checkin_code: "", 
   pass_type: "PERIOD", 
   product_name: "", 
   remaining_count: 0, 
   start_date: today, 
   end_date: addMonths(today, 1), 
-  status: "ACTIVE", memo: "", 
-  locker_no: "", member_no: "", 
-  gender: "", birth_date: "", 
+  status: "ACTIVE",
+  memo: "", 
+  locker_no: "",
+  member_no: "", 
+  gender: "",
+  birth_date: "", 
   emergency_contact: "", 
   address: "", 
   join_date: today, 
   staff_name: "", 
+  attendance_sms_enabled: 0,
 });
 
 export default function MembersPage() {
@@ -142,7 +147,7 @@ export default function MembersPage() {
       branch_name:
         user && user.role !== "ADMIN" && user.role !== "OWNER"
           ? user.branch_name
-          : branches[0]?.option_name || "철산점",
+          : "",
       product_name: firstProduct?.option_name || "",
       pass_type: firstProduct?.option_value || "PERIOD",
     });
@@ -174,9 +179,11 @@ export default function MembersPage() {
       birth_date: m.birth_date?.slice(0, 10) || "", 
       emergency_contact: m.emergency_contact || "", 
       address: m.address || "", 
-      join_date: m.join_date?.slice(0, 10) || "", 
-      staff_name: m.staff_name || "", 
-    });
+      join_date: m.join_date?.slice(0, 10) || "",
+      staff_name: m.staff_name || "",
+      attendance_sms_enabled:
+        Number(m.attendance_sms_enabled || 0),
+      });
 
     setShowForm(true);
     setShowHoldForm(false);
@@ -201,12 +208,21 @@ export default function MembersPage() {
   };
 
   const saveMember = async () => {
-    const url = isEdit ? "/api/members/update" : "/api/members/add";
-
     const targetForm = {
       ...form,
-      branch_name: isAdminOrOwner ? form.branch_name : user?.branch_name,
+      branch_name: isAdminOrOwner
+        ? form.branch_name
+        : user?.branch_name,
     };
+
+    if (!targetForm.branch_name) {
+      alert("지점을 선택해주세요.");
+      return;
+    }
+
+    const url = isEdit
+      ? "/api/members/update"
+      : "/api/members/add";
 
     const res = await apiFetch(url, {
       method: "POST",
@@ -216,15 +232,21 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
-      alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
+      alert(
+        isEdit
+          ? "회원 수정 완료!"
+          : "회원 등록 완료!"
+      );
+
       setShowForm(false);
       setIsEdit(false);
       setForm(makeDefaultForm());
+
       loadMembers(user);
     } else {
       alert(data.message || "저장 실패");
     }
-  };
+};
 
   const openExtend = (m: any) => {
     setExtendMember(m);
@@ -617,6 +639,27 @@ ${
               }) 
             } 
             />
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                paddingLeft: 6,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={Number(form.attendance_sms_enabled || 0) === 1}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    attendance_sms_enabled: e.target.checked ? 1 : 0,
+                  })
+                }
+              />
+              출석 시 문자 발송
+            </label>
 
             <select
               className="input"
