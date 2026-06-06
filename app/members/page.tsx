@@ -12,36 +12,40 @@ function addMonths(dateString: string, months: number) {
 
 const today = new Date().toISOString().slice(0, 10);
 const pageSize = 15;
+
+const memberGridColumns =
+  "50px 90px 140px 90px 130px 190px 70px 70px 90px 90px 260px";
+
 const miniBtnStyle = {
-  padding: "6px 10px",
+  padding: "5px 9px",
   fontSize: 12,
-  height: 34,
-  minWidth: 48,
-  borderRadius: 12,
+  height: 30,
+  minWidth: 42,
+  borderRadius: 10,
   whiteSpace: "nowrap" as const,
 };
 
-const makeDefaultForm = () => ({ 
-  member_id: null as any, 
-  branch_name: "", 
+const makeDefaultForm = () => ({
+  member_id: null as any,
+  branch_name: "",
   name: "",
-  phone: "", 
-  checkin_code: "", 
-  pass_type: "PERIOD", 
-  product_name: "", 
-  remaining_count: 0, 
-  start_date: today, 
-  end_date: addMonths(today, 1), 
+  phone: "",
+  checkin_code: "",
+  pass_type: "PERIOD",
+  product_name: "",
+  remaining_count: 0,
+  start_date: today,
+  end_date: addMonths(today, 1),
   status: "ACTIVE",
-  memo: "", 
+  memo: "",
   locker_no: "",
-  member_no: "", 
+  member_no: "",
   gender: "",
-  birth_date: "", 
-  emergency_contact: "", 
-  address: "", 
-  join_date: today, 
-  staff_name: "", 
+  birth_date: "",
+  emergency_contact: "",
+  address: "",
+  join_date: today,
+  staff_name: "",
   checkin_sms_enabled: 0,
   checkout_sms_enabled: 0,
 });
@@ -88,8 +92,7 @@ export default function MembersPage() {
     return savedUser ? JSON.parse(savedUser) : null;
   };
 
-  const isAdminOrOwner =
-    user?.role === "ADMIN" || user?.role === "OWNER";
+  const isAdminOrOwner = user?.role === "ADMIN" || user?.role === "OWNER";
 
   const loadBranches = async () => {
     const res = await apiFetch("/api/settings?option_type=BRANCH");
@@ -132,25 +135,8 @@ export default function MembersPage() {
     const res = await apiFetch(url);
     const data = await res.json();
 
-    const rows = data.rows || [];
-
-    setMembers(rows);
+    setMembers(data.rows || []);
     setPage(1);
-
-    const params = new URLSearchParams(window.location.search);
-    const editMemberId = params.get("member_id");
-
-    if (editMemberId) {
-      const target = rows.find(
-        (m: any) => String(m.member_id) === String(editMemberId)
-      );
-
-      if (target) {
-        setTimeout(() => {
-          openEdit(target);
-        }, 100);
-      }
-    }
   };
 
   useEffect(() => {
@@ -158,8 +144,7 @@ export default function MembersPage() {
     setUser(savedUser);
 
     const params = new URLSearchParams(window.location.search);
-    const editId = params.get("member_id") || "";
-    setAutoEditId(editId);
+    setAutoEditId(params.get("member_id") || "");
 
     loadBranches();
     loadProducts();
@@ -181,12 +166,12 @@ export default function MembersPage() {
 
     openEdit(target);
     setAutoEditId("");
-
     window.history.replaceState({}, "", "/members");
   }, [autoEditId, members]);
 
   const openAdd = () => {
     const firstProduct = products[0];
+    const firstBranch = branches[0];
 
     setIsEdit(false);
     setForm({
@@ -194,7 +179,7 @@ export default function MembersPage() {
       branch_name:
         user && user.role !== "ADMIN" && user.role !== "OWNER"
           ? user.branch_name
-          : "",
+          : firstBranch?.option_name || "",
       product_name: firstProduct?.option_name || "",
       pass_type: firstProduct?.option_value || "PERIOD",
     });
@@ -203,37 +188,36 @@ export default function MembersPage() {
     setShowHoldForm(false);
     setShowExtendForm(false);
     setShowSmsPreview(false);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const openEdit = (m: any) => {
     setIsEdit(true);
-    setForm({ 
-      member_id: m.member_id, 
-      branch_name: m.branch_name || "철산점", 
-      name: m.name || "", 
-      phone: m.phone || "", 
-      checkin_code: m.checkin_code || "", 
-      pass_type: m.pass_type || "PERIOD", 
-      product_name: m.product_name || "", 
-      remaining_count: m.remaining_count || 0, 
-      start_date: m.start_date?.slice(0, 10) || today, 
-      end_date: m.end_date?.slice(0, 10) || today, 
-      status: m.status || "ACTIVE", 
-      memo: m.memo || "", 
-      locker_no: m.locker_no || "", 
-      member_no: m.member_no || "", 
-      gender: m.gender || "", 
-      birth_date: m.birth_date?.slice(0, 10) || "", 
-      emergency_contact: m.emergency_contact || "", 
-      address: m.address || "", 
+    setForm({
+      member_id: m.member_id,
+      branch_name: m.branch_name || "",
+      name: m.name || "",
+      phone: m.phone || "",
+      checkin_code: m.checkin_code || "",
+      pass_type: m.pass_type || "PERIOD",
+      product_name: m.product_name || "",
+      remaining_count: m.remaining_count || 0,
+      start_date: m.start_date?.slice(0, 10) || today,
+      end_date: m.end_date?.slice(0, 10) || today,
+      status: m.status || "ACTIVE",
+      memo: m.memo || "",
+      locker_no: m.locker_no || "",
+      member_no: m.member_no || "",
+      gender: m.gender || "",
+      birth_date: m.birth_date?.slice(0, 10) || "",
+      emergency_contact: m.emergency_contact || "",
+      address: m.address || "",
       join_date: m.join_date?.slice(0, 10) || "",
       staff_name: m.staff_name || "",
-      checkin_sms_enabled:
-        m.checkin_sms_enabled || 0,
-
-      checkout_sms_enabled:
-        m.checkout_sms_enabled || 0,
-      });
+      checkin_sms_enabled: m.checkin_sms_enabled || 0,
+      checkout_sms_enabled: m.checkout_sms_enabled || 0,
+    });
 
     setShowForm(true);
     setShowHoldForm(false);
@@ -260,9 +244,7 @@ export default function MembersPage() {
   const saveMember = async () => {
     const targetForm = {
       ...form,
-      branch_name: isAdminOrOwner
-        ? form.branch_name
-        : user?.branch_name,
+      branch_name: isAdminOrOwner ? form.branch_name : user?.branch_name,
     };
 
     if (!targetForm.branch_name) {
@@ -270,9 +252,7 @@ export default function MembersPage() {
       return;
     }
 
-    const url = isEdit
-      ? "/api/members/update"
-      : "/api/members/add";
+    const url = isEdit ? "/api/members/update" : "/api/members/add";
 
     const res = await apiFetch(url, {
       method: "POST",
@@ -282,25 +262,18 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
-      alert(
-        isEdit
-          ? "회원 수정 완료!"
-          : "회원 등록 완료!"
-      );
-
+      alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
       setShowForm(false);
       setIsEdit(false);
       setForm(makeDefaultForm());
-
       loadMembers(user);
     } else {
       alert(data.message || "저장 실패");
     }
-};
+  };
 
   const openExtend = (m: any) => {
     setExtendMember(m);
-
     setExtendForm({
       months: 1,
       count: 1,
@@ -313,10 +286,7 @@ export default function MembersPage() {
     setShowHoldForm(false);
     setShowSmsPreview(false);
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const saveExtend = async () => {
@@ -377,7 +347,6 @@ ${
 
   const openHold = (m: any) => {
     setHoldMember(m);
-
     setHoldForm({
       hold_start: today,
       hold_end: today,
@@ -451,8 +420,7 @@ ${
   };
 
   const filtered = members.filter((m) => {
-    const matchBranch =
-      !branch || m.branch_name === branch;
+    const matchBranch = !branch || m.branch_name === branch;
 
     const matchSearch =
       !search ||
@@ -462,7 +430,7 @@ ${
       m.memo?.includes(search);
 
     return matchBranch && matchSearch;
-});
+  });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pagedMembers = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -487,7 +455,6 @@ ${
             <p style={{ color: "#888", marginTop: 8 }}>
               총 {filtered.length}명 / {page}페이지
             </p>
-
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -528,12 +495,12 @@ ${
 
       {showForm && (
         <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
-          <h2>{isEdit ? "회원 수정" : "회원 등록"}</h2>
+          <h2 style={{ marginTop: 0 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
               gap: 12,
             }}
           >
@@ -545,6 +512,7 @@ ${
                   setForm({ ...form, branch_name: e.target.value })
                 }
               >
+                <option value="">지점 선택</option>
                 {branches.map((b) => (
                   <option key={b.option_id} value={b.option_name}>
                     {b.option_name}
@@ -559,7 +527,7 @@ ${
 
             <input
               className="input"
-              placeholder="이름"
+              placeholder="회원명"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -585,101 +553,59 @@ ${
                 })
               }
             />
-            <input 
-              className="input" 
-              placeholder="락카번호" 
-              value={form.locker_no} 
-              onChange={(e) => 
-                setForm({ 
-                  ...form, 
-                  locker_no: e.target.value, }) } 
-            /> 
-            <select 
-              className="input" 
-              value={form.gender} 
-              onChange={(e) => 
-                setForm({ 
-                  ...form, 
-                  gender: e.target.value, 
-                }) 
-              } 
-            > 
-              <option value="">성별</option> 
-              <option value="남">남</option> 
-              <option value="여">여</option> 
-            </select> 
-            
-            <input 
-              className="input" 
-              type="date" 
-              value={form.birth_date} 
-              onChange={(e) => 
-                setForm({ 
-                  ...form, 
-                  birth_date: e.target.value, 
-                }) 
-              } 
-              /> 
-              
-              <input 
-              className="input" 
-              placeholder="비상연락처" 
-              value={form.emergency_contact} 
-              onChange={(e) => 
-                setForm({ 
-                  ...form, 
-                  emergency_contact: e.target.value, 
-                }) 
-              } 
-            /> 
-            
-            <input 
-              className="input" 
-              placeholder="담당자" 
-              value={form.staff_name} 
-              onChange={(e) => 
-                setForm({ 
-                ...form, 
-                staff_name: e.target.value, 
-              }) 
-            } 
+
+            <select
+              className="input"
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value })}
+            >
+              <option value="">성별</option>
+              <option value="남">남</option>
+              <option value="여">여</option>
+            </select>
+
+            <input
+              className="input"
+              type="date"
+              value={form.birth_date}
+              onChange={(e) =>
+                setForm({ ...form, birth_date: e.target.value })
+              }
             />
 
-            <div style={{ display: "grid", gap: 8 }}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Number(form.checkin_sms_enabled) === 1}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      checkin_sms_enabled: e.target.checked ? 1 : 0,
-                    })
-                  }
-                />
-                입장 문자 발송
-              </label>
+            <input
+              className="input"
+              placeholder="비상연락처 / 보호자"
+              value={form.emergency_contact}
+              onChange={(e) =>
+                setForm({ ...form, emergency_contact: e.target.value })
+              }
+            />
 
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Number(form.checkout_sms_enabled) === 1}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      checkout_sms_enabled: e.target.checked ? 1 : 0,
-                    })
-                  }
-                />
-                퇴실 문자 발송
-              </label>
-            </div>
+            <input
+              className="input"
+              placeholder="락카번호"
+              value={form.locker_no}
+              onChange={(e) =>
+                setForm({ ...form, locker_no: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              placeholder="담당자"
+              value={form.staff_name}
+              onChange={(e) =>
+                setForm({ ...form, staff_name: e.target.value })
+              }
+            />
 
             <select
               className="input"
               value={form.product_name}
               onChange={(e) => handleProductChange(e.target.value)}
             >
+              <option value="">회원권 선택</option>
               {products.map((p) => (
                 <option key={p.option_id} value={p.option_name}>
                   {p.option_name}
@@ -691,7 +617,7 @@ ${
               {form.pass_type === "COUNT" ? "횟수권" : "기간권"}
             </div>
 
-            {form.pass_type === "COUNT" && (
+            {form.pass_type === "COUNT" ? (
               <input
                 className="input"
                 type="number"
@@ -704,6 +630,8 @@ ${
                   })
                 }
               />
+            ) : (
+              <div />
             )}
 
             <input
@@ -719,6 +647,43 @@ ${
               value={form.end_date}
               onChange={(e) => setForm({ ...form, end_date: e.target.value })}
             />
+
+            <div
+              style={{
+                display: "grid",
+                gap: 8,
+                alignContent: "center",
+                color: "#ddd",
+              }}
+            >
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Number(form.checkin_sms_enabled) === 1}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      checkin_sms_enabled: e.target.checked ? 1 : 0,
+                    })
+                  }
+                />{" "}
+                입장 문자 발송
+              </label>
+
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Number(form.checkout_sms_enabled) === 1}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      checkout_sms_enabled: e.target.checked ? 1 : 0,
+                    })
+                  }
+                />{" "}
+                운동 종료 문자 발송
+              </label>
+            </div>
 
             <textarea
               className="input"
@@ -744,21 +709,13 @@ ${
       {showExtendForm && extendMember && (
         <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
           <h2>회원권 연장</h2>
-
           <div style={{ color: "#aaa", marginBottom: 16 }}>
             {extendMember.name} / {extendMember.product_name}
           </div>
 
           {extendMember.pass_type === "PERIOD" ? (
             <>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                  marginBottom: 14,
-                }}
-              >
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
                 {[1, 3, 6].map((m) => (
                   <button
                     key={m}
@@ -795,14 +752,7 @@ ${
             </>
           ) : (
             <>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                  marginBottom: 14,
-                }}
-              >
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
                 {[1, 12, 24].map((c) => (
                   <button
                     key={c}
@@ -844,10 +794,7 @@ ${
               연장 저장
             </button>
 
-            <button
-              className="btn secondary"
-              onClick={() => setShowExtendForm(false)}
-            >
+            <button className="btn secondary" onClick={() => setShowExtendForm(false)}>
               취소
             </button>
           </div>
@@ -862,47 +809,31 @@ ${
             className="input"
             value={smsMessage}
             onChange={(e) => setSmsMessage(e.target.value)}
-            style={{
-              minHeight: 220,
-              width: "100%",
-            }}
+            style={{ minHeight: 220, width: "100%" }}
           />
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button
               className="btn"
               onClick={async () => {
-                const res = await apiFetch(
-                "/api/sms/send",
-                {
+                const res = await apiFetch("/api/sms/send", {
                   method: "POST",
                   body: JSON.stringify({
-                    branch_name:
-                      extendMember?.branch_name,
+                    branch_name: extendMember?.branch_name,
                     message: smsMessage,
                     is_test: true,
-                    test_phone:
-                      extendMember?.phone,
+                    test_phone: extendMember?.phone,
                   }),
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                  alert("문자 발송 완료 😎");
+                } else {
+                  alert(data.message || "문자 발송 실패");
                 }
-              );
 
-              const data = await res.json();
-
-              if (data.success) {
-                alert("문자 발송 완료 😎");
-
-                setShowSmsPreview(
-                  false
-                );
-
-                setExtendMember(null);
-              } else {
-                alert(
-                  data.message ||
-                    "문자 발송 실패"
-                );
-              }
                 setShowSmsPreview(false);
                 setExtendMember(null);
               }}
@@ -931,13 +862,7 @@ ${
             {holdMember.name} / 현재 만료일 {holdMember.end_date?.slice(0, 10)}
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 12,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <input
               className="input"
               type="date"
@@ -971,10 +896,7 @@ ${
               휴회 처리
             </button>
 
-            <button
-              className="btn secondary"
-              onClick={() => setShowHoldForm(false)}
-            >
+            <button className="btn secondary" onClick={() => setShowHoldForm(false)}>
               취소
             </button>
           </div>
@@ -990,7 +912,45 @@ ${
           marginBottom: 18,
         }}
       >
-        {pagedMembers.map((m) => {
+        <div
+          style={{
+            padding: "14px 16px 10px",
+            fontSize: 18,
+            fontWeight: 900,
+            borderBottom: "1px solid #1f2937",
+          }}
+        >
+          회원 목록
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: memberGridColumns,
+            gap: 10,
+            padding: "10px 14px",
+            borderBottom: "1px solid #374151",
+            color: "#9ca3af",
+            fontSize: 12,
+            fontWeight: 900,
+            alignItems: "center",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <div>No</div>
+          <div>회원번호</div>
+          <div>회원명</div>
+          <div>지점</div>
+          <div>프로그램</div>
+          <div>이용기간</div>
+          <div>잔여</div>
+          <div>락카</div>
+          <div>출석번호</div>
+          <div>상태</div>
+          <div>관리</div>
+        </div>
+
+        {pagedMembers.map((m, index) => {
           const status = getStatus(m);
 
           return (
@@ -998,8 +958,7 @@ ${
               key={m.member_id}
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                    "80px 140px 100px 140px 90px 90px 420px",
+                gridTemplateColumns: memberGridColumns,
                 gap: 10,
                 padding: "8px 14px",
                 borderBottom: "1px solid #1f2937",
@@ -1011,6 +970,8 @@ ${
                 location.href = `/member-detail?member_id=${m.member_id}`;
               }}
             >
+              <div>{(page - 1) * pageSize + index + 1}</div>
+
               <div style={{ color: "#aaa" }}>
                 {m.member_no || m.checkin_code || "-"}
               </div>
@@ -1023,11 +984,16 @@ ${
 
               <div>{m.product_name || "-"}</div>
 
-              <div style={{ color: "#e5e7eb", fontWeight: 700 }}>
-                {m.pass_type === "COUNT"
-                  ? `${m.remaining_count || 0}회`
-                  : "-"}
+              <div>
+                {m.start_date?.slice(0, 10) || "-"} ~{" "}
+                {m.end_date?.slice(0, 10) || "-"}
               </div>
+
+              <div>{m.pass_type === "COUNT" ? `${m.remaining_count || 0}` : "-"}</div>
+
+              <div>{m.locker_no || "-"}</div>
+
+              <div>{m.checkin_code || "-"}</div>
 
               <div>
                 <span
@@ -1061,11 +1027,7 @@ ${
                   수정
                 </button>
 
-                <button
-                  className="btn"
-                  onClick={() => openExtend(m)}
-                  style={miniBtnStyle}
-                >
+                <button className="btn" onClick={() => openExtend(m)} style={miniBtnStyle}>
                   연장
                 </button>
 
@@ -1090,10 +1052,7 @@ ${
                 <button
                   className="btn secondary"
                   onClick={() => deleteMember(m)}
-                  style={{
-                    ...miniBtnStyle,
-                    color: "#ff4d6d",
-                  }}
+                  style={{ ...miniBtnStyle, color: "#ff4d6d" }}
                 >
                   삭제
                 </button>
