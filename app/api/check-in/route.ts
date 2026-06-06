@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { SolapiMessageService } from "solapi";
 
 export async function POST(req: Request) {
   try {
@@ -153,6 +154,13 @@ export async function POST(req: Request) {
     }
 
     await saveAttendance(member, "SUCCESS", memo || "출석 완료");
+    
+    if (
+      Number(member.attendance_sms_enabled || 0) === 1 &&
+      member.emergency_contact
+    ) {
+      await sendAttendanceSms(member);
+    }
 
     await pool.query(
       `
@@ -237,4 +245,85 @@ async function saveAttendance(member: any, result: string, memo?: string) {
       memo || null,
     ]
   );
+}
+
+async function sendAttendanceSms(member: any) {
+  try {
+    const from = getFromNumber(member.branch_name);
+
+    if (!from) return;
+
+    const apiKey = process.env.SOLAPI_API_KEY;
+    const apiSecret = process.env.SOLAPI_API_SECRET;
+
+    if (!apiKey || !apiSecret) return;
+
+    const messageService = new SolapiMessageService(
+      apiKey,
+      apiSecret
+    );
+
+    const now = new Date();
+
+    const timeText = now.toLocaleString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const to = cleanPhone(member.emergency_contact);
+
+    if (to.length < 10) return;
+
+    const text = `[스트롱복싱 ${member.branch_name}]
+${member.name} 회원님이 ${timeText} 출석했습니다.`;
+
+    await messageService.send({
+      to,
+      from: cleanPhone(from),
+      text,
+    });
+
+    await pool.query(
+      `
+      INSERT INTO sms_logs
+      (
+        branch_name,
+        target_type,
+        receiver_name,
+        receiver_phone,
+        message,
+        send_status,
+        provider
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        member.branch_name,
+        "ATTENDANCE",
+        member.name,
+        member.emergency_contact,
+        text,
+        "SENT",
+        "SOLAPI",
+      ]
+    );
+  } catch (error) {
+    console.error("출석 문자 발송 실패", error);
+  }
+}
+
+function cleanPhone(phone: string) {
+  return String(phone || "").replace(/[^0-9]/g, "");
+}
+
+function getFromNumber(branchName: string) {
+  if (branchName === "철산점") return process.env.SOLAPI_FROM_CHULSAN;
+  if (branchName === "목동점") return process.env.SOLAPI_FROM_MOKDONG;
+  if (branchName === "개봉점") return process.env.SOLAPI_FROM_GAEBONG;
+  if (branchName === "신정점") return process.env.SOLAPI_FROM_SINJEONG;
+
+  return process.env.SOLAPI_FROM_CHULSAN;
 }

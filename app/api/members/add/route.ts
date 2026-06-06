@@ -109,6 +109,7 @@ export async function POST(req: Request) {
         address || null,
         join_date || start_date || null,
         staff_name || null,
+        attendance_sms_enabled || 0,
       ]
     );
 

@@ -305,6 +305,7 @@ export async function GET(req: Request) {
       today_expire: Number(
         todayExpireRows[0]?.today_expire || 0
       ),
+      today_expire_members:  todayExpireMembers,
       crm_alerts: Number(crmAlertRows[0]?.crm_alerts || 0),
       reservations: Number(reservationRows[0]?.reservations || 0),
 

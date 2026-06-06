@@ -4,6 +4,34 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
+const isMobileStyle = `
+@media (max-width: 900px) {
+  .sms-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sms-side {
+    position: static !important;
+  }
+
+  .sms-target-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sms-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sms-table-wrap {
+    overflow-x: auto;
+  }
+
+  .sms-table-wrap table {
+    min-width: 720px;
+  }
+}
+`;
+
 const branches = ["철산점", "목동점", "개봉점", "신정점"];
 
 const targetTypes = [
@@ -151,7 +179,8 @@ export default function SmsPage() {
   };
 
   return (
-    <AppShell title="문자 관리">
+  <AppShell title="문자 관리">
+    <style>{isMobileStyle}</style>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
           문자 관리
@@ -162,9 +191,11 @@ export default function SmsPage() {
       </div>
 
       <div
+        className="sms-layout"
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 360px",
+          gridTemplateColumns:
+            "minmax(0, 1fr) minmax(320px, 360px)",
           gap: 16,
           alignItems: "start",
         }}
@@ -291,7 +322,10 @@ export default function SmsPage() {
               </div>
             </div>
 
-            <div style={{ maxHeight: 360, overflow: "auto" }}>
+            <div
+              className="sms-table-wrap"
+              style={{ maxHeight: 360, overflow: "auto" }}
+            >
               <table>
                 <thead>
                   <tr>
@@ -388,6 +422,7 @@ export default function SmsPage() {
             position: "sticky",
             top: 20,
             borderRadius: 24,
+            maxWidth: "100%"
           }}
         >
           <h2 style={{ marginTop: 0 }}>발송 확인</h2>
@@ -510,6 +545,6 @@ export default function SmsPage() {
           </p>
         </div>
       </div>
-    </AppShell>
+       </AppShell>
   );
 }
