@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { phone_last4, checkin_code, branch_name, memo } = body;
+    const { phone_last4, checkin_code, branch_name, memo, check_type = "CHECK_IN", } = body;
 
     const code = checkin_code || phone_last4;
 
@@ -67,6 +67,47 @@ export async function POST(req: Request) {
     }
 
     const member = rows[0];
+
+    if (check_type === "CHECK_OUT") {
+    if (
+      Number(member.checkout_sms_enabled || 0) === 1 &&
+      member.emergency_contact
+    ) {
+      await sendCheckoutSms(member);
+    }
+
+    await pool.query(
+      `
+      INSERT INTO attendance
+      (
+        member_id,
+        branch_name,
+        member_name,
+        pass_type,
+        used_count,
+        result,
+        memo
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        member.member_id,
+        member.branch_name,
+        member.name,
+        member.pass_type,
+        0,
+        "CHECK_OUT",
+        "퇴실",
+      ]
+    );
+
+    return NextResponse.json({
+      success: true,
+      result: "CHECK_OUT",
+      message: "퇴실 완료",
+      member,
+    });
+  }
 
     const today = new Date();
     const todayText = today.toISOString().slice(0, 10);
@@ -156,7 +197,7 @@ export async function POST(req: Request) {
     await saveAttendance(member, "SUCCESS", memo || "출석 완료");
     
     if (
-      Number(member.attendance_sms_enabled || 0) === 1 &&
+      Number(member.checkin_sms_enabled || 0) === 1 &&
       member.emergency_contact
     ) {
       await sendAttendanceSms(member);
@@ -312,6 +353,49 @@ ${member.name} 회원님이 ${timeText} 출석했습니다.`;
     );
   } catch (error) {
     console.error("출석 문자 발송 실패", error);
+  }
+}
+
+async function sendCheckoutSms(member: any) {
+  try {
+    const from = getFromNumber(member.branch_name);
+
+    if (!from) return;
+
+    const apiKey = process.env.SOLAPI_API_KEY;
+    const apiSecret = process.env.SOLAPI_API_SECRET;
+
+    if (!apiKey || !apiSecret) return;
+
+    const messageService = new SolapiMessageService(
+      apiKey,
+      apiSecret
+    );
+
+    const now = new Date();
+
+    const timeText = now.toLocaleString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const to = cleanPhone(member.emergency_contact);
+
+    if (to.length < 10) return;
+
+    const text = `[스트롱복싱 ${member.branch_name}]
+${member.name} 회원님이 ${timeText} 퇴실했습니다.`;
+
+    await messageService.send({
+      to,
+      from: cleanPhone(from),
+      text,
+    });
+  } catch (error) {
+    console.error("퇴실 문자 발송 실패", error);
   }
 }
 

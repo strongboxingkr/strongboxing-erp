@@ -461,17 +461,6 @@ export default function MobileMembersPage() {
 
           <input 
             className="input" 
-            placeholder="회원번호" 
-            value={form.member_no} 
-            onChange={(e) => 
-              setForm({ ...form, 
-              member_no: e.target.value, 
-              }) 
-            } 
-          /> 
-          
-          <input 
-            className="input" 
             placeholder="락카번호" 
             value={form.locker_no} 
             onChange={(e) => 

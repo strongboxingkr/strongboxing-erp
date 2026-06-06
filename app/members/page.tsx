@@ -12,6 +12,14 @@ function addMonths(dateString: string, months: number) {
 
 const today = new Date().toISOString().slice(0, 10);
 const pageSize = 15;
+const miniBtnStyle = {
+  padding: "6px 10px",
+  fontSize: 12,
+  height: 34,
+  minWidth: 48,
+  borderRadius: 12,
+  whiteSpace: "nowrap" as const,
+};
 
 const makeDefaultForm = () => ({ 
   member_id: null as any, 
@@ -46,6 +54,7 @@ export default function MembersPage() {
   const [user, setUser] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [branch, setBranch] = useState("");
+  const [autoEditId, setAutoEditId] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -147,6 +156,11 @@ export default function MembersPage() {
   useEffect(() => {
     const savedUser = getUser();
     setUser(savedUser);
+
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("member_id") || "";
+    setAutoEditId(editId);
+
     loadBranches();
     loadProducts();
     loadMembers(savedUser);
@@ -155,6 +169,21 @@ export default function MembersPage() {
   useEffect(() => {
     setPage(1);
   }, [search]);
+
+  useEffect(() => {
+    if (!autoEditId || members.length === 0) return;
+
+    const target = members.find(
+      (m: any) => String(m.member_id) === String(autoEditId)
+    );
+
+    if (!target) return;
+
+    openEdit(target);
+    setAutoEditId("");
+
+    window.history.replaceState({}, "", "/members");
+  }, [autoEditId, members]);
 
   const openAdd = () => {
     const firstProduct = products[0];
@@ -603,17 +632,6 @@ ${
                 }) 
               } 
             /> 
-            <input 
-              className="input" 
-              placeholder="주소" 
-              value={form.address} 
-              onChange={(e) => 
-                setForm({ 
-                  ...form, 
-                  address: e.target.value, 
-                }) 
-              } 
-            /> 
             
             <input 
               className="input" 
@@ -981,7 +999,7 @@ ${
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "120px 160px 100px 160px 100px 120px 100px 260px",
+                  "120px 160px 100px 160px 100px 120px 100px 320px",
                 gap: 10,
                 padding: "8px 14px",
                 borderBottom: "1px solid #1f2937",
@@ -1034,11 +1052,50 @@ ${
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <button className="btn secondary" onClick={() => openEdit(m)} style={{ padding: "5px 7px", fontSize: 12 }}>수정</button>
-                <button className="btn" onClick={() => openExtend(m)} style={{ padding: "5px 7px", fontSize: 12 }}>연장</button>
-                <button className="btn secondary" onClick={() => openHold(m)} style={{ padding: "5px 7px", fontSize: 12 }}>휴회</button>
-                <button className="btn secondary" onClick={() => { location.href = `/member-detail?member_id=${m.member_id}`; }} style={{ padding: "5px 7px", fontSize: 12 }}>상세</button>
-                <button className="btn secondary" onClick={() => deleteMember(m)} style={{ padding: "5px 7px", fontSize: 12, color: "#ff4d6d" }}>삭제</button>
+                <button
+                  className="btn secondary"
+                  onClick={() => openEdit(m)}
+                  style={miniBtnStyle}
+                >
+                  수정
+                </button>
+
+                <button
+                  className="btn"
+                  onClick={() => openExtend(m)}
+                  style={miniBtnStyle}
+                >
+                  연장
+                </button>
+
+                <button
+                  className="btn secondary"
+                  onClick={() => openHold(m)}
+                  style={miniBtnStyle}
+                >
+                  휴회
+                </button>
+
+                <button
+                  className="btn secondary"
+                  onClick={() => {
+                    location.href = `/member-detail?member_id=${m.member_id}`;
+                  }}
+                  style={miniBtnStyle}
+                >
+                  상세
+                </button>
+
+                <button
+                  className="btn secondary"
+                  onClick={() => deleteMember(m)}
+                  style={{
+                    ...miniBtnStyle,
+                    color: "#ff4d6d",
+                  }}
+                >
+                  삭제
+                </button>
               </div>
             </div>
           );

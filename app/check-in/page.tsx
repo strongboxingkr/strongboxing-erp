@@ -18,17 +18,12 @@ export default function CheckInPage() {
       return;
     }
 
-    if (value === "ok") {
-      submitCheckIn();
-      return;
-    }
-
     if (phone.length < 4) {
       setPhone((prev) => prev + value);
     }
   };
 
-  const submitCheckIn = async () => {
+  const submitCheckIn = async (type: "CHECK_IN" | "CHECK_OUT") => {
     if (phone.length !== 4) return;
 
     const res = await fetch("/api/check-in", {
@@ -36,7 +31,10 @@ export default function CheckInPage() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ phone_last4: phone }),
+      body: JSON.stringify({
+        phone_last4: phone,
+        check_type: type,
+      }),
     });
 
     const data = await res.json();
@@ -91,11 +89,41 @@ export default function CheckInPage() {
 
           <button className="key" onClick={() => press("back")}>←</button>
           <button className="key" onClick={() => press("0")}>0</button>
-          <button className="key confirm" onClick={() => press("ok")}>확인</button>
+
+          <button
+            className="key confirm"
+            style={{
+              background: "#ff2d55",
+              fontSize: 32,
+              fontWeight: 900,
+            }}
+            onClick={() => submitCheckIn("CHECK_IN")}
+          >
+            입장
+          </button>
 
           <button className="key" style={{ gridColumn: "1 / 4" }} onClick={() => press("clear")}>
             초기화
           </button>
+
+          <button
+            onClick={() => submitCheckIn("CHECK_OUT")}
+            style={{
+              marginTop: 12,
+              width: "100%",
+              height: 52,
+              borderRadius: 12,
+              border: "1px solid #374151",
+              background: "#111827",
+              color: "#9ca3af",
+              fontSize: 18,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            운동 종료
+          </button>
+
         </div>
       </div>
     </div>
