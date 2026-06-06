@@ -26,10 +26,13 @@ export async function GET(req: Request) {
         product_name,
         end_date,
         pass_type,
-        remaining_count
+        remaining_count,
+        checkin_code,
+        member_no,
+        checkin_sms_enabled,
+        checkout_sms_enabled
       FROM members
-      WHERE status = 'ACTIVE'
-      AND phone IS NOT NULL
+      WHERE 1 = 1
     `;
 
     const params: any[] = [];

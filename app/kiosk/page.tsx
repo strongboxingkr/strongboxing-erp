@@ -8,21 +8,26 @@ export default function KioskPage() {
   const [message, setMessage] = useState("출석번호를 입력해주세요");
   const [member, setMember] = useState<any>(null);
 
-  const checkinWithCode = async (inputCode: string) => {
+  const checkWithCode = async (inputCode: string, type: "CHECK_IN" | "CHECK_OUT") => {
     if (!inputCode.trim()) return;
 
     const res = await apiFetch("/api/check-in", {
       method: "POST",
       body: JSON.stringify({
-        checkin_code: inputCode,
-      }),
+      checkin_code: inputCode,
+      check_type: type,
+    }),
     });
 
     const data = await res.json();
 
     if (data.success) {
       setMember(data.member);
-      setMessage(`${data.member.name}님 출석 완료! 🥊`);
+      setMessage(
+        type === "CHECK_OUT"
+          ? `${data.member.name}님 퇴실 완료! 👋`
+          : `${data.member.name}님 입장 완료! 🥊`
+      );
     } else {
       setMember(null);
       setMessage(data.message || "출석 실패");
@@ -36,7 +41,11 @@ export default function KioskPage() {
   };
 
   const checkin = async () => {
-    await checkinWithCode(code);
+    await checkWithCode(code, "CHECK_IN");
+  };
+
+  const checkout = async () => {
+    await checkWithCode(code, "CHECK_OUT");
   };
 
   const pressNumber = (num: string) => {
@@ -55,7 +64,7 @@ export default function KioskPage() {
     if (qrCode) {
       setCode(qrCode);
       setTimeout(() => {
-        checkinWithCode(qrCode);
+        checkWithCode(qrCode, "CHECK_IN");
       }, 300);
     }
   }, []);
@@ -197,22 +206,47 @@ export default function KioskPage() {
           </button>
         </div>
 
-        <button
-          onClick={checkin}
+        <div
           style={{
-            width: "100%",
-            height: 82,
-            borderRadius: 16,
-            border: 0,
-            background: "#2ee59d",
-            color: "#000",
-            fontSize: 32,
-            fontWeight: 1000,
-            cursor: "pointer",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12,
           }}
         >
-          출석하기
-        </button>
+          <button
+            onClick={checkin}
+            style={{
+              width: "100%",
+              height: 82,
+              borderRadius: 16,
+              border: 0,
+              background: "#2ee59d",
+              color: "#000",
+              fontSize: 32,
+              fontWeight: 1000,
+              cursor: "pointer",
+            }}
+          >
+            입장
+          </button>
+
+          <button
+            onClick={checkout}
+            style={{
+              width: "100%",
+              height: 82,
+              borderRadius: 16,
+              border: 0,
+              background: "#f59e0b",
+              color: "#000",
+              fontSize: 32,
+              fontWeight: 1000,
+              cursor: "pointer",
+            }}
+          >
+            퇴실
+          </button>
+        </div>
 
         <div
           style={{
