@@ -16,7 +16,6 @@ export async function POST(req: Request) {
       start_date,
       end_date,
       memo,
-
       locker_no,
       member_no,
       gender,
@@ -25,7 +24,8 @@ export async function POST(req: Request) {
       address,
       join_date,
       staff_name,
-      attendance_sms_enabled,
+      checkin_sms_enabled,
+      checkout_sms_enabled,
     } = body;
 
     if (!name || !phone || !checkin_code || !branch_name) {
@@ -41,8 +41,6 @@ export async function POST(req: Request) {
         message: "출석번호는 숫자 4자리로 입력해주세요.",
       });
     }
-
-    const phoneLast4 = String(phone).slice(-4);
 
     const [dupRows]: any = await pool.query(
       `
@@ -69,7 +67,6 @@ export async function POST(req: Request) {
         name,
         phone,
         emergency_contact,
-        phone_last4,
         checkin_code,
         product_name,
         pass_type,
@@ -85,16 +82,16 @@ export async function POST(req: Request) {
         address,
         join_date,
         staff_name,
-        attendance_sms_enabled
-        )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        checkin_sms_enabled,
+        checkout_sms_enabled
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         branch_name,
         name,
         phone,
         emergency_contact || null,
-        phoneLast4,
         checkin_code,
         product_name || null,
         pass_type || "PERIOD",
@@ -109,7 +106,8 @@ export async function POST(req: Request) {
         address || null,
         join_date || start_date || null,
         staff_name || null,
-        attendance_sms_enabled || 0,
+        checkin_sms_enabled || 0,
+        checkout_sms_enabled || 0,
       ]
     );
 
