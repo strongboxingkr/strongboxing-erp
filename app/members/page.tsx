@@ -34,7 +34,8 @@ const makeDefaultForm = () => ({
   address: "", 
   join_date: today, 
   staff_name: "", 
-  attendance_sms_enabled: 0,
+  checkin_sms_enabled: 0,
+  checkout_sms_enabled: 0,
 });
 
 export default function MembersPage() {
@@ -122,8 +123,25 @@ export default function MembersPage() {
     const res = await apiFetch(url);
     const data = await res.json();
 
-    setMembers(data.rows || []);
+    const rows = data.rows || [];
+
+    setMembers(rows);
     setPage(1);
+
+    const params = new URLSearchParams(window.location.search);
+    const editMemberId = params.get("member_id");
+
+    if (editMemberId) {
+      const target = rows.find(
+        (m: any) => String(m.member_id) === String(editMemberId)
+      );
+
+      if (target) {
+        setTimeout(() => {
+          openEdit(target);
+        }, 100);
+      }
+    }
   };
 
   useEffect(() => {
@@ -181,8 +199,11 @@ export default function MembersPage() {
       address: m.address || "", 
       join_date: m.join_date?.slice(0, 10) || "",
       staff_name: m.staff_name || "",
-      attendance_sms_enabled:
-        Number(m.attendance_sms_enabled || 0),
+      checkin_sms_enabled:
+        m.checkin_sms_enabled || 0,
+
+      checkout_sms_enabled:
+        m.checkout_sms_enabled || 0,
       });
 
     setShowForm(true);
@@ -438,29 +459,6 @@ ${
               총 {filtered.length}명 / {page}페이지
             </p>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                "120px 180px 120px 220px 100px 120px 120px auto",
-                gap: 14,
-                padding: "8px 12px",
-                marginTop: 16,
-                borderBottom: "1px solid #374151",
-                color: "#9ca3af",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              <div>회원번호</div>
-              <div>회원명</div>
-              <div>지점</div>
-              <div>상품</div>
-              <div>잔여횟수</div>
-              <div>만료일</div>
-              <div>상태</div>
-              <div>관리</div>
-            </div>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -559,17 +557,6 @@ ${
               }
             />
             <input 
-              className="input"
-              placeholder="회원번호" 
-              value={form.member_no} 
-              onChange={(e) => 
-                setForm({ 
-                  ...form, 
-                  member_no: e.target.value, 
-                }) 
-              } 
-            /> 
-            <input 
               className="input" 
               placeholder="락카번호" 
               value={form.locker_no} 
@@ -640,26 +627,35 @@ ${
             } 
             />
 
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                paddingLeft: 6,
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={Number(form.attendance_sms_enabled || 0) === 1}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    attendance_sms_enabled: e.target.checked ? 1 : 0,
-                  })
-                }
-              />
-              출석 시 문자 발송
-            </label>
+            <div style={{ display: "grid", gap: 8 }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Number(form.checkin_sms_enabled) === 1}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      checkin_sms_enabled: e.target.checked ? 1 : 0,
+                    })
+                  }
+                />
+                입장 문자 발송
+              </label>
+
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Number(form.checkout_sms_enabled) === 1}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      checkout_sms_enabled: e.target.checked ? 1 : 0,
+                    })
+                  }
+                />
+                퇴실 문자 발송
+              </label>
+            </div>
 
             <select
               className="input"
