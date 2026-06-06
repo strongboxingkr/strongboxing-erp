@@ -999,7 +999,7 @@ ${
               style={{
                 display: "grid",
                 gridTemplateColumns:
-                  "120px 160px 100px 160px 100px 120px 100px 320px",
+                    "80px 140px 100px 140px 90px 90px 420px",
                 gap: 10,
                 padding: "8px 14px",
                 borderBottom: "1px solid #1f2937",
@@ -1047,8 +1047,9 @@ ${
               <div
                 style={{
                   display: "flex",
-                  gap: 4,
-                  justifyContent: "flex-end",
+                  gap: 6,
+                  justifyContent: "flex-start",
+                  flexWrap: "nowrap",
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
