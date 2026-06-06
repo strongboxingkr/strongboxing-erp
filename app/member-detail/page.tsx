@@ -354,75 +354,70 @@ export default function MemberDetailPage() {
               }}
             >
               <div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
                 <div
                   style={{
-                    fontSize: 40,
-                    fontWeight: 900,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {data.member.name}
-                </div>
-
-                {data.member.status ===
-                  "REST" && (
                   <div
                     style={{
-                      background:
-                        "rgba(245,158,11,.15)",
-                      color: "#f59e0b",
-                      padding:
-                        "6px 12px",
-                      borderRadius: 999,
-                      fontSize: 13,
+                      fontSize: 40,
                       fontWeight: 900,
                     }}
                   >
-                    휴회중
+                    {data.member.name}
                   </div>
-                    )}
 
-                    {data.member.status ===
-                      "EXPIRED" && (
-                      <div
-                        style={{
-                          background:
-                            "rgba(239,68,68,.15)",
-                          color: "#ef4444",
-                          padding:
-                            "6px 12px",
-                          borderRadius: 999,
-                          fontSize: 13,
-                          fontWeight: 900,
-                        }}
-                      >
-                        만료
-                      </div>
+                  <button
+                    className="btn secondary"
+                    onClick={() => {
+                      location.href = `/members?member_id=${data.member.member_id}`;
+                    }}
+                  >
+                    수정
+                  </button>
+
+                  {data.member.status === "REST" && (
+                    <div
+                      style={{
+                        background: "rgba(245,158,11,.15)",
+                        color: "#f59e0b",
+                        padding: "6px 12px",
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 900,
+                      }}
+                    >
+                      휴회중
+                    </div>
                   )}
 
-                  {Number(
-                    data.member.remaining_count || 0
-                  ) > 0 &&
-                    Number(
-                      data.member.remaining_count
-                    ) <= 3 && (
+                  {data.member.status === "EXPIRED" && (
+                    <div
+                      style={{
+                        background: "rgba(239,68,68,.15)",
+                        color: "#ef4444",
+                        padding: "6px 12px",
+                        borderRadius: 999,
+                        fontSize: 13,
+                        fontWeight: 900,
+                      }}
+                    >
+                      만료
+                    </div>
+                  )}
+
+                  {Number(data.member.remaining_count || 0) > 0 &&
+                    Number(data.member.remaining_count) <= 3 && (
                       <div
                         style={{
-                          background:
-                            "rgba(255,77,109,.15)",
+                          background: "rgba(255,77,109,.15)",
                           color: "#ff4d6d",
-                          padding:
-                            "6px 12px",
-                          borderRadius:
-                            999,
+                          padding: "6px 12px",
+                          borderRadius: 999,
                           fontSize: 13,
                           fontWeight: 900,
                         }}
@@ -431,20 +426,14 @@ export default function MemberDetailPage() {
                       </div>
                     )}
                 </div>
-                
+
                 <div
                   style={{
                     marginTop: 8,
                     color: "#aaa",
                   }}
                 >
-                  {
-                    data.member.branch_name
-                  }{" "}
-                  /{" "}
-                  {
-                    data.member.phone
-                  }
+                  {data.member.branch_name} / {data.member.phone}
                 </div>
 
                 <div
@@ -754,7 +743,8 @@ export default function MemberDetailPage() {
                         fontSize: 13,
                       }}
                     >
-                      출석 완료
+                      {c.result === "CHECK_OUT" ? "운동 종료" : "출석 완료"}
+                      
                     </div>
                   </div>
                 ))}
