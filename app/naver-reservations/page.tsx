@@ -42,7 +42,7 @@ const getSourceInfo = (r: any) => {
   };
 };
 
-export default function HomepageReservationsPage() {
+export default function NaverReservationsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [branch, setBranch] = useState("전체");
@@ -200,7 +200,7 @@ export default function HomepageReservationsPage() {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
-            홈페이지 예약 관리
+            네이버 예약 관리
           </h1>
           <p style={{ color: "#aaa", marginTop: 8 }}>
             예약일/예약시간은 고객이 실제 방문하기로 한 이용일시 기준입니다.
