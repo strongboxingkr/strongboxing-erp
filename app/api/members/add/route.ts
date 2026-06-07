@@ -60,6 +60,18 @@ export async function POST(req: Request) {
       });
     }
 
+    const [noRows]: any = await pool.query(
+      `
+      SELECT COALESCE(MAX(CAST(member_no AS UNSIGNED)), 0) + 1 AS next_member_no
+      FROM members
+      WHERE branch_name = ?
+        AND member_no REGEXP '^[0-9]+$'
+      `,
+      [branch_name]
+    );
+
+    const finalMemberNo = member_no || String(noRows[0].next_member_no);
+
     const [result]: any = await pool.query(
       `
       INSERT INTO members (
@@ -100,7 +112,7 @@ export async function POST(req: Request) {
         end_date || null,
         memo || "",
         locker_no || null,
-        member_no || null,
+        finalMemberNo,
         gender || null,
         birth_date || null,
         address || null,
@@ -134,6 +146,7 @@ export async function POST(req: Request) {
         null,
         JSON.stringify({
           member_id: memberId,
+          member_no: finalMemberNo,
           ...body,
         }),
         staff_name || "관리자",
@@ -144,6 +157,7 @@ export async function POST(req: Request) {
       success: true,
       message: "회원 등록 완료",
       member_id: memberId,
+      member_no: finalMemberNo,
     });
   } catch (error) {
     console.error(error);
