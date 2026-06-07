@@ -501,158 +501,63 @@ ${
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-              gap: 12,
+              gap: 14,
             }}
           >
             {isAdminOrOwner ? (
-              <select
-                className="input"
-                value={form.branch_name}
-                onChange={(e) =>
-                  setForm({ ...form, branch_name: e.target.value })
-                }
-              >
+              <select className="input" value={form.branch_name} onChange={(e) => setForm({ ...form, branch_name: e.target.value })}>
                 <option value="">지점 선택</option>
                 {branches.map((b) => (
-                  <option key={b.option_id} value={b.option_name}>
-                    {b.option_name}
-                  </option>
+                  <option key={b.option_id} value={b.option_name}>{b.option_name}</option>
                 ))}
               </select>
             ) : (
-              <div className="input" style={{ color: "#aaa" }}>
-                {user?.branch_name}
-              </div>
+              <div className="input" style={{ color: "#aaa" }}>{user?.branch_name}</div>
             )}
 
-            <input
-              className="input"
-              placeholder="회원명"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
+            <input className="input" placeholder="회원명" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <input className="input" placeholder="전화번호" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <input className="input" placeholder="출석번호 4자리" maxLength={4} value={form.checkin_code} onChange={(e) => setForm({ ...form, checkin_code: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) })} />
 
-            <input
-              className="input"
-              placeholder="전화번호"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
-
-            <input
-              className="input"
-              placeholder="출석번호"
-              maxLength={4}
-              value={form.checkin_code}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  checkin_code: e.target.value
-                    .replace(/[^0-9]/g, "")
-                    .slice(0, 4),
-                })
-              }
-            />
-
-            <select
-              className="input"
-              value={form.gender}
-              onChange={(e) => setForm({ ...form, gender: e.target.value })}
-            >
+            <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
               <option value="">성별</option>
               <option value="남">남</option>
               <option value="여">여</option>
             </select>
 
-            <input
-              className="input"
-              type="date"
-              value={form.birth_date}
-              onChange={(e) =>
-                setForm({ ...form, birth_date: e.target.value })
-              }
-            />
+            <input className="input" type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
+            <input className="input" placeholder="비상연락처 / 보호자" value={form.emergency_contact} onChange={(e) => setForm({ ...form, emergency_contact: e.target.value })} />
+            <input className="input" placeholder="락카번호" value={form.locker_no} onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
 
-            <input
-              className="input"
-              placeholder="비상연락처 / 보호자"
-              value={form.emergency_contact}
-              onChange={(e) =>
-                setForm({ ...form, emergency_contact: e.target.value })
-              }
-            />
+            <input className="input" placeholder="담당자" value={form.staff_name} onChange={(e) => setForm({ ...form, staff_name: e.target.value })} />
 
-            <input
-              className="input"
-              placeholder="락카번호"
-              value={form.locker_no}
-              onChange={(e) =>
-                setForm({ ...form, locker_no: e.target.value })
-              }
-            />
-
-            <input
-              className="input"
-              placeholder="담당자"
-              value={form.staff_name}
-              onChange={(e) =>
-                setForm({ ...form, staff_name: e.target.value })
-              }
-            />
-
-            <select
-              className="input"
-              value={form.product_name}
-              onChange={(e) => handleProductChange(e.target.value)}
-            >
+            <select className="input" value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
               <option value="">회원권 선택</option>
               {products.map((p) => (
-                <option key={p.option_id} value={p.option_name}>
-                  {p.option_name}
-                </option>
+                <option key={p.option_id} value={p.option_name}>{p.option_name}</option>
               ))}
             </select>
 
-            <div className="input" style={{ color: "#aaa" }}>
-              {form.pass_type === "COUNT" ? "횟수권" : "기간권"}
-            </div>
+            <input className="input" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+            <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
 
             {form.pass_type === "COUNT" ? (
-              <input
-                className="input"
-                type="number"
-                placeholder="남은횟수"
-                value={form.remaining_count}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    remaining_count: Number(e.target.value),
-                  })
-                }
-              />
+              <input className="input" type="number" placeholder="남은횟수" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
             ) : (
-              <div />
+              <div className="input" style={{ color: "#aaa" }}>기간권</div>
             )}
-
-            <input
-              className="input"
-              type="date"
-              value={form.start_date}
-              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-            />
-
-            <input
-              className="input"
-              type="date"
-              value={form.end_date}
-              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-            />
 
             <div
               style={{
-                display: "grid",
-                gap: 8,
-                alignContent: "center",
+                gridColumn: "2 / 5",
+                display: "flex",
+                alignItems: "center",
+                gap: 22,
+                background: "#111827",
+                border: "1px solid #1f2937",
+                borderRadius: 14,
+                padding: "0 14px",
+                minHeight: 48,
                 color: "#ddd",
               }}
             >
@@ -660,12 +565,7 @@ ${
                 <input
                   type="checkbox"
                   checked={Number(form.checkin_sms_enabled) === 1}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      checkin_sms_enabled: e.target.checked ? 1 : 0,
-                    })
-                  }
+                  onChange={(e) => setForm({ ...form, checkin_sms_enabled: e.target.checked ? 1 : 0 })}
                 />{" "}
                 입장 문자 발송
               </label>
@@ -674,12 +574,7 @@ ${
                 <input
                   type="checkbox"
                   checked={Number(form.checkout_sms_enabled) === 1}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      checkout_sms_enabled: e.target.checked ? 1 : 0,
-                    })
-                  }
+                  onChange={(e) => setForm({ ...form, checkout_sms_enabled: e.target.checked ? 1 : 0 })}
                 />{" "}
                 운동 종료 문자 발송
               </label>
@@ -690,7 +585,7 @@ ${
               placeholder="메모"
               value={form.memo}
               onChange={(e) => setForm({ ...form, memo: e.target.value })}
-              style={{ gridColumn: "1 / 5", minHeight: 90 }}
+              style={{ gridColumn: "1 / 5", minHeight: 82 }}
             />
           </div>
 
