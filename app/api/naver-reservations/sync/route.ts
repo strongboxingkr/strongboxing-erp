@@ -82,6 +82,12 @@ function pickPhone(text: string) {
   return text.match(/010[-\s]?\d{4}[-\s]?\d{4}/)?.[0] || "";
 }
 
+function normalizePhone(value: string) {
+  const onlyNumber = String(value || "").replace(/[^0-9]/g, "");
+  const match = onlyNumber.match(/010\d{8}/);
+  return match ? match[0] : onlyNumber.slice(0, 20);
+}
+
 function pickRequestedAt(text: string) {
   const match = text.match(
     /예약신청\s*일시\s*\n?\s*(\d{4})\.(\d{1,2})\.(\d{1,2})\.?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/
@@ -121,7 +127,7 @@ function pickHomepageReservation(subject: string, text: string) {
   const reservation_time =
     subjectMatch?.[4] || pickHomepageValue(text, "예약시간");
 
-  const phone = pickHomepageValue(text, "전화번호") || pickPhone(text);
+  const phone = normalizePhone(pickHomepageValue(text, "전화번호") || pickPhone(text));
   const goal = pickHomepageValue(text, "운동목적");
   const message = pickHomepageValue(text, "문의사항");
 
@@ -268,7 +274,7 @@ export async function GET() {
         branch_name = detectBranch(fullText);
         status = detectStatus(fullText);
         customer_name = pickName(fullText).slice(0, 50);
-        phone = pickPhone(fullText);
+        phone = normalizePhone(pickPhone(fullText));
 
         const picked = pickReservationDateTime(fullText);
         reservation_date = picked.reservation_date;
