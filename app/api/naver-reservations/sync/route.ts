@@ -64,6 +64,7 @@ function detectStatus(text: string) {
 
 function pickName(text: string) {
   const patterns = [
+    /이름[:\s]*([가-힣a-zA-Z*]+)/,
     /예약자명\s*\n?\s*([가-힣a-zA-Z*]+님?)/,
     /예약자명\s+([가-힣a-zA-Z*]+님?)/,
     /예약자\s*\n?\s*([가-힣a-zA-Z*]+님?)/,
@@ -71,7 +72,7 @@ function pickName(text: string) {
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    if (match?.[1]) return match[1].replace(/\s+/g, "").trim();
+    if (match?.[1]) return match[1].replace(/\s+/g, "").replace(/님$/, "").trim();
   }
 
   return "미확인";
@@ -96,6 +97,48 @@ function pickRequestedAt(text: string) {
   const s = String(match[6] || "00").padStart(2, "0");
 
   return `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+}
+
+function pickHomepageValue(text: string, label: string) {
+  const match = text.match(new RegExp(`${label}\\s*[:：]\\s*([^\\n]+)`));
+  return match?.[1]?.trim() || "";
+}
+
+function pickHomepageReservation(subject: string, text: string) {
+  const subjectMatch = subject.match(
+    /\[홈페이지예약\]\[([^\]]+)\]\s*([^/]+)\s*\/\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/
+  );
+
+  const branch_name =
+    subjectMatch?.[1]?.trim() || pickHomepageValue(text, "지점") || detectBranch(text);
+
+  const customer_name =
+    subjectMatch?.[2]?.trim() || pickHomepageValue(text, "이름") || "미확인";
+
+  const reservation_date =
+    subjectMatch?.[3] || pickHomepageValue(text, "예약일");
+
+  const reservation_time =
+    subjectMatch?.[4] || pickHomepageValue(text, "예약시간");
+
+  const phone = pickHomepageValue(text, "전화번호") || pickPhone(text);
+  const goal = pickHomepageValue(text, "운동목적");
+  const message = pickHomepageValue(text, "문의사항");
+
+  return {
+    branch_name,
+    customer_name,
+    phone,
+    reservation_date,
+    reservation_time,
+    reservation_product: goal ? `홈페이지 체험예약 - ${goal}` : "홈페이지 체험예약",
+    status: "예약접수",
+    memoExtra: [
+      `출처: 홈페이지 예약`,
+      `운동목적: ${goal || "-"}`,
+      `문의사항: ${message || "-"}`,
+    ].join("\n"),
+  };
 }
 
 function pickReservationDateTime(text: string) {
@@ -168,8 +211,8 @@ export async function GET() {
 
     const list = await gmail.users.messages.list({
       userId: "me",
-      q: '"네이버 예약" newer_than:7d',
-      maxResults: 50,
+      q: '("네이버 예약" OR "홈페이지예약") newer_than:7d',
+      maxResults: 80,
     });
 
     const messages = list.data.messages || [];
@@ -192,16 +235,53 @@ export async function GET() {
       const fullTextRaw = `${subject}\n${snippet}\n${body}`;
       const fullText = cleanText(fullTextRaw);
 
-      const branch_name = detectBranch(fullText);
-      const status = detectStatus(fullText);
-      const customer_name = pickName(fullText).slice(0, 50);
-      const phone = pickPhone(fullText);
+      const isHomepage = subject.includes("[홈페이지예약]") || fullText.includes("새 홈페이지 체험 예약");
+
+      let branch_name = "";
+      let status = "";
+      let customer_name = "";
+      let phone = "";
+      let reservation_date: any = null;
+      let reservation_time = "";
+      let reservation_raw = "";
+      let reservation_product = "";
+      let sourceType = "";
+      let eventType = "";
+      let titlePrefix = "";
+      let memoExtra = "";
+
+      if (isHomepage) {
+        const hp = pickHomepageReservation(subject, fullText);
+
+        branch_name = hp.branch_name;
+        status = hp.status;
+        customer_name = hp.customer_name.slice(0, 50);
+        phone = hp.phone;
+        reservation_date = hp.reservation_date;
+        reservation_time = hp.reservation_time;
+        reservation_product = hp.reservation_product.slice(0, 100);
+        sourceType = "HOMEPAGE_RESERVATION";
+        eventType = "HOMEPAGE";
+        titlePrefix = "홈페이지예약";
+        memoExtra = hp.memoExtra;
+      } else {
+        branch_name = detectBranch(fullText);
+        status = detectStatus(fullText);
+        customer_name = pickName(fullText).slice(0, 50);
+        phone = pickPhone(fullText);
+
+        const picked = pickReservationDateTime(fullText);
+        reservation_date = picked.reservation_date;
+        reservation_time = picked.reservation_time;
+        reservation_raw = picked.reservation_raw;
+
+        reservation_product = pickProduct(fullText).slice(0, 100);
+        sourceType = "NAVER_RESERVATION";
+        eventType = "NAVER";
+        titlePrefix = "네이버예약";
+      }
+
       const requested_at = pickRequestedAt(fullText);
-
-      const { reservation_date, reservation_time, reservation_raw } =
-        pickReservationDateTime(fullText);
-
-      const reservation_product = pickProduct(fullText).slice(0, 100);
 
       if (!reservation_date || !reservation_time) {
         skippedCount++;
@@ -213,7 +293,7 @@ export async function GET() {
       const memo = [
         `메일제목: ${subject}`,
         `예약신청일시: ${requested_at || "-"}`,
-        `이용일시원문: ${reservation_raw || "-"}`,
+        isHomepage ? memoExtra : `이용일시원문: ${reservation_raw || "-"}`,
         "",
         fullText,
       ]
@@ -279,7 +359,7 @@ export async function GET() {
             )
           LIMIT 1
           `,
-          ["NAVER_RESERVATION", msg.id, String(reservationId)]
+          [sourceType, msg.id, String(reservationId)]
         );
 
         if (calendarRows.length > 0) {
@@ -300,8 +380,8 @@ export async function GET() {
             `,
             [
               branch_name,
-              "NAVER",
-              `네이버예약 - ${customer_name}`,
+              eventType,
+              `${titlePrefix} - ${customer_name}`,
               customer_name,
               phone,
               startDateTime,
@@ -332,15 +412,15 @@ export async function GET() {
             `,
             [
               branch_name,
-              "NAVER",
-              `네이버예약 - ${customer_name}`,
+              eventType,
+              `${titlePrefix} - ${customer_name}`,
               customer_name,
               phone,
               startDateTime,
               null,
               memo,
               status,
-              "NAVER_RESERVATION",
+              sourceType,
               msg.id,
             ]
           );
@@ -399,15 +479,15 @@ export async function GET() {
         `,
         [
           branch_name,
-          "NAVER",
-          `네이버예약 - ${customer_name}`,
+          eventType,
+          `${titlePrefix} - ${customer_name}`,
           customer_name,
           phone,
           startDateTime,
           null,
           memo,
           status,
-          "NAVER_RESERVATION",
+          sourceType,
           msg.id || String(insertResult.insertId),
         ]
       );
@@ -427,7 +507,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: false,
-      message: "네이버 예약 메일 동기화 실패",
+      message: "예약 메일 동기화 실패",
       error,
     });
   }

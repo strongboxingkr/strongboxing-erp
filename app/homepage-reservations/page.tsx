@@ -42,7 +42,7 @@ const getSourceInfo = (r: any) => {
   };
 };
 
-export default function HomepageReservationsPage() {
+export default function NaverReservationsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [branch, setBranch] = useState("전체");
@@ -150,11 +150,11 @@ export default function HomepageReservationsPage() {
     }
   }, [branch, user]);
 
-  const naverRows = rows.filter(
-    (r) => !String(r.memo || "").includes("출처: 홈페이지 예약")
+  const homepageRows = rows.filter(
+    (r) => String(r.memo || "").includes("출처: 홈페이지 예약")
   );
 
-  const filtered = naverRows
+  const filtered = homepageRows
     .filter((r) => {
       const date = r.reservation_date?.slice(0, 10);
 
@@ -196,11 +196,11 @@ export default function HomepageReservationsPage() {
   ];
 
   return (
-    <AppShell title="네이버 예약 관리">
+    <AppShell title="홈페이지 예약 관리">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
-            홈페이지 예약 관리
+            네이버 예약 관리
           </h1>
           <p style={{ color: "#aaa", marginTop: 8 }}>
             예약일/예약시간은 고객이 실제 방문하기로 한 이용일시 기준입니다.
