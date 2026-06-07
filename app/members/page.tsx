@@ -59,6 +59,7 @@ export default function MembersPage() {
   const [page, setPage] = useState(1);
   const [branch, setBranch] = useState("");
   const [autoEditId, setAutoEditId] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -406,6 +407,39 @@ ${
     }
   };
 
+  const uploadExcel = async (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+
+      formData.append("file", file);
+      formData.append(
+        "branch_name",
+        branch || user?.branch_name || ""
+      );
+
+      const res = await fetch("/api/members/import", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert(data.message);
+        loadMembers(user);
+      } else {
+        alert(data.message);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const getStatus = (m: any) => {
     if (m.status === "REST") return { text: "휴회", color: "#f59e0b" };
     if (m.status === "EXPIRED") return { text: "만료", color: "#ef4444" };
@@ -485,6 +519,17 @@ ${
             <button className="btn" onClick={openAdd}>
               회원등록
             </button>
+
+            <label className="btn secondary" style={{ cursor: "pointer" }}>
+              {uploading ? "업로드중..." : "엑셀업로드"}
+
+              <input
+                hidden
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={uploadExcel}
+              />
+            </label>
 
             <button className="btn secondary" onClick={() => loadMembers(user)}>
               새로고침
