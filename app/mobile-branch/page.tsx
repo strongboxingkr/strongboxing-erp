@@ -100,6 +100,22 @@ export default function MobileBranchPage() {
     const json = await res.json();
 
     if (json.success) {
+      await apiFetch("/api/calendar-events/add", {
+        method: "POST",
+        body: JSON.stringify({
+          branch_name: targetBranch,
+          event_type: "PHONE",
+          title: `전화예약 - ${consultForm.customer_name}`,
+          customer_name: consultForm.customer_name,
+          phone: consultForm.phone,
+          start_datetime: `${consultForm.reservation_date}T${consultForm.reservation_time || "00:00"}`,
+          memo: consultForm.memo,
+          status: "예약확정",
+          source_type: "PHONE_RESERVATION",
+          source_id: "",
+        }),
+      });
+
       alert("상담 등록 완료!");
       setShowConsult(false);
       setConsultForm({
