@@ -82,8 +82,8 @@ export default function NaverCalendarPage() {
   };
 
   const loadReservations = async () => {
-    let url =
-      "/api/naver-reservations";
+      let url =
+        "/api/calendar-events";
 
     if (
       !isAdminOrOwner &&
@@ -118,20 +118,14 @@ export default function NaverCalendarPage() {
   const selectedRows = rows
     .filter(
       (r) =>
-        r.reservation_date?.slice(
+        r.start_datetime?.slice(
           0,
           10
         ) === selectedDate
     )
     .sort((a, b) =>
-      String(
-        a.reservation_time ||
-          "99:99"
-      ).localeCompare(
-        String(
-          b.reservation_time ||
-            "99:99"
-        )
+      String(a.start_datetime || "9999-99-99 99:99").localeCompare(
+        String(b.start_datetime || "9999-99-99 99:99")
       )
     );
 
@@ -140,7 +134,7 @@ export default function NaverCalendarPage() {
 
     return rows.filter(
       (r) =>
-        r.reservation_date?.slice(
+        r.start_datetime?.slice(
           0,
           10
         ) === target
@@ -401,7 +395,7 @@ export default function NaverCalendarPage() {
                 (r) => (
                   <div
                     key={
-                      r.reservation_id
+                      r.event_id
                     }
                     style={{
                       padding: 18,
@@ -435,7 +429,7 @@ export default function NaverCalendarPage() {
                             fontWeight: 900,
                           }}
                         >
-                          {r.reservation_time ||
+                          {r.start_datetime?.slice(11, 16) ||
                             "-"}
                         </div>
 
@@ -469,7 +463,7 @@ export default function NaverCalendarPage() {
                           }}
                         >
                           {
-                            r.reservation_product
+                            r.title || r.memo || "-"
                           }
                         </div>
 
