@@ -100,7 +100,25 @@ export default function NaverReservationsPage() {
   };
 
   const updateReservation = async (r: any, status: string, memo?: string) => {
-    const res = await apiFetch("/api/naver-reservations/update", {
+  if (status === "예약확정") {
+    const ok = confirm(
+      "예약을 확정하시겠습니까?\n\n확정 시 고객에게 예약확정 문자가 발송됩니다."
+    );
+
+    if (!ok) return;
+  }
+
+  if (status === "노쇼") {
+    const ok = confirm("노쇼 처리하시겠습니까?");
+    if (!ok) return;
+  }
+
+  if (status === "취소") {
+    const ok = confirm("예약을 취소하시겠습니까?");
+    if (!ok) return;
+  }
+
+  const res = await apiFetch("/api/naver-reservations/update", {
       method: "POST",
       body: JSON.stringify({
         reservation_id: r.reservation_id,
@@ -112,6 +130,12 @@ export default function NaverReservationsPage() {
     const data = await res.json();
 
     if (data.success) {
+      if (status === "예약확정") {
+        alert("예약확정 및 안내문자 발송 완료");
+      } else {
+        alert("예약 상태 수정 완료");
+      }
+
       await loadReservations(user);
       const updated = {
         ...r,
