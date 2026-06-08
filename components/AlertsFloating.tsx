@@ -101,18 +101,56 @@ export default function AlertsFloating() {
       </div>
 
       <div style={{ display: "grid", gap: 10 }}>
-        {reservationCount > 0 && (
+        {data.reservations?.slice(0, 5).map((r: any) => (
+        <div
+          key={r.reservation_id}
+          style={{
+            background: "#1f2937",
+            borderRadius: 12,
+            padding: 12,
+            borderLeft: "5px solid #2ee59d",
+          }}
+        >
           <div
             style={{
-              background: "#1f2937",
-              borderRadius: 12,
-              padding: 12,
-              borderLeft: "5px solid #2ee59d",
+              fontWeight: 900,
+              fontSize: 16,
             }}
           >
-            오늘 예약 {reservationCount}건
+            🔔 {r.customer_name}
           </div>
-        )}
+
+          <div
+            style={{
+              color: "#9ca3af",
+              marginTop: 4,
+            }}
+          >
+            {r.branch_name}
+          </div>
+
+          <div
+            style={{
+              color: "#2ee59d",
+              fontWeight: 800,
+              marginTop: 4,
+            }}
+          >
+            {r.reservation_date?.slice(0, 10)}
+            {" "}
+            {r.reservation_time}
+          </div>
+
+          <div
+            style={{
+              color: "#fbbf24",
+              marginTop: 4,
+            }}
+          >
+            {r.status}
+          </div>
+        </div>
+      ))}
 
         {memberCount > 0 && (
           <div
