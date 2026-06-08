@@ -19,7 +19,7 @@ export async function GET(req: Request) {
       WHERE reservation_date = CURDATE()
       AND status IN ('예약접수', '예약확정')
       ${branchFilter}
-      ORDER BY reservation_time ASC
+      ORDER BY reservation_id DESC
       `,
       params
     );

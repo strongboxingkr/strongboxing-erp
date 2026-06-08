@@ -11,36 +11,43 @@ const audio =
 export default function AlertsFloating() {
   const [data, setData] = useState<any>(null);
   const [open, setOpen] = useState(true);
-  const [lastCount, setLastCount] = useState(0);
+  const [lastReservationId, setLastReservationId] = useState<number>(0);
 
   const load = async () => {
     const res = await apiFetch("/api/alerts-center");
     const json = await res.json();
 
-    if (json.success) {
-      setData(json);
+    if (!json.success) return;
 
-      const total =
-        (json.reservations?.length || 0) +
-        (json.members?.length || 0) +
-        (json.crm?.length || 0);
+    setData(json);
 
-      if (lastCount !== 0 && total > lastCount) {
-        if (Notification.permission === "granted") {
-          new Notification("스트롱복싱 알림", {
-            body: `새 알림 ${total - lastCount}건`,
-          });
-        }
+    const newestReservation = json.reservations?.[0];
 
-        audio?.play?.();
+    if (
+      newestReservation &&
+      lastReservationId !== 0 &&
+      Number(newestReservation.reservation_id) > Number(lastReservationId)
+    ) {
+      audio?.play?.().catch(() => {});
+
+      if (Notification.permission === "granted") {
+        new Notification("새 예약 접수", {
+          body: `${newestReservation.branch_name || "-"} / ${
+            newestReservation.customer_name || "-"
+          } / ${newestReservation.reservation_time || "-"}`,
+        });
       }
 
-      setLastCount(total);
+      setOpen(true);
+    }
+
+    if (newestReservation?.reservation_id) {
+      setLastReservationId(Number(newestReservation.reservation_id));
     }
   };
 
   useEffect(() => {
-    if (Notification.permission !== "granted") {
+    if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
@@ -49,23 +56,15 @@ export default function AlertsFloating() {
     const timer = setInterval(load, 30000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [lastReservationId]);
 
   if (!data || !open) return null;
 
-  const reservationCount =
-    data.reservations?.length || 0;
+  const reservationCount = data.reservations?.length || 0;
+  const memberCount = data.members?.length || 0;
+  const crmCount = data.crm?.length || 0;
 
-  const memberCount =
-    data.members?.length || 0;
-
-  const crmCount =
-    data.crm?.length || 0;
-
-  const total =
-    reservationCount +
-    memberCount +
-    crmCount;
+  const total = reservationCount + memberCount + crmCount;
 
   if (total === 0) return null;
 
@@ -75,7 +74,7 @@ export default function AlertsFloating() {
         position: "fixed",
         right: 20,
         bottom: 20,
-        width: 340,
+        width: 360,
         zIndex: 9999,
         background: "#111827",
         border: "1px solid #374151",
@@ -92,37 +91,23 @@ export default function AlertsFloating() {
           marginBottom: 12,
         }}
       >
-        <div
-          style={{
-            fontSize: 20,
-            fontWeight: 900,
-          }}
-        >
+        <div style={{ fontSize: 20, fontWeight: 900 }}>
           실시간 알림 {total}건
         </div>
 
-        <button
-          className="btn secondary"
-          onClick={() => setOpen(false)}
-        >
+        <button className="btn secondary" onClick={() => setOpen(false)}>
           닫기
         </button>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gap: 10,
-        }}
-      >
+      <div style={{ display: "grid", gap: 10 }}>
         {reservationCount > 0 && (
           <div
             style={{
               background: "#1f2937",
               borderRadius: 12,
               padding: 12,
-              borderLeft:
-                "5px solid #2ee59d",
+              borderLeft: "5px solid #2ee59d",
             }}
           >
             오늘 예약 {reservationCount}건
@@ -135,8 +120,7 @@ export default function AlertsFloating() {
               background: "#1f2937",
               borderRadius: 12,
               padding: 12,
-              borderLeft:
-                "5px solid #ff4d6d",
+              borderLeft: "5px solid #ff4d6d",
             }}
           >
             관리 필요 회원 {memberCount}명
@@ -149,8 +133,7 @@ export default function AlertsFloating() {
               background: "#1f2937",
               borderRadius: 12,
               padding: 12,
-              borderLeft:
-                "5px solid #f72585",
+              borderLeft: "5px solid #f72585",
             }}
           >
             재연락 상담 {crmCount}건
@@ -165,8 +148,7 @@ export default function AlertsFloating() {
           marginTop: 12,
         }}
         onClick={() => {
-          location.href =
-            "/alerts-center";
+          location.href = "/alerts-center";
         }}
       >
         알림센터 보기
