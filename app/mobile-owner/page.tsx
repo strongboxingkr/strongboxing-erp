@@ -43,6 +43,7 @@ const menus = [
 export default function MobileOwnerPage() {
   const [data, setData] = useState<any>(null);
   const [chartRows, setChartRows] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
 
   const [datePreset, setDatePreset] = useState("TODAY");
   const [startDate, setStartDate] = useState(today);
@@ -81,6 +82,16 @@ export default function MobileOwnerPage() {
     const chartRes = await fetch(chartUrl);
     const chartJson = await chartRes.json();
     setChartRows(chartJson.rows || []);
+
+    const reservationRes = await apiFetch("/api/calendar-events");
+    const reservationJson = await reservationRes.json();
+
+    setReservations(
+      (reservationJson.rows || []).filter(
+        (r: any) =>
+          r.start_datetime?.slice(0, 10) === today
+      )
+    );
   };
 
   const saveConsult = async () => {
@@ -117,20 +128,38 @@ export default function MobileOwnerPage() {
     const json = await res.json();
 
     if (json.success) {
-      alert("상담 등록 완료!");
-      setShowConsult(false);
-      setConsultForm({
-        customer_name: "",
-        phone: "",
-        inquiry_channel: "전화문의",
-        memo: "",
-        reservation_date: today,
-        reservation_time: "",
-        branch_name: "철산점",
+      await apiFetch("/api/calendar-events/add", {
+        method: "POST",
+        body: JSON.stringify({
+          branch_name: consultForm.branch_name,
+          event_type: "PHONE",
+          title: `전화예약 - ${consultForm.customer_name}`,
+          customer_name: consultForm.customer_name,
+          phone: consultForm.phone,
+          start_datetime: `${consultForm.reservation_date}T${consultForm.reservation_time || "00:00"}`,
+          memo: consultForm.memo,
+          status: "예약확정",
+          source_type: "PHONE_RESERVATION",
+          source_id: "",
+        }),
       });
-    } else {
-      alert(json.message || "상담 등록 실패");
-    }
+
+  alert("상담 등록 완료!");
+
+  setShowConsult(false);
+
+  setConsultForm({
+    customer_name: "",
+    phone: "",
+    inquiry_channel: "전화문의",
+    memo: "",
+    reservation_date: today,
+    reservation_time: "",
+    branch_name: "철산점",
+  });
+} else {
+  alert(json.message || "상담 등록 실패");
+}
   };
 
   useEffect(() => {
@@ -354,6 +383,58 @@ export default function MobileOwnerPage() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div
+        style={{
+          background: "#111827",
+          borderRadius: 24,
+          padding: 18,
+          marginTop: 20,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 900,
+            marginBottom: 14,
+          }}
+        >
+          오늘 예약
+        </div>
+
+        {reservations.length === 0 ? (
+          <div style={{ color: "#888" }}>
+            오늘 예약이 없습니다.
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            {reservations.map((r) => (
+              <div
+                key={r.event_id}
+                style={{
+                  background: "#1f2937",
+                  borderRadius: 18,
+                  padding: 16,
+                  borderLeft: "6px solid #2ee59d",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 900,
+                  }}
+                >
+                  {r.start_datetime?.slice(11, 16)} / {r.customer_name}
+                </div>
+
+                <div style={{ color: "#aaa", marginTop: 8 }}>
+                  {r.branch_name}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       <div

@@ -165,6 +165,29 @@ export default function NaverCalendarPage() {
     return "#aaa";
   };
 
+
+const getTypeInfo = (r: any) => {
+  const type = String(r.event_type || r.source_type || "");
+
+  if (type.includes("NAVER")) {
+    return { label: "네이버", color: "#22c55e" };
+  }
+
+  if (type.includes("HOMEPAGE")) {
+    return { label: "홈페이지", color: "#3b82f6" };
+  }
+
+  if (type.includes("KAKAO")) {
+    return { label: "카카오", color: "#facc15" };
+  }
+
+  if (type.includes("PHONE")) {
+    return { label: "전화예약", color: "#f97316" };
+  }
+
+  return { label: "예약", color: "#94a3b8" };
+};
+
   return (
     <AppShell title="예약 캘린더">
       <div
@@ -487,6 +510,25 @@ export default function NaverCalendarPage() {
                           gap: 10,
                         }}
                       >
+                        {(() => {
+                          const type = getTypeInfo(r);
+
+                          return (
+                            <div
+                              style={{
+                                padding: "8px 14px",
+                                borderRadius: 999,
+                                background: `${type.color}22`,
+                                color: type.color,
+                                fontWeight: 900,
+                                textAlign: "center",
+                              }}
+                            >
+                              {type.label}
+                            </div>
+                          );
+                        })()}
+
                         <div
                           style={{
                             padding:
