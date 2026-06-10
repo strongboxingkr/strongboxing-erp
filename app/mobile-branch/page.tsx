@@ -51,13 +51,13 @@ export default function MobileBranchPage() {
     setData(dashboardJson);
 
     const reservationRes = await apiFetch(
-      `/api/naver-reservations?branch_name=${encodeURIComponent(branch)}`
+      `/api/calendar-events?branch_name=${encodeURIComponent(branch)}`
     );
     const reservationJson = await reservationRes.json();
 
     setReservations(
       (reservationJson.rows || []).filter(
-        (r: any) => r.reservation_date?.slice(0, 10) === today
+        (r: any) => r.start_datetime?.slice(0, 10) === today
       )
     );
 
@@ -227,9 +227,9 @@ export default function MobileBranchPage() {
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {reservations.map((r) => (
-              <div key={r.reservation_id} style={{ background: "#1f2937", borderRadius: 18, padding: 16, borderLeft: "6px solid #2ee59d" }}>
+              <div key={r.event_id} style={{ background: "#1f2937", borderRadius: 18, padding: 16, borderLeft: "6px solid #2ee59d" }}>
                 <div style={{ fontSize: 24, fontWeight: 900 }}>
-                  {r.reservation_time || "-"} / {r.customer_name}
+                  {r.start_datetime?.slice(11, 16) || "-"} / {r.customer_name || r.title}
                 </div>
                 <div style={{ color: "#aaa", marginTop: 8 }}>{r.phone}</div>
                 <div style={{ color: "#2ee59d", marginTop: 8, fontWeight: 900 }}>{r.status}</div>
