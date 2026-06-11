@@ -266,7 +266,7 @@ export async function GET() {
 
     const list = await gmail.users.messages.list({
       userId: "me",
-      q: '("네이버 예약" OR "홈페이지예약" OR "카카오톡 에약하기") newer_than:7d',
+      q: '("네이버 예약" OR "홈페이지예약") newer_than:7d',
       maxResults: 80,
     });
 
@@ -291,7 +291,7 @@ export async function GET() {
       const fullText = cleanText(fullTextRaw);
 
       const isHomepage = subject.includes("[홈페이지예약]") || fullText.includes("새 홈페이지 체험 예약");
-      const isKakao = subject.includes("카카오톡 예약하기");
+      const isKakao =  subject.includes("카카오톡 예약하기") || fullText.includes("카카오톡 예약하기") || fullText.includes("신규 예약이 확정되었습니다");
 
       let branch_name = "";
       let status = "";
@@ -386,27 +386,31 @@ export async function GET() {
         .slice(0, 1500);
 
       const [sameReservationRows]: any = await pool.query(
-      `
-      SELECT *
-      FROM naver_reservations
-      WHERE source_email_id = ?
-        OR memo LIKE ?
-        OR (
-              phone = ?
-          AND reservation_date = ?
-          AND reservation_time = ?
-        )
-      ORDER BY reservation_id DESC
-      LIMIT 1
-      `,
-      [
-        msg.id,
-        `%예약번호:${reservationNo}%`,
-        phone,
-        reservation_date,
-        reservation_time,
-      ]
-      );
+        `
+        SELECT *
+        FROM naver_reservations
+        WHERE source_email_id = ?
+          OR (
+                ? <> ''
+            AND memo LIKE ?
+              )
+          OR (
+                phone = ?
+            AND reservation_date = ?
+            AND reservation_time = ?
+              )
+        ORDER BY reservation_id DESC
+        LIMIT 1
+        `,
+        [
+          msg.id,
+          reservationNo,
+          `%예약번호:${reservationNo}%`,
+          phone,
+          reservation_date,
+          reservation_time,
+        ]
+        );
 
       if (sameReservationRows.length > 0) {
         const reservationId = sameReservationRows[0].reservation_id;
@@ -440,18 +444,17 @@ export async function GET() {
           ]
         );
 
+        const calendarSourceId = reservationNo || String(reservationId) || msg.id || "";
+
         const [calendarRows]: any = await pool.query(
           `
           SELECT event_id
           FROM calendar_events
           WHERE source_type = ?
-            AND (
-              source_id = ?
-              OR source_id = ?
-            )
+            AND source_id = ?
           LIMIT 1
           `,
-          [sourceType, msg.id, String(reservationId)]
+          [sourceType, calendarSourceId]
         );
 
         if (calendarRows.length > 0) {
@@ -479,7 +482,7 @@ export async function GET() {
               startDateTime,
               memo,
               status,
-              msg.id,
+              calendarSourceId,
               calendarRows[0].event_id,
             ]
           );
@@ -513,7 +516,7 @@ export async function GET() {
               memo,
               status,
               sourceType,
-              msg.id,
+              calendarSourceId,
             ]
           );
         }
@@ -580,7 +583,7 @@ export async function GET() {
           memo,
           status,
           sourceType,
-          msg.id || String(insertResult.insertId),
+          reservationNo || String(insertResult.insertId) || msg.id,
         ]
       );
 
