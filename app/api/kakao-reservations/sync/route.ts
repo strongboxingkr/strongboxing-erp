@@ -47,11 +47,21 @@ const pickValue = (text: string, label: string) => {
   return match?.[1]?.trim() || "";
 };
 
+const normalizeKakaoPhone = (value: string) => {
+  return String(value || "").replace(/[^0-9*]/g, "");
+};
+
+const pickKakaoReservationNo = (text: string) => {
+  return pickValue(text, "예약번호").replace(/[^0-9]/g, "");
+};
+
 const pickKakaoReservation = (text: string) => {
   const customer_name =
     pickValue(text, "예약자명").replace(/\s+/g, "") || "미확인";
 
-  const phone = cleanPhone(pickValue(text, "예약자 연락처"));
+  const phone = normalizeKakaoPhone(
+    pickValue(text, "예약자 연락처")
+  );
 
   const schedule =
     pickValue(text, "이용일정") ||
@@ -62,6 +72,8 @@ const pickKakaoReservation = (text: string) => {
     pickValue(text, "상품명") ||
     pickValue(text, "예약상품") ||
     "카카오 예약";
+
+  const reservationNo = pickKakaoReservationNo(text);
 
   const dateMatch = schedule.match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/);
   const timeMatch = schedule.match(/(\d{1,2}):(\d{2})/);
@@ -82,6 +94,7 @@ const pickKakaoReservation = (text: string) => {
     reservation_date,
     reservation_time,
     product,
+    reservationNo,
   };
 };
 
@@ -163,8 +176,9 @@ const syncOneAccount = (account: HiworksAccount) => {
                   }
 
                   const sourceId =
-                    parsed.messageId ||
-                    `${account.user}-${kakao.customer_name}-${kakao.reservation_date}-${kakao.reservation_time}`;
+                      kakao.reservationNo ||
+                      parsed.messageId ||
+                      `${account.user}-${kakao.customer_name}-${kakao.reservation_date}-${kakao.reservation_time}`;
 
                   const startDateTime = `${kakao.reservation_date} ${kakao.reservation_time}:00`;
 
@@ -210,7 +224,13 @@ const syncOneAccount = (account: HiworksAccount) => {
                       kakao.phone,
                       startDateTime,
                       null,
-                      [`출처: 카카오 예약`, `상품명: ${kakao.product}`, "", text]
+                      [
+                        `출처: 카카오 예약`,
+                        `예약번호: ${kakao.reservationNo || "-"}`,
+                        `상품명: ${kakao.product}`,
+                        "",
+                        text,
+                      ]
                         .join("\n")
                         .slice(0, 1500),
                       "예약확정",

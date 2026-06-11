@@ -198,6 +198,55 @@ function pickProduct(text: string) {
   return "방문상담 예약";
 }
 
+function pickReservationNo(text: string) {
+  const patterns = [
+    /예약번호\s*\n?\s*(\d+)/,
+    /예약번호[:\s]*(\d+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return "";
+}
+
+function pickKakaoName(text: string) {
+  return text.match(/예약자명\s*\n?\s*([^\n]+)/)?.[1]?.trim() || "미확인";
+}
+
+function pickKakaoReservationNo(text: string) {
+  return text.match(/예약번호\s*\n?\s*(\d+)/)?.[1] || "";
+}
+
+function pickKakaoProduct(text: string) {
+  return text.match(/상품명\s*\n?\s*([^\n]+)/)?.[1]?.trim() || "상담 예약";
+}
+
+function pickKakaoDateTime(text: string) {
+  const match = text.match(
+    /이용일정\s*\n?\s*(\d{4})\.(\d{2})\.(\d{2}).*?(\d{2}):(\d{2})/
+  );
+
+  if (!match) {
+    return {
+      reservation_date: null,
+      reservation_time: "",
+      reservation_raw: "",
+    };
+  }
+
+  return {
+    reservation_date: `${match[1]}-${match[2]}-${match[3]}`,
+    reservation_time: `${match[4]}:${match[5]}`,
+    reservation_raw: match[0],
+  };
+}
+
 export async function GET() {
   try {
     const oauth2Client = new google.auth.OAuth2(
@@ -217,7 +266,7 @@ export async function GET() {
 
     const list = await gmail.users.messages.list({
       userId: "me",
-      q: '("네이버 예약" OR "홈페이지예약") newer_than:7d',
+      q: '("네이버 예약" OR "홈페이지예약" OR "카카오톡 에약하기") newer_than:7d',
       maxResults: 80,
     });
 
@@ -242,6 +291,7 @@ export async function GET() {
       const fullText = cleanText(fullTextRaw);
 
       const isHomepage = subject.includes("[홈페이지예약]") || fullText.includes("새 홈페이지 체험 예약");
+      const isKakao = subject.includes("카카오톡 예약하기");
 
       let branch_name = "";
       let status = "";
@@ -255,8 +305,35 @@ export async function GET() {
       let eventType = "";
       let titlePrefix = "";
       let memoExtra = "";
+      let reservationNo = "";
 
-      if (isHomepage) {
+      if (isKakao) {
+
+        branch_name = "미확인"; // 하이웍스 계정별로 나중에 결정
+
+        status = "예약확정";
+
+        customer_name = pickKakaoName(fullText).slice(0, 50);
+
+        phone = normalizePhone(pickPhone(fullText));
+
+        const picked = pickKakaoDateTime(fullText);
+
+        reservation_date = picked.reservation_date;
+        reservation_time = picked.reservation_time;
+        reservation_raw = picked.reservation_raw;
+
+        reservationNo = pickKakaoReservationNo(fullText);
+
+        reservation_product = pickKakaoProduct(fullText);
+
+        sourceType = "KAKAO_RESERVATION";
+        eventType = "KAKAO";
+        titlePrefix = "카카오예약";
+      }
+
+      else if (isHomepage) {
+        
         const hp = pickHomepageReservation(subject, fullText);
 
         branch_name = hp.branch_name;
@@ -282,6 +359,7 @@ export async function GET() {
         reservation_raw = picked.reservation_raw;
 
         reservation_product = pickProduct(fullText).slice(0, 100);
+        reservationNo = pickReservationNo(fullText);
         sourceType = "NAVER_RESERVATION";
         eventType = "NAVER";
         titlePrefix = "네이버예약";
@@ -297,29 +375,37 @@ export async function GET() {
       const startDateTime = `${reservation_date} ${reservation_time}:00`;
 
       const memo = [
-        `메일제목: ${subject}`,
-        `예약신청일시: ${requested_at || "-"}`,
-        isHomepage ? memoExtra : `이용일시원문: ${reservation_raw || "-"}`,
-        "",
-        fullText,
+          `예약번호:${reservationNo || "-"}`,
+          `메일제목: ${subject}`,
+          `예약신청일시: ${requested_at || "-"}`,
+         isHomepage ? memoExtra : `이용일시원문: ${reservation_raw || "-"}`,
+         "",
+         fullText,
       ]
         .join("\n")
         .slice(0, 1500);
 
       const [sameReservationRows]: any = await pool.query(
-        `
-        SELECT *
-        FROM naver_reservations
-        WHERE source_email_id = ?
-           OR (
-                phone = ?
-            AND reservation_date = ?
-            AND reservation_time = ?
-           )
-        ORDER BY reservation_id DESC
-        LIMIT 1
-        `,
-        [msg.id, phone, reservation_date, reservation_time]
+      `
+      SELECT *
+      FROM naver_reservations
+      WHERE source_email_id = ?
+        OR memo LIKE ?
+        OR (
+              phone = ?
+          AND reservation_date = ?
+          AND reservation_time = ?
+        )
+      ORDER BY reservation_id DESC
+      LIMIT 1
+      `,
+      [
+        msg.id,
+        `%예약번호:${reservationNo}%`,
+        phone,
+        reservation_date,
+        reservation_time,
+      ]
       );
 
       if (sameReservationRows.length > 0) {
