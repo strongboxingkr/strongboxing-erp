@@ -58,7 +58,7 @@ export default function NaverCalendarPage() {
   };
 
   const selectedDate = toDateKey(
-    new Date(value)
+    Array.isArray(value) ? value[0] : value
   );
 
   const todayKey = toDateKey(
@@ -128,6 +128,25 @@ export default function NaverCalendarPage() {
         String(b.start_datetime || "9999-99-99 99:99")
       )
     );
+    
+    const getTypeCounts = (targetRows: any[]) => {
+      return {
+        naver: targetRows.filter((r) =>
+          String(r.event_type || "").includes("NAVER")
+        ).length,
+        kakao: targetRows.filter((r) =>
+          String(r.event_type || "").includes("KAKAO")
+        ).length,
+        homepage: targetRows.filter((r) =>
+          String(r.event_type || "").includes("HOMEPAGE")
+        ).length,
+        phone: targetRows.filter((r) =>
+          String(r.event_type || "").includes("PHONE")
+        ).length,
+      };
+    };
+
+    const selectedTypeCounts = getTypeCounts(selectedRows);
 
   const getCount = (date: Date) => {
     const target = toDateKey(date);
@@ -139,6 +158,14 @@ export default function NaverCalendarPage() {
           10
         ) === target
     ).length;
+  };
+
+  const getRowsByDate = (date: Date) => {
+    const target = toDateKey(date);
+
+    return rows.filter(
+      (r) => r.start_datetime?.slice(0, 10) === target
+    );
   };
 
   const getStatusColor = (
@@ -294,7 +321,7 @@ const getTypeInfo = (r: any) => {
           }}
         >
           <Calendar
-            onChange={setValue}
+            onChange={(v) => setValue(v)}
             value={value}
             locale="ko-KR"
             calendarType="gregory"
@@ -337,20 +364,55 @@ const getTypeInfo = (r: any) => {
 
               return "";
             }}
-            tileContent={({
-              date,
-            }) => {
-              const count =
-                getCount(date);
+            tileContent={({ date }) => {
+              const dayRows = getRowsByDate(date);
+              const count = dayRows.length;
 
-              if (
-                count === 0
-              )
-                return null;
+              if (count === 0) return null;
+
+              const typeCounts = getTypeCounts(dayRows);
+
+              const dots = [
+                ...Array(typeCounts.naver).fill("#22c55e"),
+                ...Array(typeCounts.kakao).fill("#facc15"),
+                ...Array(typeCounts.homepage).fill("#3b82f6"),
+                ...Array(typeCounts.phone).fill("#f97316"),
+              ].slice(0, 8);
 
               return (
-                <div className="calendar-count">
-                  {count}건
+                <div style={{ marginTop: 6 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      gap: 3,
+                      flexWrap: "wrap",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {dots.map((color, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 999,
+                          background: color,
+                          display: "inline-block",
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      color: count >= 5 ? "#ff4d6d" : "#2ee59d",
+                    }}
+                  >
+                    {count >= 5 ? `🔥${count}건` : `${count}건`}
+                  </div>
                 </div>
               );
             }}
@@ -390,6 +452,39 @@ const getTypeInfo = (r: any) => {
               }
               건 예약
             </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                marginTop: 10,
+              }}
+            >
+              {selectedTypeCounts.naver > 0 && (
+                <span style={{ color: "#22c55e", fontWeight: 900 }}>
+                  네이버 {selectedTypeCounts.naver}
+                </span>
+              )}
+
+              {selectedTypeCounts.kakao > 0 && (
+                <span style={{ color: "#facc15", fontWeight: 900 }}>
+                  카카오 {selectedTypeCounts.kakao}
+                </span>
+              )}
+
+              {selectedTypeCounts.homepage > 0 && (
+                <span style={{ color: "#3b82f6", fontWeight: 900 }}>
+                  홈페이지 {selectedTypeCounts.homepage}
+                </span>
+              )}
+
+              {selectedTypeCounts.phone > 0 && (
+                <span style={{ color: "#f97316", fontWeight: 900 }}>
+                  전화 {selectedTypeCounts.phone}
+                </span>
+              )}
+            </div>
           </div>
 
           {selectedRows.length ===
@@ -573,12 +668,11 @@ const getTypeInfo = (r: any) => {
                     >
                       예약 생성:
                       {" "}
-                      {r.created_at
-                        ?.slice(0, 16)
-                        .replace(
-                          "T",
-                          " "
-                        ) || "-"}
+                      {
+                        r.created_at
+                          ? r.created_at.slice(0, 16).replace("T", " ")
+                          : "-"
+                      }
                     </div>
                   </div>
                 )
