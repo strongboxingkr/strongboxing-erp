@@ -59,6 +59,13 @@ export async function POST(req: Request) {
 
     const before = beforeRows[0];
 
+    let safeBranchName = before.branch_name;
+
+    if (String(safeBranchName).includes("MOKDONG")) safeBranchName = "목동점";
+    if (String(safeBranchName).includes("CHULSAN")) safeBranchName = "철산점";
+    if (String(safeBranchName).includes("GAEBONG")) safeBranchName = "개봉점";
+    if (String(safeBranchName).includes("SINJEONG")) safeBranchName = "신정점";
+
     await pool.query(
       `
       UPDATE naver_reservations
@@ -108,9 +115,9 @@ export async function POST(req: Request) {
     ) {
       const apiKey = process.env.SOLAPI_API_KEY;
       const apiSecret = process.env.SOLAPI_API_SECRET;
-      const from = cleanPhone(getFromNumber(before.branch_name) || "");
+      const from = cleanPhone(getFromNumber(safeBranchName) || "");
       const to = cleanPhone(before.phone);
-      const message = sms_message || makeConfirmMessage(before);
+      const message = sms_message || makeConfirmMessage({ ...before, branch_name: safeBranchName, });
 
       if (!apiKey || !apiSecret) {
         throw new Error("솔라피 API 키가 없습니다.");
@@ -149,7 +156,7 @@ export async function POST(req: Request) {
         VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
         [
-          before.branch_name,
+          safeBranchName,
           "RESERVATION_CONFIRM",
           before.customer_name || "",
           to,
