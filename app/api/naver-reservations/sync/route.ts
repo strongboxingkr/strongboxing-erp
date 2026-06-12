@@ -343,8 +343,12 @@ export async function GET() {
       else if (isHomepage) {
         
         const hp = pickHomepageReservation(subject, fullText);
-
         branch_name = hp.branch_name;
+
+        if (!["철산점", "목동점", "개봉점", "신정점"].includes(branch_name)) {
+          branch_name = detectBranch(fullText);
+        }
+
         status = hp.status;
         customer_name = hp.customer_name.slice(0, 50);
         phone = hp.phone;
