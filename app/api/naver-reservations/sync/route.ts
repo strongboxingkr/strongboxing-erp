@@ -110,6 +110,10 @@ function pickHomepageValue(text: string, label: string) {
   return match?.[1]?.trim() || "";
 }
 
+function pickHomepageReservationNo(text: string) {
+  return pickHomepageValue(text, "예약번호");
+}
+
 function pickHomepageReservation(subject: string, text: string) {
   const subjectMatch = subject.match(
     /\[홈페이지예약\]\[([^\]]+)\]\s*([^/]+)\s*\/\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/
@@ -343,6 +347,7 @@ export async function GET() {
         reservation_date = hp.reservation_date;
         reservation_time = hp.reservation_time;
         reservation_product = hp.reservation_product.slice(0, 100);
+        reservationNo = pickHomepageReservationNo(fullText);
         sourceType = "HOMEPAGE_RESERVATION";
         eventType = "HOMEPAGE";
         titlePrefix = "홈페이지예약";
