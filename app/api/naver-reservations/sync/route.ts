@@ -116,26 +116,30 @@ function pickHomepageReservationNo(text: string) {
 
 function pickHomepageReservation(subject: string, text: string) {
   const subjectMatch = subject.match(
-    /\[홈페이지예약\]\[([^\]]+)\]\s*([^/]+)\s*\/\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/
-  );
+      /\[홈페이지예약\]\[([^\]]+)\]\[([^\]]+)\]\s*([^/]+)\s*\/\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/
+    );
+
+  const reservation_no =
+    subjectMatch?.[1]?.trim() || pickHomepageValue(text, "예약번호");
 
   const branch_name =
-    subjectMatch?.[1]?.trim() || pickHomepageValue(text, "지점") || detectBranch(text);
+    subjectMatch?.[2]?.trim() || pickHomepageValue(text, "지점") || detectBranch(text);
 
   const customer_name =
-    subjectMatch?.[2]?.trim() || pickHomepageValue(text, "이름") || "미확인";
+    subjectMatch?.[3]?.trim() || pickHomepageValue(text, "이름") || "미확인";
 
   const reservation_date =
-    subjectMatch?.[3] || pickHomepageValue(text, "예약일");
+    subjectMatch?.[4] || pickHomepageValue(text, "예약일");
 
   const reservation_time =
-    subjectMatch?.[4] || pickHomepageValue(text, "예약시간");
+    subjectMatch?.[5] || pickHomepageValue(text, "예약시간");
 
   const phone = normalizePhone(pickHomepageValue(text, "전화번호") || pickPhone(text));
   const goal = pickHomepageValue(text, "운동목적");
   const message = pickHomepageValue(text, "문의사항");
 
   return {
+    reservation_no,
     branch_name,
     customer_name,
     phone,
@@ -347,7 +351,7 @@ export async function GET() {
         reservation_date = hp.reservation_date;
         reservation_time = hp.reservation_time;
         reservation_product = hp.reservation_product.slice(0, 100);
-        reservationNo = pickHomepageReservationNo(fullText);
+        reservationNo = hp.reservation_no || pickHomepageReservationNo(fullText);
         sourceType = "HOMEPAGE_RESERVATION";
         eventType = "HOMEPAGE";
         titlePrefix = "홈페이지예약";
