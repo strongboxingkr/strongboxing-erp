@@ -38,7 +38,7 @@ ${reservation.customer_name}님 예약이 확정되었습니다.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { reservation_id, status, memo } = body;
+    const { reservation_id, status, memo, sms_message } = body;
 
     const [beforeRows]: any = await pool.query(
       `
@@ -70,6 +70,31 @@ export async function POST(req: Request) {
       [status, memo || before.memo || "", reservation_id]
     );
 
+    const reservationNoMatch = String(before.memo || "").match(/예약번호:([^\n]+)/);
+    const reservationNo = reservationNoMatch?.[1]?.trim() || "";
+
+    await pool.query(
+      `
+      UPDATE calendar_events
+      SET status = ?
+      WHERE source_id = ?
+        OR (
+              customer_name = ?
+          AND phone = ?
+          AND DATE(start_datetime) = ?
+          AND TIME_FORMAT(start_datetime, '%H:%i') = ?
+        )
+      `,
+      [
+        status,
+        reservationNo || String(reservation_id),
+        before.customer_name,
+        before.phone,
+        before.reservation_date,
+        before.reservation_time,
+      ]
+    );
+
     let smsSent = false;
 
     const isHomepageReservation = String(before.memo || "").includes(
@@ -85,7 +110,7 @@ export async function POST(req: Request) {
       const apiSecret = process.env.SOLAPI_API_SECRET;
       const from = cleanPhone(getFromNumber(before.branch_name) || "");
       const to = cleanPhone(before.phone);
-      const message = makeConfirmMessage(before);
+      const message = sms_message || makeConfirmMessage(before);
 
       if (!apiKey || !apiSecret) {
         throw new Error("솔라피 API 키가 없습니다.");

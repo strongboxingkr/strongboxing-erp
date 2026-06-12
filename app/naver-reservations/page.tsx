@@ -564,21 +564,32 @@ export default function NaverReservationsPage() {
                   key={s}
                   onClick={() => {
                     if (s === "예약확정") {
-                      setSmsReservation(selected);
+                      const target = selected;
+
+                      setSmsReservation(target);
 
                       setSmsMessage(
-                  `[${selected.branch_name}] ${selected.customer_name}님 예약이 확정되었습니다.
+                    `[스트롱복싱 ${target.branch_name}]
 
-                  방문일시 : ${selected.reservation_date?.slice(0,10)} ${selected.reservation_time}
-                  예약내용 : ${selected.reservation_product}
+                    ${target.customer_name}님 예약이 확정되었습니다.
 
-                  추가 안내사항을 자유롭게 입력해주세요.`
+                    방문일시 : ${target.reservation_date?.slice(0, 10)} ${target.reservation_time}
+                    예약내용 : ${target.reservation_product || "방문 상담"}
+
+                    편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
+                    처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
+
+                    감사합니다.
+                    스트롱복싱 ${target.branch_name}`
                       );
 
+                      setSelected(null);
                       setSmsModalOpen(true);
-                    } else {
-                      updateReservation(selected, s, modalMemo);
+
+                      return;
                     }
+
+                    updateReservation(selected, s, modalMemo);
                   }}
                   style={{
                     border: "none",
