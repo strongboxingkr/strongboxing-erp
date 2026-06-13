@@ -280,20 +280,92 @@ export default function CalendarPage() {
           >
             <h2>{selected.customer_name}</h2>
 
-            <div>{selected.branch_name}</div>
-            <div>{selected.phone}</div>
-            <div>{selected.start_datetime?.slice(0,16)}</div>
-            <div>{selected.event_type}</div>
-            <div>{selected.status}</div>
+            <div style={{ marginTop: 16 }}>
+              <div>지점 : {selected.branch_name}</div>
+              <div>연락처 : {selected.phone || "-"}</div>
+              <div>예약일시 : {selected.start_datetime?.slice(0,16)}</div>
+              <div>출처 : {selected.event_type}</div>
+              <div>상태 : {selected.status}</div>
+            </div>
 
             <div style={{ marginTop: 20 }}>
-              <button
-                className="btn secondary"
-                onClick={() => setSelected(null)}
-              >
-                닫기
-              </button>
+              <div style={{ marginBottom: 8 }}>메모</div>
+
+              <textarea
+                className="input"
+                value={selected.memo || ""}
+                onChange={(e) =>
+                  setSelected({
+                    ...selected,
+                    memo: e.target.value,
+                  })
+                }
+                style={{
+                  width: "100%",
+                  minHeight: 120,
+                  resize: "none",
+                }}
+              />
             </div>
+
+            <div style={{ marginTop: 20 }}>
+              <div>연락처 : {selected.phone || "-"}</div>
+
+              <div style={{ marginTop: 10 }}>
+                메모
+              </div>
+
+              <textarea
+                className="input"
+                value={selected.memo || ""}
+                readOnly
+                style={{
+                  width: "100%",
+                  minHeight: 120,
+                  resize: "none",
+                  marginTop: 8,
+                }}
+              />
+            </div>
+
+            <div
+                style={{
+                  marginTop: 20,
+                  display: "flex",
+                  gap: 10,
+                  justifyContent: "space-between",
+                }}
+              >
+                <button
+                  className="btn secondary"
+                  onClick={() => setSelected(null)}
+                >
+                  닫기
+                </button>
+
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    const res = await apiFetch("/api/calendar-events/update", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        event_id: selected.event_id,
+                        memo: selected.memo,
+                      }),
+                    });
+
+                    const json = await res.json();
+
+                    if (json.success) {
+                      alert("저장 완료");
+                      load();
+                      setSelected(null);
+                    }
+                  }}
+                >
+                  저장
+                </button>
+              </div>
           </div>
         </div>
       )}
