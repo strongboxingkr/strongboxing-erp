@@ -43,15 +43,15 @@ export async function POST(req: Request) {
       `,
       [
         branch_name,
-        event_type || "PHONE",
-        title || "전화문의 예약",
+        event_type || "전화문의",
+        title || `${event_type || "전화문의"} 예약`,
         customer_name || "",
         phone || "",
         start_datetime,
         memo || "",
-        status || "예약",
-        "MANUAL",
-        "",
+        status || "예약접수",
+        event_type || "전화문의",
+        `MANUAL-${Date.now()}`,
       ]
     );
 

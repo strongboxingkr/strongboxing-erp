@@ -24,6 +24,7 @@ export async function GET(req: Request) {
         reservation_product,
         status,
         source_email_id,
+        source_type,
         memo,
         is_read,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i') AS created_at
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
       status,
       memo,
       source_email_id,
+      source_type,
     } = body;
 
     if (!branch_name || !customer_name || !phone) {
@@ -130,6 +132,7 @@ export async function POST(req: Request) {
         status,
         memo,
         source_email_id,
+        source_type,
         is_read
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -144,6 +147,7 @@ export async function POST(req: Request) {
         status || "예약접수",
         memo || null,
         source_email_id || null,
+        source_type || "전화문의",
         "N",
       ]
     );

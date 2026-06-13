@@ -11,6 +11,7 @@ export default function CalendarPage() {
   const [branches, setBranches] = useState<any[]>([]);
   const [branch, setBranch] = useState("전체");
   const [date, setDate] = useState(today);
+  const [selected, setSelected] = useState<any>(null);
 
   const [form, setForm] = useState({
     branch_name: "",
@@ -18,7 +19,8 @@ export default function CalendarPage() {
     phone: "",
     start_datetime: "",
     memo: "",
-});
+    source_type: "전화문의",
+  });
 
   const loadBranches = async () => {
     const res = await apiFetch("/api/settings?option_type=BRANCH");
@@ -48,14 +50,14 @@ export default function CalendarPage() {
   }, [branch, date]);
 
   return (
-    <AppShell title="통합 예약 캘린더">
+    <AppShell title="예약 등록 캘린더">
       <div className="card" style={{ borderRadius: 24, marginBottom: 18 }}>
-        <h1 style={{ marginTop: 0 }}>통합 예약 캘린더</h1>
+        <h1 style={{ marginTop: 0 }}>예약 등록 캘린더</h1>
 
         <div
             style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(5,1fr)",
+                gridTemplateColumns: "repeat(6,1fr)",
                 gap: 12,
                 marginBottom: 18,
             }}
@@ -93,6 +95,22 @@ export default function CalendarPage() {
                 }
             />
 
+            <select
+              className="input"
+              value={form.source_type}
+              onChange={(e) =>
+                setForm({ ...form, source_type: e.target.value })
+              }
+            >
+              <option value="전화문의">전화문의</option>
+              <option value="인스타그램">인스타그램</option>
+              <option value="홈페이지">홈페이지</option>
+              <option value="카카오톡">카카오톡</option>
+              <option value="지인소개">지인소개</option>
+              <option value="방문문의">방문문의</option>
+              <option value="기타">기타</option>
+            </select>
+
             <input
                 className="input"
                 type="datetime-local"
@@ -109,8 +127,8 @@ export default function CalendarPage() {
                     method: "POST",
                     body: JSON.stringify({
                     ...form,
-                    event_type: "PHONE",
-                    }),
+                    event_type: form.source_type,
+                  }),
                 });
 
                 const json = await res.json();
@@ -119,11 +137,12 @@ export default function CalendarPage() {
                     alert("예약 등록 완료");
 
                     setForm({
-                    branch_name: "",
-                    customer_name: "",
-                    phone: "",
-                    start_datetime: "",
-                    memo: "",
+                      branch_name: "",
+                      customer_name: "",
+                      phone: "",
+                      start_datetime: "",
+                      memo: "",
+                      source_type: "전화문의",
                     });
 
                     load();
@@ -174,12 +193,23 @@ export default function CalendarPage() {
           {rows.map((r) => (
             <div
               key={r.event_id}
+              onClick={() => setSelected(r)}
               style={{
                 background: "#111827",
                 borderRadius: 18,
                 padding: 16,
                 borderLeft: `6px solid ${
-                  r.event_type === "NAVER" ? "#2ee59d" : "#5da9ff"
+                  r.event_type === "NAVER"
+                    ? "#22c55e"
+                    : r.event_type === "전화문의"
+                    ? "#3b82f6"
+                    : r.event_type === "인스타그램"
+                    ? "#ec4899"
+                    : r.event_type === "카카오톡"
+                    ? "#facc15"
+                    : r.event_type === "홈페이지"
+                    ? "#8b5cf6"
+                    : "#94a3b8"
                 }`,
               }}
             >
@@ -188,7 +218,18 @@ export default function CalendarPage() {
               </div>
 
               <div style={{ color: "#aaa", marginTop: 6 }}>
-                {r.branch_name} / {r.event_type} / {r.status}
+                {r.branch_name} /{" "}
+                  <span
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      background: "rgba(255,255,255,0.08)",
+                      fontWeight: 900,
+                    }}
+                  >
+                    {r.event_type}
+                  </span>{" "}
+                  / {r.status}
               </div>
 
               <div style={{ color: "#888", marginTop: 6 }}>
@@ -217,6 +258,45 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+      {selected && (
+        <div
+          onClick={() => setSelected(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card"
+            style={{
+              width: 500,
+              borderRadius: 24,
+            }}
+          >
+            <h2>{selected.customer_name}</h2>
+
+            <div>{selected.branch_name}</div>
+            <div>{selected.phone}</div>
+            <div>{selected.start_datetime?.slice(0,16)}</div>
+            <div>{selected.event_type}</div>
+            <div>{selected.status}</div>
+
+            <div style={{ marginTop: 20 }}>
+              <button
+                className="btn secondary"
+                onClick={() => setSelected(null)}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
