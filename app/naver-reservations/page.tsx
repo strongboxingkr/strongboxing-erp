@@ -177,7 +177,11 @@ export default function NaverReservationsPage() {
     }
   }, [branch, user]);
 
-    const filtered = rows 
+  const naverRows = rows.filter(
+    (r) => !String(r.memo || "").includes("출처: 홈페이지 예약")
+  );
+
+    const filtered = naverRows
     .filter((r) => {
       const date = r.reservation_date?.slice(0, 10);
 

@@ -17,6 +17,7 @@ export default function NaverCalendarPage() {
   const [branch, setBranch] = useState("전체");
   const [user, setUser] = useState<any>(null);
   const [mobile, setMobile] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -515,9 +516,11 @@ const getTypeInfo = (r: any) => {
                     key={
                       r.event_id
                     }
+                    onClick={() => setSelected(r)}
                     style={{
                       padding: 18,
                       borderRadius: 22,
+                      cursor: "pointer",
                       background:
                         "#0f172a",
                       border:
@@ -681,6 +684,60 @@ const getTypeInfo = (r: any) => {
           )}
         </div>
       </div>
+      
+      {selected && (
+        <div
+          onClick={() => setSelected(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.75)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card"
+            style={{
+              width: "100%",
+              maxWidth: 620,
+              borderRadius: 24,
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>{selected.customer_name || "-"}</h2>
+
+            <div style={{ color: "#94a3b8", lineHeight: 1.8 }}>
+              지점 : {selected.branch_name || "-"}<br />
+              출처 : {getTypeInfo(selected).label}<br />
+              상태 : {selected.status || "-"}<br />
+              예약일시 : {selected.start_datetime?.slice(0, 16).replace("T", " ") || "-"}<br />
+              연락처 : {selected.phone || "-"}
+            </div>
+
+            <div style={{ marginTop: 14, color: "#94a3b8" }}>메모</div>
+            <textarea
+              className="input"
+              value={selected.memo || ""}
+              readOnly
+              style={{
+                width: "100%",
+                minHeight: 130,
+                marginTop: 8,
+                resize: "none",
+              }}
+            />
+
+            <div style={{ marginTop: 18, textAlign: "right" }}>
+              <button className="btn secondary" onClick={() => setSelected(null)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
