@@ -6,18 +6,18 @@ import { apiFetch } from "@/lib/api";
 
 const statuses = [
   "예약접수",
+  "연락완료",
   "예약확정",
-  "확인완료",
-  "상담완료",
+  "등록완료",
   "노쇼",
   "취소",
 ];
 
 const getStatusColor = (status: string) => {
   if (status === "예약접수") return "#3b82f6";
+  if (status === "연락완료") return "#8b5cf6";
   if (status === "예약확정") return "#22c55e";
-  if (status === "확인완료") return "#8b5cf6";
-  if (status === "상담완료") return "#f59e0b";
+  if (status === "등록완료") return "#f59e0b";
   if (status === "노쇼") return "#ef4444";
   if (status === "취소") return "#6b7280";
   return "#9ca3af";
@@ -50,6 +50,9 @@ export default function HomepageReservationsPage() {
   const [modalMemo, setModalMemo] = useState("");
   const [search, setSearch] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [smsReservation, setSmsReservation] = useState<any>(null);
+  const [smsMessage, setSmsMessage] = useState("");
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -99,31 +102,81 @@ export default function HomepageReservationsPage() {
     }
   };
 
-  const updateReservation = async (r: any, status: string, memo?: string) => {
-    const res = await apiFetch("/api/naver-reservations/update", {
-      method: "POST",
-      body: JSON.stringify({
-        reservation_id: r.reservation_id,
-        status,
-        memo: memo ?? r.memo ?? "",
-      }),
-    });
+  const makeConfirmMessage = (r: any) => {
+  return `[스트롱복싱 ${r.branch_name}]
 
-    const data = await res.json();
+${r.customer_name}님 예약이 확정되었습니다🥊
 
-    if (data.success) {
-      await loadReservations(user);
-      const updated = {
-        ...r,
-        status,
-        memo: memo ?? r.memo ?? "",
-      };
-      setSelected(updated);
-      setModalMemo(updated.memo || "");
-    } else {
-      alert(data.message || "수정 실패");
+방문일시 : ${r.reservation_date?.slice(0, 10)} ${r.reservation_time}
+예약내용 : ${r.reservation_product || "방문 상담"}
+
+편한 복장과 실내운동화를 지참 후 방문 부탁드립니다.
+처음 방문이신 경우 에약시간 5~10분 전 도착 부탁드립니다.
+감사합니다.`;
+};
+
+const updateReservation = async (
+  r: any,
+  status: string,
+  memo?: string,
+  smsMessage?: string
+) => {
+  const res = await apiFetch("/api/naver-reservations/update", {
+    method: "POST",
+    body: JSON.stringify({
+      reservation_id: r.reservation_id,
+      status,
+      memo: memo ?? r.memo ?? "",
+      sms_message: smsMessage || "",
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    alert(data.message || "수정 실패");
+    return;
+  }
+
+  if (status === "예약확정" && r.status !== "예약확정") {
+    const ok = confirm(
+      `${r.customer_name}님에게 예약확정 안내문자를 보낼까요?\n\n${makeConfirmMessage(r)}`
+    );
+
+    if (ok) {
+      const smsRes = await apiFetch("/api/sms/send", {
+        method: "POST",
+        body: JSON.stringify({
+          branch_name: r.branch_name,
+          message: makeConfirmMessage(r),
+          is_test: true,
+          test_phone: r.phone,
+        }),
+      });
+
+      const smsData = await smsRes.json();
+
+      if (smsData.success) {
+        alert("예약확정 처리 + 안내문자 발송 완료!");
+      } else {
+        alert(smsData.message || "예약확정은 됐지만 문자 발송 실패");
+      }
     }
+  } else {
+    alert("예약 상태 수정 완료");
+  }
+
+  await loadReservations(user);
+
+  const updated = {
+    ...r,
+    status,
+    memo: memo ?? r.memo ?? "",
   };
+
+  setSelected(updated);
+  setModalMemo(updated.memo || "");
+};
 
   const openModal = (r: any) => {
     setSelected(r);
@@ -539,7 +592,34 @@ export default function HomepageReservationsPage() {
               {statuses.map((s) => (
                 <button
                   key={s}
-                  onClick={() => updateReservation(selected, s, modalMemo)}
+                  onClick={() => {
+                    if (s === "예약확정") {
+                      const target = selected;
+
+                      setSmsReservation(target);
+
+                      setSmsMessage(
+                  `[스트롱복싱 ${target.branch_name}]
+
+                  ${target.customer_name}님 예약이 확정되었습니다.
+
+                  방문일시 : ${target.reservation_date?.slice(0, 10)} ${target.reservation_time}
+                  예약내용 : ${target.reservation_product || "방문 상담"}
+
+                  편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
+                  처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
+
+                  감사합니다.
+                  스트롱복싱 ${target.branch_name}`
+                      );
+
+                      setSelected(null);
+                      setSmsModalOpen(true);
+                      return;
+                    }
+
+                    updateReservation(selected, s, modalMemo);
+                  }}
                   style={{
                     border: "none",
                     padding: "12px 18px",
@@ -622,6 +702,67 @@ export default function HomepageReservationsPage() {
           </div>
         </div>
       )}
+    {smsModalOpen && smsReservation && (
+      <div
+        onClick={() => setSmsModalOpen(false)}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.75)",
+          display: "grid",
+          placeItems: "center",
+          zIndex: 10000,
+          padding: 20,
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: "100%",
+            maxWidth: 620,
+            background: "#111827",
+            border: "1px solid #273244",
+            borderRadius: 24,
+            padding: 26,
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>문자 발송 확인</h2>
+
+          <textarea
+            className="input"
+            value={smsMessage}
+            onChange={(e) => setSmsMessage(e.target.value)}
+            style={{
+              width: "100%",
+              minHeight: 240,
+              resize: "vertical",
+              marginBottom: 16,
+            }}
+          />
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button className="btn secondary" onClick={() => setSmsModalOpen(false)}>
+              취소
+            </button>
+
+            <button
+              className="btn"
+              onClick={async () => {
+                await updateReservation(
+                  smsReservation,
+                  "예약확정",
+                  modalMemo,
+                  smsMessage
+                );
+                setSmsModalOpen(false);
+              }}
+            >
+              예약확정 + 문자발송
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </AppShell>
   );
 }

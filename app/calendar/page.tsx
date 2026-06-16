@@ -12,6 +12,9 @@ export default function CalendarPage() {
   const [branch, setBranch] = useState("전체");
   const [date, setDate] = useState(today);
   const [selected, setSelected] = useState<any>(null);
+  const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [smsReservation, setSmsReservation] = useState<any>(null);
+  const [smsMessage, setSmsMessage] = useState("");
 
   const [form, setForm] = useState({
     branch_name: "",
@@ -268,104 +271,268 @@ export default function CalendarPage() {
             display: "grid",
             placeItems: "center",
             zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card"
+            style={{ width: 560, borderRadius: 24 }}
+          >
+            <h2 style={{ marginTop: 0 }}>예약 수정</h2>
+
+            <input
+              className="input"
+              value={selected.customer_name || ""}
+              onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })}
+              placeholder="이름"
+              style={{ marginBottom: 10 }}
+            />
+
+            <input
+              className="input"
+              value={selected.phone || ""}
+              onChange={(e) => setSelected({ ...selected, phone: e.target.value })}
+              placeholder="전화번호"
+              style={{ marginBottom: 10 }}
+            />
+
+            <input
+              className="input"
+              type="datetime-local"
+              value={selected.start_datetime?.slice(0, 16) || ""}
+              onChange={(e) => setSelected({ ...selected, start_datetime: e.target.value })}
+              style={{ marginBottom: 10 }}
+            />
+
+            <select
+              className="input"
+              value={selected.event_type || "전화문의"}
+              onChange={(e) => setSelected({ ...selected, event_type: e.target.value })}
+              style={{ marginBottom: 10 }}
+            >
+              <option value="전화문의">전화문의</option>
+              <option value="인스타그램">인스타그램</option>
+              <option value="홈페이지">홈페이지</option>
+              <option value="카카오톡">카카오톡</option>
+              <option value="지인소개">지인소개</option>
+              <option value="방문문의">방문문의</option>
+              <option value="기타">기타</option>
+            </select>
+
+            <select
+              className="input"
+              value={selected.status || "예약접수"}
+              onChange={(e) => setSelected({ ...selected, status: e.target.value })}
+              style={{ marginBottom: 10 }}
+            >
+              <option value="예약접수">예약접수</option>
+              <option value="예약확정">예약확정</option>
+              <option value="상담완료">상담완료</option>
+              <option value="노쇼">노쇼</option>
+              <option value="취소">취소</option>
+            </select>
+
+            <textarea
+              className="input"
+              value={selected.memo || ""}
+              onChange={(e) => setSelected({ ...selected, memo: e.target.value })}
+              placeholder="메모"
+              style={{
+                width: "100%",
+                minHeight: 120,
+                resize: "none",
+              }}
+            />
+
+            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  setSmsReservation(selected);
+                  setSmsMessage(
+            `[스트롱복싱 ${selected.branch_name}]
+
+            ${selected.customer_name}님 예약이 확정되었습니다.
+
+            방문일시 : ${selected.start_datetime?.slice(0, 16).replace("T", " ")}
+            예약내용 : ${selected.event_type || "방문 상담"}
+
+            편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
+            처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
+
+            감사합니다.
+            스트롱복싱 ${selected.branch_name}`
+                        );
+                        setSelected(null);
+                        setSmsModalOpen(true);
+                      }}
+                    >
+                      예약확정 + 문자
+                    </button>
+
+                    <button
+                      className="btn secondary"
+                      onClick={async () => {
+                        const res = await apiFetch("/api/calendar-events/edit", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            ...selected,
+                            status: "상담완료",
+                          }),
+                        });
+
+                        const json = await res.json();
+
+                        if (json.success) {
+                          alert("상담완료 처리 완료");
+                          setSelected(null);
+                          load();
+                        } else {
+                          alert(json.message || "처리 실패");
+                        }
+                      }}
+                    >
+                      상담완료
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 20,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                    }}
+                  >
+                    <button className="btn secondary" onClick={() => setSelected(null)}>
+                      닫기
+                    </button>
+
+                    <button
+                      className="btn"
+                      onClick={async () => {
+                        const res = await apiFetch("/api/calendar-events/edit", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            event_id: selected.event_id,
+                            customer_name: selected.customer_name,
+                            phone: selected.phone,
+                            start_datetime: selected.start_datetime,
+                            event_type: selected.event_type,
+                            status: selected.status,
+                            memo: selected.memo,
+                          }),
+                        });
+
+                        const json = await res.json();
+
+                        if (json.success) {
+                          alert("저장 완료");
+                          setSelected(null);
+                          load();
+                        } else {
+                          alert(json.message || "저장 실패");
+                        }
+                      }}
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {smsModalOpen && smsReservation && (
+        <div
+          onClick={() => setSmsModalOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.75)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 10000,
+            padding: 20,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             className="card"
             style={{
-              width: 500,
+              width: "100%",
+              maxWidth: 620,
               borderRadius: 24,
             }}
           >
-            <h2>{selected.customer_name}</h2>
+            <h2 style={{ marginTop: 0 }}>문자 발송 확인</h2>
 
-            <div style={{ marginTop: 16 }}>
-              <div>지점 : {selected.branch_name}</div>
-              <div>연락처 : {selected.phone || "-"}</div>
-              <div>예약일시 : {selected.start_datetime?.slice(0,16)}</div>
-              <div>출처 : {selected.event_type}</div>
-              <div>상태 : {selected.status}</div>
-            </div>
+            <textarea
+              className="input"
+              value={smsMessage}
+              onChange={(e) => setSmsMessage(e.target.value)}
+              style={{
+                width: "100%",
+                minHeight: 240,
+                resize: "vertical",
+                marginBottom: 16,
+              }}
+            />
 
-            <div style={{ marginTop: 20 }}>
-              <div style={{ marginBottom: 8 }}>메모</div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button className="btn secondary" onClick={() => setSmsModalOpen(false)}>
+                취소
+              </button>
 
-              <textarea
-                className="input"
-                value={selected.memo || ""}
-                onChange={(e) =>
-                  setSelected({
-                    ...selected,
-                    memo: e.target.value,
-                  })
-                }
-                style={{
-                  width: "100%",
-                  minHeight: 120,
-                  resize: "none",
-                }}
-              />
-            </div>
+              <button
+                className="btn"
+                onClick={async () => {
+                  const saveRes = await apiFetch("/api/calendar-events/edit", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      event_id: smsReservation.event_id,
+                      customer_name: smsReservation.customer_name,
+                      phone: smsReservation.phone,
+                      start_datetime: smsReservation.start_datetime,
+                      event_type: smsReservation.event_type,
+                      status: "예약확정",
+                      memo: smsReservation.memo,
+                    }),
+                  });
 
-            <div style={{ marginTop: 20 }}>
-              <div>연락처 : {selected.phone || "-"}</div>
+                  const saveJson = await saveRes.json();
 
-              <div style={{ marginTop: 10 }}>
-                메모
-              </div>
+                  if (!saveJson.success) {
+                    alert(saveJson.message || "예약확정 실패");
+                    return;
+                  }
 
-              <textarea
-                className="input"
-                value={selected.memo || ""}
-                readOnly
-                style={{
-                  width: "100%",
-                  minHeight: 120,
-                  resize: "none",
-                  marginTop: 8,
-                }}
-              />
-            </div>
+                  const smsRes = await apiFetch("/api/sms/send", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      branch_name: smsReservation.branch_name,
+                      message: smsMessage,
+                      is_test: true,
+                      test_phone: smsReservation.phone,
+                    }),
+                  });
 
-            <div
-                style={{
-                  marginTop: 20,
-                  display: "flex",
-                  gap: 10,
-                  justifyContent: "space-between",
+                  const smsJson = await smsRes.json();
+
+                  if (smsJson.success) {
+                    alert("예약확정 + 문자발송 완료");
+                  } else {
+                    alert(smsJson.message || "예약확정은 됐지만 문자 발송 실패");
+                  }
+
+                  setSmsModalOpen(false);
+                  setSmsReservation(null);
+                  load();
                 }}
               >
-                <button
-                  className="btn secondary"
-                  onClick={() => setSelected(null)}
-                >
-                  닫기
-                </button>
-
-                <button
-                  className="btn"
-                  onClick={async () => {
-                    const res = await apiFetch("/api/calendar-events/update", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        event_id: selected.event_id,
-                        memo: selected.memo,
-                      }),
-                    });
-
-                    const json = await res.json();
-
-                    if (json.success) {
-                      alert("저장 완료");
-                      load();
-                      setSelected(null);
-                    }
-                  }}
-                >
-                  저장
-                </button>
-              </div>
+                예약확정 + 문자발송
+              </button>
+            </div>
           </div>
         </div>
       )}
