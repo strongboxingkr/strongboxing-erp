@@ -345,57 +345,69 @@ export default function CalendarPage() {
               }}
             />
 
-            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-              <button
-                className="btn"
-                onClick={() => {
-                  setSmsReservation(selected);
-                  setSmsMessage(
-            `[스트롱복싱 ${selected.branch_name}]
-
-            ${selected.customer_name}님 예약이 확정되었습니다.
-
-            방문일시 : ${selected.start_datetime?.slice(0, 16).replace("T", " ")}
-            예약내용 : ${selected.event_type || "방문 상담"}
-
-            편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
-            처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
-
-            감사합니다.
-            스트롱복싱 ${selected.branch_name}`
-                        );
-                        setSelected(null);
-                        setSmsModalOpen(true);
-                      }}
-                    >
-                      예약확정 + 문자
-                    </button>
-
-                    <button
-                      className="btn secondary"
-                      onClick={async () => {
-                        const res = await apiFetch("/api/calendar-events/edit", {
-                          method: "POST",
-                          body: JSON.stringify({
-                            ...selected,
-                            status: "상담완료",
-                          }),
-                        });
-
-                        const json = await res.json();
-
-                        if (json.success) {
-                          alert("상담완료 처리 완료");
-                          setSelected(null);
-                          load();
-                        } else {
-                          alert(json.message || "처리 실패");
-                        }
-                      }}
-                    >
-                      상담완료
-                    </button>
+            <div style={{ marginTop: 18 }}>
+                  <div style={{ marginBottom: 10, fontWeight: 900 }}>
+                    예약 상태 변경
                   </div>
+
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {["예약접수", "예약확정", "상담완료", "노쇼", "취소"].map((s) => (
+                      <button
+                        key={s}
+                        className={s === "예약확정" ? "btn" : "btn secondary"}
+                        onClick={async () => {
+                          const isNaver = String(selected.event_type || "").includes("NAVER");
+
+                          if (s === "예약확정" && !isNaver) {
+                            setSmsReservation(selected);
+                            setSmsMessage(
+                `[스트롱복싱 ${selected.branch_name}]
+
+                ${selected.customer_name}님 예약이 확정되었습니다.
+
+                방문일시 : ${selected.start_datetime?.slice(0, 16).replace("T", " ")}
+                예약내용 : ${selected.event_type || "방문 상담"}
+
+                편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
+                처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
+
+                감사합니다.
+                스트롱복싱 ${selected.branch_name}`
+                            );
+                            setSelected(null);
+                            setSmsModalOpen(true);
+                            return;
+                          }
+
+                          const res = await apiFetch("/api/calendar-events/edit", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              event_id: selected.event_id,
+                              customer_name: selected.customer_name,
+                              phone: selected.phone,
+                              start_datetime: selected.start_datetime,
+                              event_type: selected.event_type,
+                              status: s,
+                              memo: selected.memo,
+                            }),
+                          });
+
+                          const json = await res.json();
+
+                          if (json.success) {
+                            alert(`${s} 처리 완료`);
+                            setSelected(null);
+                            load();
+                          } else {
+                            alert(json.message || "처리 실패");
+                          }
+                        }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                   <div
                     style={{
@@ -407,6 +419,34 @@ export default function CalendarPage() {
                   >
                     <button className="btn secondary" onClick={() => setSelected(null)}>
                       닫기
+                    </button>
+
+                    <button
+                      className="btn secondary"
+                      onClick={async () => {
+                        const ok = confirm("예약을 삭제하시겠습니까?");
+
+                        if (!ok) return;
+
+                        const res = await apiFetch("/api/calendar-events/delete", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            event_id: selected.event_id,
+                          }),
+                        });
+
+                        const json = await res.json();
+
+                        if (json.success) {
+                          alert("삭제 완료");
+                          setSelected(null);
+                          load();
+                        } else {
+                          alert(json.message || "삭제 실패");
+                        }
+                      }}
+                    >
+                      삭제
                     </button>
 
                     <button
