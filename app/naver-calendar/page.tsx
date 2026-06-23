@@ -729,66 +729,37 @@ const getTypeInfo = (r: any) => {
               }}
             />
 
-            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-              <button
-                className="btn"
-                onClick={async () => {
-                  const res = await apiFetch("/api/calendar-events/edit", {
-                    method: "POST",
-                    body: JSON.stringify({
-                      event_id: selected.event_id,
-                      customer_name: selected.customer_name,
-                      phone: selected.phone,
-                      start_datetime: selected.start_datetime,
-                      event_type: selected.event_type,
-                      status: "예약확정",
-                      memo: selected.memo,
-                    }),
-                  });
-
-                  const json = await res.json();
-
-                  if (json.success) {
-                    alert("예약확정 완료");
-                    setSelected(null);
-                    loadReservations();
-                  } else {
-                    alert(json.message || "예약확정 실패");
-                  }
-                }}
-              >
-                예약확정
-              </button>
-
-              <button
-                className="btn secondary"
-                onClick={async () => {
-                  const res = await apiFetch("/api/calendar-events/edit", {
-                    method: "POST",
-                    body: JSON.stringify({
-                      event_id: selected.event_id,
-                      customer_name: selected.customer_name,
-                      phone: selected.phone,
-                      start_datetime: selected.start_datetime,
-                      event_type: selected.event_type,
-                      status: "상담완료",
-                      memo: selected.memo,
-                    }),
-                  });
-
-                  const json = await res.json();
-
-                  if (json.success) {
-                    alert("상담완료 처리 완료");
-                    setSelected(null);
-                    loadReservations();
-                  } else {
-                    alert(json.message || "처리 실패");
-                  }
-                }}
-              >
-                상담완료
-              </button>
+            <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+              {["예약접수", "예약확정", "상담완료", "노쇼", "취소"].map((s) => (
+                <button
+                  key={s}
+                  className={selected.status === s ? "btn" : "btn secondary"}
+                  onClick={async () => {
+                    const res = await apiFetch("/api/calendar-events/edit", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        event_id: selected.event_id,
+                        customer_name: selected.customer_name,
+                        phone: selected.phone,
+                        start_datetime: selected.start_datetime,
+                        event_type: selected.event_type,
+                        status: s,
+                        memo: selected.memo,
+                      }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                      alert(`${s} 처리 완료`);
+                      setSelected(null);
+                      loadReservations();
+                    } else {
+                      alert(json.message || "처리 실패");
+                    }
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
 
             <div style={{ marginTop: 18, textAlign: "right" }}>
