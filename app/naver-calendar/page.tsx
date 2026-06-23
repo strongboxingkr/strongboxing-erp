@@ -119,10 +119,9 @@ export default function NaverCalendarPage() {
   const selectedRows = rows
     .filter(
       (r) =>
-        r.start_datetime?.slice(
-          0,
-          10
-        ) === selectedDate
+        r.start_datetime?.slice(0, 10) === selectedDate &&
+        r.status !== "취소" &&
+        r.status !== "痍⑥냼"
     )
     .sort((a, b) =>
       String(a.start_datetime || "9999-99-99 99:99").localeCompare(

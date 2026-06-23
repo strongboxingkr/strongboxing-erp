@@ -23,6 +23,16 @@ const getStatusColor = (status: string) => {
   return "#9ca3af";
 };
 
+const BRANCH_COLORS: Record<string, string> = {
+  "개봉점": "#3b82f6",
+  "신정점": "#22c55e",
+  "목동점": "#f59e0b",
+  "철산점": "#ec4899",
+  "영등포점": "#8b5cf6",
+};
+
+const getBranchColor = (branch: string) => BRANCH_COLORS[branch] || "#94a3b8";
+
 const getSourceInfo = (r: any) => {
   const memo = String(r.memo || "");
   const product = String(r.reservation_product || "");
@@ -398,9 +408,10 @@ export default function NaverReservationsPage() {
                       style={{
                         padding: "6px 10px",
                         borderRadius: 8,
-                        background: "rgba(34,197,94,0.15)",
-                        color: "#22c55e",
+                        background: `${getBranchColor(r.branch_name)}22`,
+                        color: getBranchColor(r.branch_name),
                         fontWeight: 900,
+                        borderLeft: `3px solid ${getBranchColor(r.branch_name)}`,
                       }}
                     >
                       {r.branch_name || "-"}
