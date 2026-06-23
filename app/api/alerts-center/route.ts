@@ -24,6 +24,54 @@ export async function GET(req: Request) {
       params
     );
 
+    const calendarBranchFilter = !isAdminOrOwner(user.role)
+      ? " AND branch_name = ? "
+      : "";
+
+    const [calendarEvents]: any = await pool.query(
+      `
+      SELECT
+        event_id,
+        branch_name,
+        customer_name,
+        phone,
+        DATE(start_datetime) AS reservation_date,
+        TIME_FORMAT(start_datetime, '%H:%i') AS reservation_time,
+        event_type AS source_type,
+        status,
+        memo,
+        created_at
+      FROM calendar_events
+      WHERE DATE(start_datetime) = CURDATE()
+      AND status != '취소'
+      ${calendarBranchFilter}
+      ORDER BY event_id DESC
+      `,
+      !isAdminOrOwner(user.role) ? [user.branch_name] : []
+    );
+
+    const [newCalendarEvents]: any = await pool.query(
+      `
+      SELECT
+        event_id,
+        branch_name,
+        customer_name,
+        phone,
+        DATE(start_datetime) AS reservation_date,
+        TIME_FORMAT(start_datetime, '%H:%i') AS reservation_time,
+        event_type AS source_type,
+        status,
+        created_at
+      FROM calendar_events
+      WHERE created_at >= NOW() - INTERVAL 1 MINUTE
+      AND status != '취소'
+      ${calendarBranchFilter}
+      ORDER BY event_id DESC
+      LIMIT 5
+      `,
+      !isAdminOrOwner(user.role) ? [user.branch_name] : []
+    );
+
     const [members]: any = await pool.query(
       `
       SELECT *
@@ -74,6 +122,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       reservations,
+      calendarEvents,
+      newCalendarEvents,
       members,
       crm,
       notices,
