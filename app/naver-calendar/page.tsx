@@ -708,25 +708,20 @@ const getTypeInfo = (r: any) => {
           >
             <h2 style={{ marginTop: 0 }}>{selected.customer_name || "-"}</h2>
 
-            <div style={{ color: "#94a3b8", lineHeight: 1.8 }}>
-              지점 : {selected.branch_name || "-"}<br />
-              출처 : {getTypeInfo(selected).label}<br />
-              상태 : {selected.status || "-"}<br />
-              예약일시 : {selected.start_datetime?.slice(0, 16).replace("T", " ") || "-"}<br />
-              연락처 : {selected.phone || "-"}
+            <input className="input" value={selected.customer_name || ""} onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })} placeholder="이름" style={{ marginBottom: 10 }} />
+            <input className="input" value={selected.phone || ""} onChange={(e) => setSelected({ ...selected, phone: e.target.value })} placeholder="전화번호" style={{ marginBottom: 10 }} />
+            <input className="input" type="datetime-local" value={selected.start_datetime?.slice(0, 16) || ""} onChange={(e) => setSelected({ ...selected, start_datetime: e.target.value })} style={{ marginBottom: 10 }} />
+
+            <div style={{ marginTop: 4, marginBottom: 10, color: "#94a3b8", fontSize: 13 }}>
+              지점 : {selected.branch_name || "-"} &nbsp;|&nbsp; 출처 : {getTypeInfo(selected).label} &nbsp;|&nbsp; 상태 : {selected.status || "-"}
             </div>
 
-            <div style={{ marginTop: 14, color: "#94a3b8" }}>메모</div>
             <textarea
               className="input"
               value={selected.memo || ""}
-              readOnly
-              style={{
-                width: "100%",
-                minHeight: 130,
-                marginTop: 8,
-                resize: "none",
-              }}
+              onChange={(e) => setSelected({ ...selected, memo: e.target.value })}
+              placeholder="메모"
+              style={{ width: "100%", minHeight: 100, resize: "none", marginBottom: 10 }}
             />
 
             <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
@@ -762,10 +757,25 @@ const getTypeInfo = (r: any) => {
               ))}
             </div>
 
-            <div style={{ marginTop: 18, textAlign: "right" }}>
-              <button className="btn secondary" onClick={() => setSelected(null)}>
-                닫기
-              </button>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18 }}>
+              <button className="btn secondary" onClick={() => setSelected(null)}>닫기</button>
+              <button className="btn" onClick={async () => {
+                const res = await apiFetch("/api/calendar-events/edit", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    event_id: selected.event_id,
+                    customer_name: selected.customer_name,
+                    phone: selected.phone,
+                    start_datetime: selected.start_datetime,
+                    event_type: selected.event_type,
+                    status: selected.status,
+                    memo: selected.memo,
+                  }),
+                });
+                const json = await res.json();
+                if (json.success) { alert("저장 완료"); setSelected(null); loadReservations(); }
+                else alert(json.message || "저장 실패");
+              }}>저장</button>
             </div>
           </div>
         </div>
