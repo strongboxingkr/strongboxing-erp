@@ -25,10 +25,8 @@ const menuGroups = [
   {
     title: "📅 예약/상담",
     items: [
-      ["예약 등록", "/calendar"],
-      ["네이버 예약", "/naver-reservations"],
+      ["통합 예약", "/calendar"],
       ["홈페이지 예약", "/homepage-reservations"],
-      ["예약 캘린더", "/naver-calendar"],
       ["상담 CRM", "/crm"],
       ["재연락 상담", "/crm-alerts"],
     ],
