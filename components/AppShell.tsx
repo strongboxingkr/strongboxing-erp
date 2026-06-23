@@ -43,6 +43,12 @@ const menuGroups = [
     ],
   },
   {
+    title: "📊 마케팅",
+    items: [
+      ["마케팅 분석", "/marketing"],
+    ],
+  },
+  {
     title: "🔔 문자/공지",
     items: [
       ["문자관리", "/sms"],

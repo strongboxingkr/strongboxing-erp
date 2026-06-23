@@ -403,15 +403,17 @@ export async function GET() {
         SELECT *
         FROM naver_reservations
         WHERE source_email_id = ?
-          OR (
-                ? <> ''
-            AND memo LIKE ?
-              )
-          OR (
-                phone = ?
-            AND reservation_date = ?
-            AND reservation_time = ?
-              )
+        OR (
+              ? <> ''
+          AND memo LIKE ?
+        )
+        OR (
+              ? = ''
+          AND phone = ?
+          AND branch_name = ?
+          AND reservation_date = ?
+          AND reservation_time = ?
+        )
         ORDER BY reservation_id DESC
         LIMIT 1
         `,
@@ -419,7 +421,9 @@ export async function GET() {
           msg.id,
           reservationNo,
           `%예약번호:${reservationNo}%`,
+          reservationNo,
           phone,
+          branch_name,
           reservation_date,
           reservation_time,
         ]

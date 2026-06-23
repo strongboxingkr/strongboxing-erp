@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
       params.push(end_date + " 23:59:59");
     }
 
+    sql += ` AND status != '취소'`;
+
     sql += `
       ORDER BY start_datetime ASC
     `;
