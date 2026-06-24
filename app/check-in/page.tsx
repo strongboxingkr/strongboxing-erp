@@ -26,59 +26,125 @@ export default function CheckInPage() {
 
   const isSuccess = result?.success === true;
 
-  const keyStyle: React.CSSProperties = {
-    height: 86,
-    borderRadius: 18,
-    border: "1px solid #334155",
-    background: "#1e293b",
-    color: "#fff",
-    fontSize: 32,
-    fontWeight: 900,
-    cursor: "pointer",
-  };
-
   return (
-    <div style={{ minHeight: "100vh", background: "radial-gradient(circle at top, #172554 0%, #0f172a 45%, #020617 100%)", color: "#fff", display: "flex", justifyContent: "center", alignItems: "center", padding: 20 }}>
-      <div style={{ width: "100%", maxWidth: 680, background: "rgba(15,23,42,0.95)", borderRadius: 34, padding: "44px 40px", boxShadow: "0 0 60px rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.06)" }}>
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0a0a",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 24,
+      fontFamily: "'Arial Black', 'Impact', sans-serif",
+    }}>
+      <style>{`
+        .key { transition: all 0.07s; }
+        .key:active { transform: translateY(2px); filter: brightness(0.85); }
+      `}</style>
 
-        {/* 헤더 */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h1 style={{ fontSize: 54, margin: 0, fontWeight: 900, letterSpacing: 4 }}>
-            <span style={{ color: "#fff" }}>STRONG</span>{" "}
-            <span style={{ color: "#2563eb" }}>BOXING</span>
-          </h1>
-          <p style={{ color: "#64748b", marginTop: 10, fontSize: 20 }}>전화번호 뒤 4자리를 입력해주세요</p>
+      {/* 로고 */}
+      <div style={{ marginBottom: 32, textAlign: "center" }}>
+        <div style={{ fontSize: 14, letterSpacing: 8, color: "#ef4444", fontWeight: 700, marginBottom: 6, fontFamily: "sans-serif" }}>
+          ★ WELCOME TO ★
+        </div>
+        <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", letterSpacing: 6, lineHeight: 1 }}>
+          STRONG
+        </div>
+        <div style={{ fontSize: 52, fontWeight: 900, color: "#ef4444", letterSpacing: 6, lineHeight: 1 }}>
+          BOXING
+        </div>
+      </div>
+
+      {/* 카드 */}
+      <div style={{
+        width: "100%",
+        maxWidth: 420,
+        background: "#141414",
+        borderRadius: 24,
+        border: "1px solid #222",
+        overflow: "hidden",
+      }}>
+        {/* 상단 안내 */}
+        <div style={{ background: "#ef4444", padding: "14px 20px", textAlign: "center", fontSize: 15, fontWeight: 700, letterSpacing: 2, color: "#fff", fontFamily: "sans-serif" }}>
+          전화번호 뒤 4자리 입력
         </div>
 
-        {/* 디스플레이 */}
-        <div style={{ height: 82, borderRadius: 16, border: "2px solid #2ee59d", background: "#020617", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 900, letterSpacing: 16, marginBottom: 20, boxShadow: "0 0 20px rgba(46,229,157,0.15)" }}>
-          {phone || <span style={{ color: "#334155" }}>____</span>}
-        </div>
-
-        {/* 결과 */}
-        {result && (
-          <div style={{ marginBottom: 20, padding: 24, borderRadius: 16, fontSize: 30, fontWeight: 900, background: isSuccess ? "rgba(46,229,157,.15)" : "rgba(255,32,78,.18)", border: isSuccess ? "2px solid #2ee59d" : "2px solid #ff204e", color: isSuccess ? "#2ee59d" : "#ff204e", textAlign: "center" }}>
-            <div>{result.message}</div>
-            {result.member && (
-              <div style={{ marginTop: 12, fontSize: 18, color: "#cbd5e1" }}>
-                {result.member.name} / {result.member.product_name} / 남은횟수 {result.member.remaining_count}
-              </div>
-            )}
+        <div style={{ padding: "24px 20px 20px" }}>
+          {/* 디스플레이 */}
+          <div style={{
+            background: "#0a0a0a",
+            border: "2px solid #333",
+            borderRadius: 12,
+            height: 72,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 44,
+            fontWeight: 900,
+            letterSpacing: 14,
+            marginBottom: 16,
+            color: "#ef4444",
+          }}>
+            {phone || <span style={{ color: "#2a2a2a", fontSize: 36 }}>_ _ _ _</span>}
           </div>
-        )}
 
-        {/* 키패드 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 12 }}>
-          {["1","2","3","4","5","6","7","8","9"].map((n) => (
-            <button key={n} onClick={() => press(n)} style={keyStyle}>{n}</button>
-          ))}
-          <button onClick={() => press("back")} style={{ ...keyStyle, fontSize: 26, color: "#94a3b8" }}>⌫</button>
-          <button onClick={() => press("0")} style={keyStyle}>0</button>
-          <button onClick={() => submitCheckIn("CHECK_IN")} style={{ ...keyStyle, background: "#ff2d55", border: "none", fontSize: 28, letterSpacing: 2 }}>입장</button>
+          {/* 결과 */}
+          {result && (
+            <div style={{
+              marginBottom: 16,
+              padding: "16px 20px",
+              borderRadius: 12,
+              background: isSuccess ? "#052e16" : "#1c0a0a",
+              border: isSuccess ? "1px solid #22c55e" : "1px solid #ef4444",
+              color: isSuccess ? "#22c55e" : "#ef4444",
+              textAlign: "center",
+              fontSize: 20,
+              fontWeight: 700,
+              fontFamily: "sans-serif",
+            }}>
+              {result.message}
+              {result.member && (
+                <div style={{ marginTop: 8, fontSize: 14, color: "#9ca3af" }}>
+                  {result.member.name} · {result.member.product_name} · 잔여 {result.member.remaining_count}회
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 키패드 */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 10 }}>
+            {["1","2","3","4","5","6","7","8","9"].map((n) => (
+              <button key={n} className="key" onClick={() => press(n)} style={{
+                height: 72,
+                borderRadius: 12,
+                border: "1px solid #2a2a2a",
+                background: "#1e1e1e",
+                color: "#fff",
+                fontSize: 30,
+                fontWeight: 900,
+                cursor: "pointer",
+              }}>{n}</button>
+            ))}
+            <button className="key" onClick={() => press("back")} style={{
+              height: 72, borderRadius: 12, border: "1px solid #2a2a2a", background: "#1e1e1e", color: "#666", fontSize: 22, fontWeight: 900, cursor: "pointer"
+            }}>⌫</button>
+            <button className="key" onClick={() => press("0")} style={{
+              height: 72, borderRadius: 12, border: "1px solid #2a2a2a", background: "#1e1e1e", color: "#fff", fontSize: 30, fontWeight: 900, cursor: "pointer"
+            }}>0</button>
+            <button className="key" onClick={() => submitCheckIn("CHECK_IN")} style={{
+              height: 72, borderRadius: 12, border: "none", background: "#ef4444", color: "#fff", fontSize: 22, fontWeight: 900, cursor: "pointer", letterSpacing: 2
+            }}>입장</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button className="key" onClick={() => press("clear")} style={{
+              height: 52, borderRadius: 12, border: "1px solid #2a2a2a", background: "#1e1e1e", color: "#555", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "sans-serif"
+            }}>초기화</button>
+            <button className="key" onClick={() => submitCheckIn("CHECK_OUT")} style={{
+              height: 52, borderRadius: 12, border: "1px solid #2a2a2a", background: "#1e1e1e", color: "#888", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "sans-serif"
+            }}>운동 종료</button>
+          </div>
         </div>
-
-        <button onClick={() => press("clear")} style={{ ...keyStyle, width: "100%", height: 60, fontSize: 20, marginBottom: 10, color: "#94a3b8" }}>초기화</button>
-        <button onClick={() => submitCheckIn("CHECK_OUT")} style={{ ...keyStyle, width: "100%", height: 52, fontSize: 18, color: "#94a3b8" }}>운동 종료</button>
       </div>
     </div>
   );
