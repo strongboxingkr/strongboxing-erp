@@ -73,9 +73,7 @@ export default function KioskPage() {
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, #172554 0%, #0f172a 45%, #020617 100%)",
-        color: "#fff",
+        background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #e0e7ff 100%)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
@@ -86,26 +84,27 @@ export default function KioskPage() {
         style={{
           width: "100%",
           maxWidth: 760,
-          background: "rgba(15, 23, 42, 0.92)",
+          background: "#ffffff",
           borderRadius: 34,
           padding: 44,
-          boxShadow: "0 0 60px rgba(0,0,0,0.5)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          boxShadow: "0 8px 40px rgba(37,99,235,0.12)",
+          border: "1px solid #bfdbfe",
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 30 }}>
           <h1
             style={{
-              fontSize: 58,
+              fontSize: 52,
               margin: 0,
               fontWeight: 1000,
               letterSpacing: 2,
+              color: "#1e3a8a",
             }}
           >
             STRONG BOXING
           </h1>
 
-          <p style={{ color: "#aaa", marginTop: 18, fontSize: 22 }}>
+          <p style={{ color: "#64748b", marginTop: 14, fontSize: 20 }}>
             회원 출석 키오스크
           </p>
         </div>
@@ -113,14 +112,15 @@ export default function KioskPage() {
         <div
           style={{
             textAlign: "center",
-            fontSize: 30,
+            fontSize: 26,
             fontWeight: 900,
             marginBottom: 24,
+            color: "#111827",
           }}
         >
           {message}
           {member && (
-            <div style={{ color: "#2ee59d", fontSize: 22, marginTop: 8 }}>
+            <div style={{ color: "#2563eb", fontSize: 20, marginTop: 8 }}>
               {member.branch_name}
             </div>
           )}
@@ -130,8 +130,8 @@ export default function KioskPage() {
           style={{
             height: 88,
             borderRadius: 16,
-            border: "2px solid #2ee59d",
-            background: "#020617",
+            border: "2px solid #2563eb",
+            background: "#f0f7ff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -139,10 +139,10 @@ export default function KioskPage() {
             fontWeight: 900,
             letterSpacing: 16,
             marginBottom: 26,
-            boxShadow: "0 0 20px rgba(46,229,157,0.18)",
+            color: "#1e3a8a",
           }}
         >
-          {code || <span style={{ color: "#334155" }}>----</span>}
+          {code || <span style={{ color: "#cbd5e1" }}>----</span>}
         </div>
 
         <div
@@ -160,9 +160,9 @@ export default function KioskPage() {
               style={{
                 height: 72,
                 borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "#1f2937",
-                color: "#fff",
+                border: "1px solid #e5e7eb",
+                background: "#f8f9fb",
+                color: "#111827",
                 fontSize: 34,
                 fontWeight: 900,
                 cursor: "pointer",
@@ -178,9 +178,9 @@ export default function KioskPage() {
               gridColumn: "1 / 3",
               height: 72,
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "#1f2937",
-              color: "#fff",
+              border: "1px solid #e5e7eb",
+              background: "#f8f9fb",
+              color: "#111827",
               fontSize: 34,
               fontWeight: 900,
               cursor: "pointer",
@@ -194,9 +194,9 @@ export default function KioskPage() {
             style={{
               height: 72,
               borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "#1f2937",
-              color: "#fff",
+              border: "1px solid #e5e7eb",
+              background: "#f8f9fb",
+              color: "#111827",
               fontSize: 28,
               fontWeight: 900,
               cursor: "pointer",
@@ -220,9 +220,9 @@ export default function KioskPage() {
               height: 82,
               borderRadius: 16,
               border: 0,
-              background: "#2ee59d",
-              color: "#000",
-              fontSize: 32,
+              background: "#2563eb",
+              color: "#fff",
+              fontSize: 30,
               fontWeight: 1000,
               cursor: "pointer",
             }}
@@ -238,8 +238,8 @@ export default function KioskPage() {
               borderRadius: 16,
               border: 0,
               background: "#f59e0b",
-              color: "#000",
-              fontSize: 32,
+              color: "#fff",
+              fontSize: 30,
               fontWeight: 1000,
               cursor: "pointer",
             }}
@@ -251,7 +251,7 @@ export default function KioskPage() {
         <div
           style={{
             marginTop: 20,
-            color: "#777",
+            color: "#94a3b8",
             textAlign: "center",
             fontSize: 16,
           }}

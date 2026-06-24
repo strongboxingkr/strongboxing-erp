@@ -520,10 +520,8 @@ const getTypeInfo = (r: any) => {
                       padding: 18,
                       borderRadius: 22,
                       cursor: "pointer",
-                      background:
-                        "#0f172a",
-                      border:
-                        "1px solid #273244",
+                      background: "var(--panel)",
+                      border: "1px solid var(--line)",
                       borderLeft: `7px solid ${getStatusColor(
                         r.status
                       )}`,
@@ -566,8 +564,7 @@ const getTypeInfo = (r: any) => {
 
                         <div
                           style={{
-                            color:
-                              "#aaa",
+                            color: "var(--muted)",
                             marginTop: 10,
                           }}
                         >
@@ -577,8 +574,7 @@ const getTypeInfo = (r: any) => {
 
                         <div
                           style={{
-                            color:
-                              "#aaa",
+                            color: "var(--muted)",
                             marginTop: 6,
                           }}
                         >
@@ -589,8 +585,7 @@ const getTypeInfo = (r: any) => {
 
                         <div
                           style={{
-                            color:
-                              "#94a3b8",
+                            color: "var(--muted)",
                             marginTop: 10,
                           }}
                         >
