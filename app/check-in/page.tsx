@@ -65,8 +65,9 @@ export default function CheckInPage() {
       >
         {/* 헤더 */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <h1 style={{ fontSize: 48, margin: 0, fontWeight: 1000, letterSpacing: 2, color: "#1e3a8a" }}>
-            STRONG BOXING
+          <h1 style={{ fontSize: 56, margin: 0, fontWeight: 900, letterSpacing: 4, color: "#1e3a8a", textTransform: "uppercase" }}>
+            <span style={{ color: "#1e3a8a" }}>STRONG</span>{" "}
+            <span style={{ color: "#2563eb" }}>BOXING</span>
           </h1>
           <p style={{ color: "#64748b", marginTop: 10, fontSize: 20 }}>
             전화번호 뒤 4자리를 입력해주세요

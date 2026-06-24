@@ -94,14 +94,14 @@ export default function KioskPage() {
         <div style={{ textAlign: "center", marginBottom: 30 }}>
           <h1
             style={{
-              fontSize: 52,
+              fontSize: 56,
               margin: 0,
-              fontWeight: 1000,
-              letterSpacing: 2,
-              color: "#1e3a8a",
+              fontWeight: 900,
+              letterSpacing: 4,
             }}
           >
-            STRONG BOXING
+            <span style={{ color: "#1e3a8a" }}>STRONG</span>{" "}
+            <span style={{ color: "#2563eb" }}>BOXING</span>
           </h1>
 
           <p style={{ color: "#64748b", marginTop: 14, fontSize: 20 }}>
