@@ -186,11 +186,11 @@ export default function PaymentsPage() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {isAdminOrOwner && (
             <select
               className="input"
-              style={{ width: 180 }}
+              style={{ width: 160, padding: "6px 10px", fontSize: 13 }}
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
             >
@@ -201,7 +201,7 @@ export default function PaymentsPage() {
             </select>
           )}
 
-          <button className="btn secondary" onClick={loadPayments}>
+          <button className="btn secondary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={loadPayments}>
             새로고침
           </button>
         </div>
