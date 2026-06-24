@@ -252,8 +252,8 @@ export default function PaymentsPage() {
                     cursor: "pointer",
                     border:
                       String(form.member_id) === String(m.member_id)
-                        ? "2px solid #2ee59d"
-                        : "1px solid #1f2937",
+                        ? "2px solid #2563eb"
+                        : "1px solid var(--line)",
                     background: "var(--panel2)",
                   }}
                 >
@@ -261,7 +261,7 @@ export default function PaymentsPage() {
                   <div style={{ marginTop: 6, color: "#888", fontSize: 13 }}>
                     {m.phone}
                   </div>
-                  <div style={{ marginTop: 8, color: "#ddd", fontSize: 14 }}>
+                  <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 14 }}>
                     {m.product_name}
                   </div>
                 </div>
@@ -480,11 +480,12 @@ export default function PaymentsPage() {
               borderRadius: 24,
               marginBottom: 18,
               background:
-                "linear-gradient(135deg, rgba(46,229,157,0.18), rgba(17,24,39,1))",
+                "linear-gradient(135deg, #eff6ff, #dbeafe)",
+              border: "1px solid #bfdbfe",
             }}
           >
-            <div style={{ color: "#d1fae5" }}>오늘 매출</div>
-            <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900 }}>
+            <div style={{ color: "#2563eb", fontSize: 13, fontWeight: 600 }}>오늘 매출</div>
+            <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900, color: "#1e3a8a" }}>
               {money(todaySales)}
             </div>
           </div>
