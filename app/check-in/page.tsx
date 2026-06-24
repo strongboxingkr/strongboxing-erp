@@ -119,27 +119,26 @@ export default function CheckInPage() {
         )}
 
         {/* 키패드 */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 10,
-            marginBottom: 12,
-          }}
-        >
+        <style>{`
+          .key-btn { transition: transform 0.08s, box-shadow 0.08s; }
+          .key-btn:active { transform: scale(0.94); box-shadow: none !important; }
+        `}</style>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 12 }}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => (
             <button
               key={n}
+              className="key-btn"
               onClick={() => press(n)}
               style={{
-                height: 78,
-                borderRadius: 14,
-                border: "1px solid #e5e7eb",
-                background: "#f8f9fb",
-                color: "#111827",
-                fontSize: 34,
+                height: 82,
+                borderRadius: 18,
+                border: "1px solid #e2e8f0",
+                background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+                color: "#1e3a8a",
+                fontSize: 36,
                 fontWeight: 900,
                 cursor: "pointer",
+                boxShadow: "0 4px 0 #cbd5e1",
               }}
             >
               {n}
@@ -147,48 +146,55 @@ export default function CheckInPage() {
           ))}
 
           <button
+            className="key-btn"
             onClick={() => press("back")}
             style={{
-              height: 78,
-              borderRadius: 14,
-              border: "1px solid #e5e7eb",
-              background: "#f8f9fb",
-              color: "#111827",
+              height: 82,
+              borderRadius: 18,
+              border: "1px solid #e2e8f0",
+              background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+              color: "#64748b",
               fontSize: 28,
               fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #cbd5e1",
             }}
           >
             ⌫
           </button>
 
           <button
+            className="key-btn"
             onClick={() => press("0")}
             style={{
-              height: 78,
-              borderRadius: 14,
-              border: "1px solid #e5e7eb",
-              background: "#f8f9fb",
-              color: "#111827",
-              fontSize: 34,
+              height: 82,
+              borderRadius: 18,
+              border: "1px solid #e2e8f0",
+              background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+              color: "#1e3a8a",
+              fontSize: 36,
               fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #cbd5e1",
             }}
           >
             0
           </button>
 
           <button
+            className="key-btn"
             onClick={() => submitCheckIn("CHECK_IN")}
             style={{
-              height: 78,
-              borderRadius: 14,
+              height: 82,
+              borderRadius: 18,
               border: 0,
-              background: "#2563eb",
+              background: "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
               color: "#fff",
-              fontSize: 30,
-              fontWeight: 1000,
+              fontSize: 28,
+              fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #1e40af",
+              letterSpacing: 2,
             }}
           >
             입장
@@ -197,17 +203,19 @@ export default function CheckInPage() {
 
         {/* 초기화 */}
         <button
+          className="key-btn"
           onClick={() => press("clear")}
           style={{
             width: "100%",
-            height: 62,
-            borderRadius: 14,
-            border: "1px solid #e5e7eb",
-            background: "#f8f9fb",
-            color: "#374151",
-            fontSize: 22,
+            height: 60,
+            borderRadius: 16,
+            border: "1px solid #e2e8f0",
+            background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+            color: "#64748b",
+            fontSize: 20,
             fontWeight: 700,
             cursor: "pointer",
+            boxShadow: "0 3px 0 #cbd5e1",
             marginBottom: 10,
           }}
         >
@@ -216,17 +224,19 @@ export default function CheckInPage() {
 
         {/* 운동 종료 */}
         <button
+          className="key-btn"
           onClick={() => submitCheckIn("CHECK_OUT")}
           style={{
             width: "100%",
-            height: 54,
-            borderRadius: 14,
+            height: 52,
+            borderRadius: 16,
             border: "1px solid #fde68a",
-            background: "#fffbeb",
+            background: "linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%)",
             color: "#92400e",
             fontSize: 18,
             fontWeight: 700,
             cursor: "pointer",
+            boxShadow: "0 3px 0 #fde68a",
           }}
         >
           운동 종료

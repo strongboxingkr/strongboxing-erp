@@ -145,27 +145,26 @@ export default function KioskPage() {
           {code || <span style={{ color: "#cbd5e1" }}>----</span>}
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 10,
-            marginBottom: 24,
-          }}
-        >
+        <style>{`
+          .key-btn { transition: transform 0.08s, box-shadow 0.08s; }
+          .key-btn:active { transform: scale(0.94); box-shadow: none !important; }
+        `}</style>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => (
             <button
               key={n}
+              className="key-btn"
               onClick={() => pressNumber(n)}
               style={{
-                height: 72,
-                borderRadius: 12,
-                border: "1px solid #e5e7eb",
-                background: "#f8f9fb",
-                color: "#111827",
-                fontSize: 34,
+                height: 82,
+                borderRadius: 18,
+                border: "1px solid #e2e8f0",
+                background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+                color: "#1e3a8a",
+                fontSize: 36,
                 fontWeight: 900,
                 cursor: "pointer",
+                boxShadow: "0 4px 0 #cbd5e1",
               }}
             >
               {n}
@@ -173,75 +172,79 @@ export default function KioskPage() {
           ))}
 
           <button
+            className="key-btn"
             onClick={() => pressNumber("0")}
             style={{
               gridColumn: "1 / 3",
-              height: 72,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              background: "#f8f9fb",
-              color: "#111827",
-              fontSize: 34,
+              height: 82,
+              borderRadius: 18,
+              border: "1px solid #e2e8f0",
+              background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+              color: "#1e3a8a",
+              fontSize: 36,
               fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #cbd5e1",
             }}
           >
             0
           </button>
 
           <button
+            className="key-btn"
             onClick={backspace}
             style={{
-              height: 72,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              background: "#f8f9fb",
-              color: "#111827",
+              height: 82,
+              borderRadius: 18,
+              border: "1px solid #e2e8f0",
+              background: "linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)",
+              color: "#64748b",
               fontSize: 28,
               fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #cbd5e1",
             }}
           >
             ⌫
           </button>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 12,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <button
+            className="key-btn"
             onClick={checkin}
             style={{
               width: "100%",
               height: 82,
-              borderRadius: 16,
+              borderRadius: 18,
               border: 0,
-              background: "#2563eb",
+              background: "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
               color: "#fff",
-              fontSize: 30,
-              fontWeight: 1000,
+              fontSize: 28,
+              fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #1e40af",
+              letterSpacing: 2,
             }}
           >
             입장
           </button>
 
           <button
+            className="key-btn"
             onClick={checkout}
             style={{
               width: "100%",
               height: 82,
-              borderRadius: 16,
+              borderRadius: 18,
               border: 0,
-              background: "#f59e0b",
+              background: "linear-gradient(180deg, #fbbf24 0%, #d97706 100%)",
               color: "#fff",
-              fontSize: 30,
-              fontWeight: 1000,
+              fontSize: 28,
+              fontWeight: 900,
               cursor: "pointer",
+              boxShadow: "0 4px 0 #b45309",
+              letterSpacing: 2,
             }}
           >
             퇴실
