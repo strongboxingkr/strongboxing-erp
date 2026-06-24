@@ -164,7 +164,7 @@ export default function NaverCalendarPage() {
     const target = toDateKey(date);
 
     return rows.filter(
-      (r) => r.start_datetime?.slice(0, 10) === target
+      (r) => r.start_datetime?.slice(0, 10) === target && r.status !== "취소" && r.status !== "痍⑥냼"
     );
   };
 
