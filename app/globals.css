@@ -1,14 +1,20 @@
 :root {
-  --bg: #08090d;
-  --panel: #11131a;
-  --panel2: #171a23;
-  --text: #f5f7fb;
-  --muted: #9ca3af;
-  --red: #ff204e;
-  --red2: #b80f32;
-  --line: #292d3a;
-  --green: #2ee59d;
-  --yellow: #facc15;
+  --bg: #f0f2f5;
+  --panel: #ffffff;
+  --panel2: #f8f9fb;
+  --text: #111827;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent2: #1d4ed8;
+  --red: #ef4444;
+  --red2: #dc2626;
+  --line: #e5e7eb;
+  --green: #16a34a;
+  --yellow: #d97706;
+  --sidebar-bg: #1e293b;
+  --sidebar-text: #cbd5e1;
+  --sidebar-hover: #334155;
+  --sidebar-active: #2563eb;
 }
 
 * { box-sizing: border-box; }
@@ -17,7 +23,7 @@ html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
 
 a {
@@ -35,10 +41,10 @@ button, input, select, textarea {
 }
 
 .sidebar {
-  width: 250px;
-  background: #0c0e14;
-  border-right: 1px solid var(--line);
-  padding: 22px 16px;
+  width: 240px;
+  background: var(--sidebar-bg);
+  border-right: none;
+  padding: 22px 14px;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -47,52 +53,59 @@ button, input, select, textarea {
 
 .logo {
   font-weight: 900;
-  font-size: 22px;
+  font-size: 20px;
   margin-bottom: 28px;
+  color: white;
+  letter-spacing: 1px;
 }
 
-.logo span { color: var(--red); }
+.logo span { color: var(--accent); }
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .nav a {
-  padding: 13px 14px;
-  border-radius: 12px;
-  color: var(--muted);
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--sidebar-text);
+  font-size: 14px;
 }
 
 .nav a:hover {
   color: white;
-  background: var(--panel2);
+  background: var(--sidebar-hover);
 }
 
 .main {
   flex: 1;
-  padding: 26px;
+  padding: 24px 28px;
   min-width: 0;
+  background: var(--bg);
 }
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .title {
-  font-size: 28px;
-  font-weight: 900;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .badge {
-  border: 1px solid var(--red);
-  color: white;
-  background: rgba(255,32,78,0.12);
-  padding: 8px 12px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: white;
+  padding: 6px 12px;
   border-radius: 999px;
   font-size: 13px;
 }
@@ -104,17 +117,26 @@ button, input, select, textarea {
 }
 
 .card {
-  background: linear-gradient(180deg, var(--panel), #0d0f15);
+  background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: 0 0 30px rgba(255, 32, 78, 0.04);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.card h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 0;
+  margin-bottom: 16px;
 }
 
 .card h3 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .card .num {
@@ -131,7 +153,7 @@ button, input, select, textarea {
 .table-wrap {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   overflow-x: auto;
 }
 
@@ -146,7 +168,7 @@ table {
 }
 
 th, td {
-  padding: 14px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   font-size: 14px;
@@ -154,7 +176,21 @@ th, td {
 
 th {
   color: var(--muted);
-  background: #0e1017;
+  background: #f8f9fb;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+td {
+  color: var(--text);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: #f8faff;
 }
 
 .table-wrap th,
@@ -175,38 +211,64 @@ th {
 }
 
 .input {
-  background: #0c0e14;
+  background: white;
   border: 1px solid var(--line);
-  color: white;
-  border-radius: 12px;
-  padding: 13px 14px;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
   outline: none;
+  font-size: 14px;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
 }
 
 .btn {
-  background: var(--red);
+  background: var(--accent);
   border: none;
   color: white;
-  border-radius: 12px;
-  padding: 13px 16px;
-  font-weight: 800;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--accent2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn.secondary {
-  background: var(--panel2);
+  background: white;
   border: 1px solid var(--line);
+  color: var(--text);
 }
 
-.status-ok { color: var(--green); font-weight: 800; }
-.status-expired { color: var(--red); font-weight: 800; }
-.status-rest { color: var(--yellow); font-weight: 800; }
+.btn.secondary:hover {
+  background: var(--panel2);
+}
 
+.status-ok { color: var(--green); font-weight: 700; }
+.status-expired { color: var(--red); font-weight: 700; }
+.status-rest { color: var(--yellow); font-weight: 700; }
+
+/* 키오스크 */
 .kiosk {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at top, rgba(255,32,78,.28), transparent 35%), #05060a;
+  background: #0f172a;
 }
 
 .kiosk-box {
@@ -218,11 +280,12 @@ th {
   font-size: 46px;
   font-weight: 900;
   margin-bottom: 18px;
+  color: white;
 }
 
 .phone-display {
-  background: #0c0e14;
-  border: 2px solid var(--line);
+  background: #1e293b;
+  border: 2px solid #334155;
   border-radius: 22px;
   height: 82px;
   display: grid;
@@ -230,6 +293,7 @@ th {
   font-size: 38px;
   letter-spacing: 3px;
   margin-bottom: 18px;
+  color: white;
 }
 
 .keypad {
@@ -241,22 +305,25 @@ th {
 .key {
   height: 86px;
   border-radius: 18px;
-  background: var(--panel);
+  background: #1e293b;
   color: white;
-  border: 1px solid var(--line);
+  border: 1px solid #334155;
   font-size: 32px;
   font-weight: 900;
+  cursor: pointer;
 }
 
 .key.confirm {
-  background: var(--red);
+  background: var(--accent);
 }
 
+/* 모바일 */
 .mobile {
   max-width: 430px;
   margin: 0 auto;
   min-height: 100vh;
   padding: 20px;
+  background: var(--bg);
 }
 
 .mobile-grid {
@@ -265,67 +332,81 @@ th {
   gap: 12px;
 }
 
+/* 사이드바 메뉴 */
 .menu-group-btn {
   width: 100%;
-  background: #151515;
-  border: 1px solid #2a2a2a;
-  color: white;
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 2px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 800;
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.menu-group-btn:hover {
+  color: white;
 }
 
 .submenu {
   display: grid;
-  gap: 6px;
-  margin-bottom: 14px;
-  padding-left: 10px;
+  gap: 2px;
+  margin-bottom: 10px;
+  padding-left: 8px;
 }
 
 .submenu a {
-  color: #bbb;
+  color: #94a3b8;
   text-decoration: none;
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 .submenu a:hover {
-  background: rgba(255,255,255,0.06);
+  background: var(--sidebar-hover);
   color: white;
 }
 
-/* 예약 캘린더 */
+/* 캘린더 */
 .calendar-big .react-calendar {
   width: 100%;
   border: none;
   background: transparent;
-  color: white;
+  color: var(--text);
   font-family: inherit;
 }
 
 .calendar-big .react-calendar__navigation {
-  height: 64px;
-  margin-bottom: 16px;
+  height: 56px;
+  margin-bottom: 12px;
 }
 
 .calendar-big .react-calendar__navigation button {
-  color: white;
-  background: #111827;
-  border-radius: 14px;
+  color: var(--text);
+  background: var(--panel2);
+  border-radius: 8px;
   margin: 3px;
-  font-size: 18px;
-  font-weight: 900;
+  font-size: 16px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+}
+
+.calendar-big .react-calendar__navigation button:hover {
+  background: var(--line);
 }
 
 .calendar-big .react-calendar__month-view__weekdays {
-  color: #94a3b8;
-  font-weight: 900;
-  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .calendar-big .react-calendar__month-view__weekdays abbr {
@@ -335,52 +416,59 @@ th {
 .calendar-big .react-calendar__month-view__days {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .calendar-big .react-calendar__tile {
   max-width: none !important;
   width: 100% !important;
-  min-height: 92px;
-  background: #0b1220;
-  color: white;
-  border: 1px solid #1f2937;
-  border-radius: 16px;
-  font-size: 18px;
-  font-weight: 900;
+  min-height: 88px;
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
   margin: 0 !important;
 }
 
 .calendar-big .react-calendar__tile:hover {
-  background: #111827;
+  background: #eff6ff;
+  border-color: var(--accent);
 }
 
 .calendar-big .react-calendar__tile--active {
-  background: #ff1f5a !important;
+  background: var(--accent) !important;
   color: white !important;
+  border-color: var(--accent) !important;
 }
 
 .calendar-big .react-calendar__month-view__days__day--neighboringMonth {
-  color: #64748b !important;
+  color: #d1d5db !important;
+  background: #fafafa !important;
 }
 
 .calendar-big .sunday,
 .calendar-big .holiday {
-  color: #ff4d6d !important;
+  color: #ef4444 !important;
+}
+
+.calendar-big .saturday {
+  color: var(--accent) !important;
 }
 
 .calendar-count {
-  margin-top: 8px;
+  margin-top: 6px;
   display: inline-block;
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(46, 229, 157, 0.15);
-  color: #2ee59d;
-  font-size: 12px;
-  font-weight: 900;
+  background: rgba(37,99,235,0.1);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-/* 모바일 최적화 */
+/* 모바일 반응형 */
 @media (max-width: 900px) {
   .app-shell {
     display: block;
@@ -391,7 +479,7 @@ th {
     height: auto;
     position: relative;
     border-right: none;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid #334155;
   }
 
   .main {
@@ -405,7 +493,7 @@ th {
   }
 
   .title {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .grid,
@@ -415,7 +503,7 @@ th {
 
   .card {
     padding: 16px;
-    border-radius: 16px;
+    border-radius: 10px;
   }
 
   .row {
@@ -436,17 +524,17 @@ th {
   }
 
   .calendar-big .react-calendar__month-view__days {
-    gap: 4px;
+    gap: 3px;
   }
 
   .calendar-big .react-calendar__tile {
-    min-height: 68px;
-    font-size: 14px;
-    border-radius: 10px;
+    min-height: 60px;
+    font-size: 13px;
+    border-radius: 8px;
   }
 
   .calendar-count {
-    font-size: 11px;
-    padding: 3px 6px;
+    font-size: 10px;
+    padding: 2px 5px;
   }
 }
