@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 
 const today = new Date().toISOString().slice(0, 10);
 
-const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
+const money = (v: any) => `${Number(v || 0).toLocaleString()}??;
 
 export default function PaymentsPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -17,7 +17,7 @@ export default function PaymentsPage() {
   const [reviewRefund, setReviewRefund] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  const [branch, setBranch] = useState("전체");
+  const [branch, setBranch] = useState("?꾩껜");
   const [memberSearch, setMemberSearch] = useState("");
 
   const [form, setForm] = useState({
@@ -60,7 +60,7 @@ export default function PaymentsPage() {
 
     if (!isAdminOrOwner) {
       url += `?branch_name=${encodeURIComponent(user?.branch_name || "")}`;
-    } else if (branch !== "전체") {
+    } else if (branch !== "?꾩껜") {
       url += `?branch_name=${encodeURIComponent(branch)}`;
     }
 
@@ -110,19 +110,19 @@ export default function PaymentsPage() {
 
   const savePayment = async () => {
     if (!form.member_id) {
-      alert("회원을 선택해주세요.");
+      alert("?뚯썝???좏깮?댁＜?몄슂.");
       return;
     }
 
     if (finalAmount <= 0) {
-      alert("결제금액을 확인해주세요.");
+      alert("寃곗젣湲덉븸???뺤씤?댁＜?몄슂.");
       return;
     }
 
     const autoMemo = [
       form.memo,
-      selectedExtras.length > 0 ? `추가상품: ${selectedExtras.join(", ")}` : "",
-      reviewRefund ? "리뷰환급 예정" : "",
+      selectedExtras.length > 0 ? `異붽??곹뭹: ${selectedExtras.join(", ")}` : "",
+      reviewRefund ? "由щ럭?섍툒 ?덉젙" : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -141,7 +141,7 @@ export default function PaymentsPage() {
     const data = await res.json();
 
     if (data.success) {
-      alert("결제 등록 완료!");
+      alert("寃곗젣 ?깅줉 ?꾨즺!");
 
       setForm({
         member_id: "",
@@ -158,7 +158,7 @@ export default function PaymentsPage() {
       setMemberSearch("");
       loadPayments();
     } else {
-      alert(data.message || "결제 등록 실패");
+      alert(data.message || "寃곗젣 ?깅줉 ?ㅽ뙣");
     }
   };
 
@@ -167,7 +167,7 @@ export default function PaymentsPage() {
     .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
   return (
-    <AppShell title="결제관리">
+    <AppShell title="寃곗젣愿由?>
       <div
         style={{
           display: "flex",
@@ -179,10 +179,9 @@ export default function PaymentsPage() {
       >
         <div>
           <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
-            결제관리
-          </h1>
+            寃곗젣愿由?          </h1>
           <p style={{ color: "#888", marginTop: 8 }}>
-            회원권 + 추가상품 결제 등록
+            ?뚯썝沅?+ 異붽??곹뭹 寃곗젣 ?깅줉
           </p>
         </div>
 
@@ -194,7 +193,7 @@ export default function PaymentsPage() {
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
             >
-              <option>전체</option>
+              <option>?꾩껜</option>
               {branches.map((b) => (
                 <option key={b.option_id}>{b.option_name}</option>
               ))}
@@ -202,7 +201,7 @@ export default function PaymentsPage() {
           )}
 
           <button className="btn secondary" onClick={loadPayments}>
-            새로고침
+            ?덈줈怨좎묠
           </button>
         </div>
       </div>
@@ -217,11 +216,11 @@ export default function PaymentsPage() {
       >
         <div>
           <div className="card" style={{ borderRadius: 24, marginBottom: 18 }}>
-            <h2>회원 선택</h2>
+            <h2>?뚯썝 ?좏깮</h2>
 
             <input
               className="input"
-              placeholder="이름 또는 전화번호 검색"
+              placeholder="?대쫫 ?먮뒗 ?꾪솕踰덊샇 寃??
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
               style={{ marginBottom: 14 }}
@@ -254,7 +253,7 @@ export default function PaymentsPage() {
                       String(form.member_id) === String(m.member_id)
                         ? "2px solid #2ee59d"
                         : "1px solid #1f2937",
-                    background: "#111827",
+                    background: "var(--panel2)",
                   }}
                 >
                   <div style={{ fontSize: 18, fontWeight: 900 }}>{m.name}</div>
@@ -270,12 +269,12 @@ export default function PaymentsPage() {
           </div>
 
           <div className="card" style={{ borderRadius: 24 }}>
-            <h2>결제 등록</h2>
+            <h2>寃곗젣 ?깅줉</h2>
 
             {selectedMember ? (
               <div
                 style={{
-                  background: "#111827",
+                  background: "var(--panel2)",
                   borderRadius: 18,
                   padding: 16,
                   marginBottom: 16,
@@ -293,7 +292,7 @@ export default function PaymentsPage() {
               </div>
             ) : (
               <div style={{ color: "#888", marginBottom: 16 }}>
-                회원을 선택해주세요.
+                ?뚯썝???좏깮?댁＜?몄슂.
               </div>
             )}
 
@@ -307,7 +306,7 @@ export default function PaymentsPage() {
             >
               <input
                 className="input"
-                placeholder="상품명"
+                placeholder="?곹뭹紐?
                 value={form.product_name}
                 onChange={(e) =>
                   setForm({ ...form, product_name: e.target.value })
@@ -317,7 +316,7 @@ export default function PaymentsPage() {
               <input
                 className="input"
                 type="number"
-                placeholder="회원권 결제금액"
+                placeholder="?뚯썝沅?寃곗젣湲덉븸"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
               />
@@ -325,14 +324,14 @@ export default function PaymentsPage() {
 
             <div
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 18,
                 padding: 16,
                 marginBottom: 14,
               }}
             >
               <div style={{ fontWeight: 900, marginBottom: 12, fontSize: 18 }}>
-                추가상품
+                異붽??곹뭹
               </div>
 
               <div style={{ display: "grid", gap: 10 }}>
@@ -348,7 +347,7 @@ export default function PaymentsPage() {
                         alignItems: "center",
                         background: checked
                           ? "rgba(46,229,157,0.12)"
-                          : "#0f172a",
+                          : "var(--panel2)",
                         border: checked
                           ? "1px solid #2ee59d"
                           : "1px solid #1f2937",
@@ -380,7 +379,7 @@ export default function PaymentsPage() {
                     alignItems: "center",
                     background: reviewRefund
                       ? "rgba(255,77,109,0.12)"
-                      : "#0f172a",
+                      : "var(--panel2)",
                     border: reviewRefund
                       ? "1px solid #ff4d6d"
                       : "1px solid #1f2937",
@@ -389,10 +388,9 @@ export default function PaymentsPage() {
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 900 }}>리뷰 환급 예정</div>
+                    <div style={{ fontWeight: 900 }}>由щ럭 ?섍툒 ?덉젙</div>
                     <div style={{ color: "#888", marginTop: 4, fontSize: 13 }}>
-                      -20,000원
-                    </div>
+                      -20,000??                    </div>
                   </div>
 
                   <input
@@ -413,7 +411,7 @@ export default function PaymentsPage() {
                   alignItems: "center",
                 }}
               >
-                <div style={{ color: "#aaa" }}>최종 결제금액</div>
+                <div style={{ color: "#aaa" }}>理쒖쥌 寃곗젣湲덉븸</div>
                 <div style={{ fontSize: 30, fontWeight: 900, color: "#2ee59d" }}>
                   {money(finalAmount)}
                 </div>
@@ -429,9 +427,9 @@ export default function PaymentsPage() {
               }}
             >
               {[
-                ["CARD", "카드"],
-                ["CASH", "현금"],
-                ["TRANSFER", "계좌이체"],
+                ["CARD", "移대뱶"],
+                ["CASH", "?꾧툑"],
+                ["TRANSFER", "怨꾩쥖?댁껜"],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -457,7 +455,7 @@ export default function PaymentsPage() {
 
             <textarea
               className="input"
-              placeholder="메모"
+              placeholder="硫붾え"
               value={form.memo}
               onChange={(e) => setForm({ ...form, memo: e.target.value })}
               style={{ minHeight: 100, marginBottom: 14 }}
@@ -468,7 +466,7 @@ export default function PaymentsPage() {
               style={{ width: "100%", fontSize: 18 }}
               onClick={savePayment}
             >
-              결제 등록
+              寃곗젣 ?깅줉
             </button>
           </div>
         </div>
@@ -480,10 +478,10 @@ export default function PaymentsPage() {
               borderRadius: 24,
               marginBottom: 18,
               background:
-                "linear-gradient(135deg, rgba(46,229,157,0.18), rgba(17,24,39,1))",
+                "linear-gradient(135deg, rgba(46,229,157,0.18), var(--panel2))",
             }}
           >
-            <div style={{ color: "#d1fae5" }}>오늘 매출</div>
+            <div style={{ color: "#d1fae5" }}>?ㅻ뒛 留ㅼ텧</div>
             <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900 }}>
               {money(todaySales)}
             </div>
@@ -497,7 +495,7 @@ export default function PaymentsPage() {
                 marginBottom: 14,
               }}
             >
-              <h2 style={{ margin: 0 }}>최근 결제</h2>
+              <h2 style={{ margin: 0 }}>理쒓렐 寃곗젣</h2>
 
               <button
                 className="btn secondary"
@@ -521,7 +519,7 @@ export default function PaymentsPage() {
                 <div
                   key={r.payment_id}
                   style={{
-                    background: "#111827",
+                    background: "var(--panel2)",
                     borderRadius: 18,
                     padding: 16,
                   }}
@@ -561,7 +559,7 @@ export default function PaymentsPage() {
                   <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <div
                       style={{
-                        background: "#0f172a",
+                        background: "var(--panel2)",
                         borderRadius: 999,
                         padding: "6px 10px",
                         fontSize: 13,
@@ -573,7 +571,7 @@ export default function PaymentsPage() {
 
                     <div
                       style={{
-                        background: "#0f172a",
+                        background: "var(--panel2)",
                         borderRadius: 999,
                         padding: "6px 10px",
                         fontSize: 13,
@@ -581,10 +579,10 @@ export default function PaymentsPage() {
                       }}
                     >
                       {r.payment_method === "CARD"
-                        ? "카드"
+                        ? "移대뱶"
                         : r.payment_method === "CASH"
-                        ? "현금"
-                        : "계좌이체"}
+                        ? "?꾧툑"
+                        : "怨꾩쥖?댁껜"}
                     </div>
                   </div>
 
@@ -598,7 +596,7 @@ export default function PaymentsPage() {
 
               {rows.length === 0 && (
                 <div style={{ color: "#888", textAlign: "center" }}>
-                  결제 내역이 없습니다.
+                  寃곗젣 ?댁뿭???놁뒿?덈떎.
                 </div>
               )}
             </div>

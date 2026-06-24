@@ -191,7 +191,7 @@ export default function SalesReportPage() {
               <BarChart data={chartData}>
                 <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} />
                 <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={v => `${(v / 10000).toFixed(0)}만`} />
-                <Tooltip formatter={(v: any) => v.toLocaleString() + "원"} contentStyle={{ background: "#1e293b", border: "none" }} />
+                <Tooltip formatter={(v: any) => v.toLocaleString() + "원"} contentStyle={{ background: "var(--panel2)", border: "none" }} />
                 <Legend />
                 <Bar dataKey="현금" fill="#22c55e" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="카드" fill="#3b82f6" radius={[4, 4, 0, 0]} />

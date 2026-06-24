@@ -98,8 +98,8 @@ export default function MobileCrmPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#08090d",
-        color: "white",
+        background: "var(--bg)",
+        color: "var(--text)",
         padding: "18px 18px 90px",
       }}
     >
@@ -254,7 +254,7 @@ export default function MobileCrmPage() {
             <div
                 key={r.crm_id}
                 style={{
-                    background: "#111827",
+                    background: "var(--panel2)",
                     borderRadius: 18,
                     padding: 16,
                 }}
@@ -392,7 +392,7 @@ export default function MobileCrmPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "#0f172a",
+          background: "var(--panel2)",
           borderTop: "1px solid #1f2937",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",

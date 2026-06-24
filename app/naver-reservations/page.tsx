@@ -480,7 +480,7 @@ export default function NaverReservationsPage() {
               maxWidth: 760,
               maxHeight: "90vh",
               overflow: "auto",
-              background: "#111827",
+              background: "var(--panel2)",
               border: "1px solid #273244",
               borderRadius: 24,
               padding: 28,
@@ -670,7 +670,7 @@ export default function NaverReservationsPage() {
 
               <div
                 style={{
-                  background: "#0b1220",
+                  background: "var(--panel2)",
                   border: "1px solid #273244",
                   borderRadius: 12,
                   padding: 12,
@@ -706,7 +706,7 @@ export default function NaverReservationsPage() {
             style={{
               width: "100%",
               maxWidth: 620,
-              background: "#111827",
+              background: "var(--panel2)",
               border: "1px solid #273244",
               borderRadius: 24,
               padding: 26,

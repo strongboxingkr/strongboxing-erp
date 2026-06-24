@@ -195,7 +195,7 @@ export default function CalendarPage() {
               key={r.event_id}
               onClick={() => setSelected(r)}
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 18,
                 padding: 16,
                 cursor: "pointer",

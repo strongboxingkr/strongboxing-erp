@@ -158,8 +158,8 @@ export default function MobilePaymentsPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#08090d",
-        color: "white",
+        background: "var(--bg)",
+        color: "var(--text)",
         padding: "18px 18px 90px",
       }}
     >
@@ -187,7 +187,7 @@ export default function MobilePaymentsPage() {
           borderRadius: 28,
           marginBottom: 18,
           background:
-            "linear-gradient(135deg, rgba(46,229,157,0.18), rgba(17,24,39,1))",
+            "linear-gradient(135deg, rgba(46,229,157,0.18), var(--panel2))",
         }}
       >
         <div style={{ color: "#aaa" }}>
@@ -366,7 +366,7 @@ export default function MobilePaymentsPage() {
             <div
               key={m.member_id}
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 18,
                 padding: 16,
               }}
@@ -459,7 +459,7 @@ export default function MobilePaymentsPage() {
             <div
               key={p.payment_id}
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 18,
                 padding: 16,
               }}
@@ -528,7 +528,7 @@ export default function MobilePaymentsPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "#0f172a",
+          background: "var(--panel2)",
           borderTop: "1px solid #1f2937",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",

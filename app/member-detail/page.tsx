@@ -458,7 +458,7 @@ export default function MemberDetailPage() {
               <div
                 style={{
                   background:
-                    "#111827",
+                    "var(--panel2)",
                   borderRadius: 18,
                   padding:
                     "14px 20px",
@@ -632,12 +632,12 @@ export default function MemberDetailPage() {
                     target="_blank"
                     style={{
                       background:
-                        "#111827",
+                        "var(--panel2)",
                       borderRadius: 18,
                       padding: 14,
                       textDecoration:
                         "none",
-                      color: "white",
+                      color: "var(--text)",
                     }}
                   >
                     <div
@@ -721,7 +721,7 @@ export default function MemberDetailPage() {
                   <div
                     key={c.attendance_id}
                     style={{
-                      background: "#111827",
+                      background: "var(--panel2)",
                       borderRadius: 16,
                       padding: 14,
                     }}
@@ -810,7 +810,7 @@ export default function MemberDetailPage() {
                       gridTemplateColumns:
                         "120px 1fr 120px 120px",
                       gap: 12,
-                      background: "#111827",
+                      background: "var(--panel2)",
                       borderRadius: 12,
                       padding: 12,
                       alignItems: "center",
@@ -969,7 +969,7 @@ export default function MemberDetailPage() {
                     key={n.note_id}
                     style={{
                       background:
-                        "#111827",
+                        "var(--panel2)",
                       borderRadius: 12,
                       padding: 12,
                     }}
@@ -1169,7 +1169,7 @@ export default function MemberDetailPage() {
                   <div
                     key={h.history_id}
                     style={{
-                      background: "#111827",
+                      background: "var(--panel2)",
                       borderRadius: 14,
                       padding: 14,
                     }}
@@ -1243,7 +1243,7 @@ function Info({
   return (
     <div
       style={{
-        background: "#111827",
+        background: "var(--panel2)",
         borderRadius: 8,
         padding: "8px 10px",
         minHeight: 42,

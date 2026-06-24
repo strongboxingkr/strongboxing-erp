@@ -132,7 +132,7 @@ export default function RenewalPage() {
               <div
                 key={m.member_id}
                 style={{
-                  background: "#111827",
+                  background: "var(--panel2)",
                   borderRadius: 18,
                   padding: 16,
                   display: "flex",

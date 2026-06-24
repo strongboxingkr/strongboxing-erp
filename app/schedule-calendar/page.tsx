@@ -80,9 +80,9 @@ export default function ScheduleCalendarPage() {
     <div
       style={{
         padding: 24,
-        background: "#020617",
+        background: "var(--bg)",
         minHeight: "100vh",
-        color: "white",
+        color: "var(--text)",
       }}
     >
       <h1
@@ -105,7 +105,7 @@ export default function ScheduleCalendarPage() {
       >
         <div
           style={{
-            background: "#111827",
+            background: "var(--panel2)",
             padding: 18,
             borderRadius: 20,
             border: "1px solid #273244",
@@ -153,7 +153,7 @@ export default function ScheduleCalendarPage() {
         >
           <div
             style={{
-              background: "#111827",
+              background: "var(--panel2)",
               borderRadius: 20,
               padding: 18,
               border: "1px solid #273244",
@@ -179,7 +179,7 @@ export default function ScheduleCalendarPage() {
                 <div
                   key={`r-${r.reservation_id}`}
                   style={{
-                    background: "#0b1220",
+                    background: "var(--panel2)",
                     borderRadius: 16,
                     padding: 14,
                     borderLeft: "5px solid #3b82f6",
@@ -232,7 +232,7 @@ export default function ScheduleCalendarPage() {
                 <div
                   key={`l-${l.lesson_id}`}
                   style={{
-                    background: "#0b1220",
+                    background: "var(--panel2)",
                     borderRadius: 16,
                     padding: 14,
                     borderLeft: "5px solid #22c55e",
@@ -285,7 +285,7 @@ export default function ScheduleCalendarPage() {
                 selectedLessons.length === 0 && (
                   <div
                     style={{
-                      background: "#111827",
+                      background: "var(--panel2)",
                       borderRadius: 16,
                       padding: 30,
                       textAlign: "center",

@@ -181,7 +181,7 @@ export default function SmsPage() {
                 ["실제 발송", sendableCount, "#22c55e"],
                 ["번호 없음", noPhoneCount, "#ef4444"],
               ].map(([label, val, color]) => (
-                <div key={label as string} style={{ background: "#0b1220", borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
+                <div key={label as string} style={{ background: "var(--panel2)", borderRadius: 12, padding: "12px 14px", textAlign: "center" }}>
                   <div style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700 }}>{label}</div>
                   <div style={{ color: color as string, fontSize: 24, fontWeight: 900, marginTop: 4 }}>{val}명</div>
                 </div>
@@ -206,7 +206,7 @@ export default function SmsPage() {
             <div style={{ maxHeight: 320, overflow: "auto", borderRadius: 12, border: "1px solid #1f2937" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#0b1220", position: "sticky", top: 0 }}>
+                  <tr style={{ background: "var(--panel2)", position: "sticky", top: 0 }}>
                     <th style={{ padding: "10px 12px", textAlign: "left", color: "#94a3b8", fontSize: 13 }}>선택</th>
                     <th style={{ padding: "10px 12px", textAlign: "left", color: "#94a3b8", fontSize: 13 }}>이름</th>
                     <th style={{ padding: "10px 12px", textAlign: "left", color: "#94a3b8", fontSize: 13 }}>전화번호</th>
@@ -226,7 +226,7 @@ export default function SmsPage() {
                         <input type="checkbox" checked={selectedIds.includes(t.member_id)} onChange={() => toggle(t.member_id)} onClick={(e) => e.stopPropagation()} />
                       </td>
                       <td style={{ padding: "10px 12px", fontWeight: 900 }}>{t.name}</td>
-                      <td style={{ padding: "10px 12px", color: t.phone ? "#fff" : "#ef4444" }}>{t.phone || "번호없음"}</td>
+                      <td style={{ padding: "10px 12px", color: t.phone ? "var(--text)" : "#ef4444" }}>{t.phone || "번호없음"}</td>
                       <td style={{ padding: "10px 12px", color: "#94a3b8", fontSize: 13 }}>{t.product_name || "-"}</td>
                       <td style={{ padding: "10px 12px", color: "#94a3b8", fontSize: 13 }}>{t.end_date?.slice(0, 10) || "-"}</td>
                       <td style={{ padding: "10px 12px" }}>
@@ -269,7 +269,7 @@ export default function SmsPage() {
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, color: "#94a3b8", fontSize: 13 }}>
               <span>{message.length}자 {message.length > 45 ? <span style={{ color: "#f59e0b" }}>(장문 MMS)</span> : <span style={{ color: "#22c55e" }}>(단문 SMS)</span>}</span>
-              <span>예상 비용 약 <strong style={{ color: "#fff" }}>{cost.toLocaleString()}원</strong></span>
+              <span>예상 비용 약 <strong style={{ color: "var(--text)" }}>{cost.toLocaleString()}원</strong></span>
             </div>
           </div>
         </div>
@@ -280,13 +280,13 @@ export default function SmsPage() {
 
           <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
             {[
-              ["지점", branchName, "#fff"],
+              ["지점", branchName, "var(--text)"],
               ["발송 대상", `${selectedCount}명`, "#3b82f6"],
               ["실제 발송", `${sendableCount}명`, "#22c55e"],
               ["번호 없음", `${noPhoneCount}명`, noPhoneCount > 0 ? "#ef4444" : "#4b5563"],
               ["예상 비용", `약 ${cost.toLocaleString()}원`, "#f59e0b"],
             ].map(([label, val, color]) => (
-              <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#0b1220", borderRadius: 10 }}>
+              <div key={label as string} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "var(--panel2)", borderRadius: 10 }}>
                 <span style={{ color: "#94a3b8", fontSize: 13 }}>{label}</span>
                 <span style={{ color: color as string, fontWeight: 900 }}>{val}</span>
               </div>
@@ -294,7 +294,7 @@ export default function SmsPage() {
           </div>
 
           {/* 미리보기 */}
-          <div style={{ background: "#0b1220", border: "1px solid #273244", borderRadius: 14, padding: 14, minHeight: 120, whiteSpace: "pre-wrap", color: message ? "#fff" : "#4b5563", fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
+          <div style={{ background: "var(--panel2)", border: "1px solid #273244", borderRadius: 14, padding: 14, minHeight: 120, whiteSpace: "pre-wrap", color: message ? "var(--text)" : "#4b5563", fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
             {message || "문자 미리보기"}
           </div>
 

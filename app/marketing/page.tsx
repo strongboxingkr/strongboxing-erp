@@ -328,7 +328,7 @@ export default function MarketingPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#273244" />
               <XAxis dataKey="month" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
-              <Tooltip contentStyle={{ background: "#111827", border: "1px solid #273244", borderRadius: 12 }} />
+              <Tooltip contentStyle={{ background: "var(--panel2)", border: "1px solid #273244", borderRadius: 12 }} />
               <Legend />
               <Bar dataKey="inquiries" name="문의수" fill="#22c55e" radius={[4, 4, 0, 0]} />
               <Bar dataKey="registrations" name="등록수" fill="#f97316" radius={[4, 4, 0, 0]} />
@@ -345,7 +345,7 @@ export default function MarketingPage() {
             {top5.map((s, i) => {
               const rate = s.inquiries > 0 ? (s.registrations / s.inquiries) * 100 : 0;
               return (
-                <div key={s.src} style={{ display: "flex", alignItems: "center", gap: 16, background: "#111827", borderRadius: 14, padding: "14px 18px" }}>
+                <div key={s.src} style={{ display: "flex", alignItems: "center", gap: 16, background: "var(--panel2)", borderRadius: 14, padding: "14px 18px" }}>
                   <div style={{ fontSize: 28, fontWeight: 900, color: i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "#4b5563", minWidth: 32 }}>
                     #{i + 1}
                   </div>

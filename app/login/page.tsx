@@ -114,14 +114,14 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#0f172a",
+        background: "var(--panel2)",
         padding: 20,
       }}
     >
       <div
         style={{
           width: 420,
-          background: "#111827",
+          background: "var(--panel2)",
           padding: 32,
           borderRadius: 20,
         }}
@@ -131,7 +131,7 @@ export default function LoginPage() {
             fontSize: 32,
             fontWeight: 900,
             marginBottom: 24,
-            color: "white",
+            color: "var(--text)",
           }}
         >
           STRONG ERP

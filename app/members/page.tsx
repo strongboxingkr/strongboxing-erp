@@ -598,7 +598,7 @@ ${
                 display: "flex",
                 alignItems: "center",
                 gap: 22,
-                background: "#111827",
+                background: "var(--panel2)",
                 border: "1px solid #1f2937",
                 borderRadius: 14,
                 padding: "0 14px",

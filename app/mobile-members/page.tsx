@@ -322,7 +322,7 @@ export default function MobileMembersPage() {
 
   if (!user) {
     return (
-      <div style={{ padding: 20, color: "white", background: "#08090d" }}>
+      <div style={{ padding: 20, color: "var(--text)", background: "var(--bg)" }}>
         로딩중...
       </div>
     );
@@ -332,8 +332,8 @@ export default function MobileMembersPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#08090d",
-        color: "white",
+        background: "var(--bg)",
+        color: "var(--text)",
         padding: "18px 18px 90px",
       }}
     >
@@ -764,7 +764,7 @@ export default function MobileMembersPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "#0f172a",
+          background: "var(--panel2)",
           borderTop: "1px solid #1f2937",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",

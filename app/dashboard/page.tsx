@@ -314,7 +314,7 @@ export default function DashboardPage() {
             className="card"
             style={{
               borderRadius: 24,
-              background: `linear-gradient(135deg, ${c.bg}, rgba(17,24,39,1))`,
+              background: `linear-gradient(135deg, ${c.bg}, var(--panel2))`,
             }}
           >
             <div
@@ -400,7 +400,7 @@ export default function DashboardPage() {
                   }
                   style={{
                     background:
-                      "#111827",
+                      "var(--panel2)",
                     borderRadius: 24,
                     padding: 18,
                     border:
@@ -416,7 +416,7 @@ export default function DashboardPage() {
                       top: 16,
                       right: 16,
                       background:
-                        "#0f172a",
+                        "var(--panel2)",
                       borderRadius: 999,
                       padding:
                         "6px 10px",
@@ -648,7 +648,7 @@ export default function DashboardPage() {
                     width: "100%",
                     height: 14,
                     background:
-                      "#111827",
+                      "var(--panel2)",
                     borderRadius: 999,
                     overflow:
                       "hidden",
@@ -737,7 +737,7 @@ export default function DashboardPage() {
                   )}
                   style={{
                     background:
-                      "#111827",
+                      "var(--panel2)",
                     borderRadius: 20,
                     padding: 18,
                     display:
@@ -835,7 +835,7 @@ export default function DashboardPage() {
           <div
             key={m.member_id}
             style={{
-              background: "#111827",
+              background: "var(--panel2)",
               borderRadius: 18,
               padding: 16,
               display: "flex",
@@ -937,7 +937,7 @@ export default function DashboardPage() {
           >
             <div
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 20,
                 padding: 20,
                 border: "1px solid #273244",

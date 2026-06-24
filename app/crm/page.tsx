@@ -477,7 +477,7 @@ export default function CrmPage() {
 
           <label
             style={{
-              color: "white",
+              color: "var(--text)",
             }}
           >
             <input
@@ -498,7 +498,7 @@ export default function CrmPage() {
 
           <label
             style={{
-              color: "white",
+              color: "var(--text)",
             }}
           >
             <input
@@ -623,7 +623,7 @@ export default function CrmPage() {
                   <div
                     style={{
                       background:
-                        "#111827",
+                        "var(--panel2)",
                       padding:
                         "6px 10px",
                       borderRadius: 999,
@@ -640,7 +640,7 @@ export default function CrmPage() {
                   <div
                     style={{
                       background:
-                        "#111827",
+                        "var(--panel2)",
                       padding:
                         "6px 10px",
                       borderRadius: 999,
@@ -658,7 +658,7 @@ export default function CrmPage() {
                     <div
                       style={{
                         background:
-                          "#111827",
+                          "var(--panel2)",
                         padding:
                           "6px 10px",
                         borderRadius: 999,
@@ -722,7 +722,7 @@ export default function CrmPage() {
                 style={{
                   marginTop: 18,
                   background:
-                    "#111827",
+                    "var(--panel2)",
                   borderRadius: 18,
                   padding: 16,
                   color: "#bbb",

@@ -206,8 +206,8 @@ export default function MobileMemberDetailPage() {
       <div
         style={{
           minHeight: "100vh",
-          background: "#08090d",
-          color: "white",
+          background: "var(--bg)",
+          color: "var(--text)",
           padding: 20,
         }}
       >
@@ -222,8 +222,8 @@ export default function MobileMemberDetailPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#08090d",
-        color: "white",
+        background: "var(--bg)",
+        color: "var(--text)",
         padding: "18px 18px 90px",
       }}
     >
@@ -246,7 +246,7 @@ export default function MobileMemberDetailPage() {
           borderRadius: 28,
           marginBottom: 16,
           background:
-            "linear-gradient(135deg, rgba(46,229,157,0.18), rgba(17,24,39,1))",
+            "linear-gradient(135deg, rgba(46,229,157,0.18), var(--panel2))",
         }}
       >
         <div style={{ fontSize: 34, fontWeight: 900 }}>
@@ -352,7 +352,7 @@ export default function MobileMemberDetailPage() {
             <div
               key={n.note_id}
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 16,
                 padding: 14,
               }}
@@ -427,10 +427,10 @@ export default function MobileMemberDetailPage() {
               href={f.file_url}
               target="_blank"
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 16,
                 padding: 14,
-                color: "white",
+                color: "var(--text)",
                 textDecoration: "none",
               }}
             >
@@ -460,7 +460,7 @@ export default function MobileMemberDetailPage() {
             <div
               key={c.attendance_id}
               style={{
-                background: "#111827",
+                background: "var(--panel2)",
                 borderRadius: 16,
                 padding: 14,
               }}
@@ -486,7 +486,7 @@ export default function MobileMemberDetailPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "#0f172a",
+          background: "var(--panel2)",
           borderTop: "1px solid #1f2937",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
