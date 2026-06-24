@@ -51,10 +51,7 @@ export default function KioskPage() {
 
       {/* 로고 */}
       <div style={{ marginBottom: 32, textAlign: "center" }}>
-        <div style={{ fontSize: 14, letterSpacing: 8, color: "#ef4444", fontWeight: 700, marginBottom: 6 }}>
-          ★ WELCOME TO ★
-        </div>
-        <div style={{ fontSize: 64, fontWeight: 900, color: "#fff", letterSpacing: 6, lineHeight: 1, fontFamily: "'Arial Black', sans-serif" }}>
+<div style={{ fontSize: 64, fontWeight: 900, color: "#fff", letterSpacing: 6, lineHeight: 1, fontFamily: "'Arial Black', sans-serif" }}>
           STRONG
         </div>
         <div style={{ fontSize: 64, fontWeight: 900, color: "#ef4444", letterSpacing: 6, lineHeight: 1, fontFamily: "'Arial Black', sans-serif" }}>

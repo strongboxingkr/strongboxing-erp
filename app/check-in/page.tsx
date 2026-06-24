@@ -44,10 +44,7 @@ export default function CheckInPage() {
 
       {/* 로고 */}
       <div style={{ marginBottom: 32, textAlign: "center" }}>
-        <div style={{ fontSize: 14, letterSpacing: 8, color: "#ef4444", fontWeight: 700, marginBottom: 6, fontFamily: "sans-serif" }}>
-          ★ WELCOME TO ★
-        </div>
-        <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", letterSpacing: 6, lineHeight: 1 }}>
+<div style={{ fontSize: 52, fontWeight: 900, color: "#fff", letterSpacing: 6, lineHeight: 1 }}>
           STRONG
         </div>
         <div style={{ fontSize: 52, fontWeight: 900, color: "#ef4444", letterSpacing: 6, lineHeight: 1 }}>
