@@ -202,36 +202,36 @@ export default function MobileOwnerPage() {
   const branchSales = data.branch_sales || [];
 
   return (
-    <div className="mobile" style={{ background: "#08090d", minHeight: "100vh", paddingBottom: 50 }}>
+    <div className="mobile" style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 50 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div className="logo">
-          STRONG<span> OWNER</span>
+        <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: 1, color: "#1e293b" }}>
+          STRONG <span style={{ color: "var(--accent)" }}>OWNER</span>
         </div>
 
-        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", padding: "8px 14px", borderRadius: 999, fontSize: 13, color: "#aaa" }}>
+        <div style={{ background: "white", border: "1px solid var(--line)", padding: "6px 14px", borderRadius: 999, fontSize: 13, color: "var(--muted)" }}>
           대표 모바일
         </div>
       </div>
 
-      <div className="card" style={{ padding: 24, borderRadius: 28, background: "linear-gradient(135deg, rgba(255,32,78,0.25), rgba(17,24,39,1))", marginBottom: 20 }}>
-        <div style={{ color: "#ffd5df", fontSize: 14 }}>
+      <div className="card" style={{ padding: 24, borderRadius: 28, background: "linear-gradient(135deg, #eff6ff, #dbeafe)", border: "1px solid #bfdbfe", marginBottom: 20 }}>
+        <div style={{ color: "#2563eb", fontSize: 14, fontWeight: 600 }}>
           {startDate === endDate
           ? startDate
           : `${startDate} ~ ${endDate}`}{" "}
         {branch}
         </div>
-        <div style={{ marginTop: 10, fontSize: 18, color: "#ddd" }}>오늘 총매출</div>
-        <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900 }}>{money(data.sales)}</div>
+        <div style={{ marginTop: 10, fontSize: 18, color: "#374151" }}>오늘 총매출</div>
+        <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900, color: "#1e3a8a" }}>{money(data.sales)}</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
-          <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 18, padding: 16 }}>
-            <div style={{ color: "#aaa", fontSize: 13 }}>신규회원</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900 }}>{data.new_members || 0}명</div>
+          <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
+            <div style={{ color: "#64748b", fontSize: 13 }}>신규회원</div>
+            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.new_members || 0}명</div>
           </div>
 
-          <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 18, padding: 16 }}>
-            <div style={{ color: "#aaa", fontSize: 13 }}>오늘 출석</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900 }}>{data.checkins || 0}명</div>
+          <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
+            <div style={{ color: "#64748b", fontSize: 13 }}>오늘 출석</div>
+            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.checkins || 0}명</div>
           </div>
         </div>
       </div>
@@ -354,7 +354,7 @@ export default function MobileOwnerPage() {
                     <div style={{ marginTop: 6, color: "#888" }}>신규회원 {b.new_members || 0}명</div>
                   </div>
 
-                  <div style={{ fontSize: 28, fontWeight: 900, color: "#2ee59d" }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)" }}>
                     {money(b.sales || b.total)}
                   </div>
                 </div>
@@ -379,58 +379,36 @@ export default function MobileOwnerPage() {
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="sales" stroke="#ff3b6b" strokeWidth={4} />
+              <Line type="monotone" dataKey="sales" stroke="#2563eb" strokeWidth={4} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div
-        style={{
-          background: "#111827",
-          borderRadius: 24,
-          padding: 18,
-          marginTop: 20,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 24,
-            fontWeight: 900,
-            marginBottom: 14,
-          }}
-        >
-          오늘 예약
-        </div>
+      <div className="card" style={{ borderRadius: 24, padding: 18, marginTop: 20 }}>
+        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>오늘 예약</div>
 
         {reservations.length === 0 ? (
-          <div style={{ color: "#888" }}>
-            오늘 예약이 없습니다.
-          </div>
+          <div style={{ color: "var(--muted)" }}>오늘 예약이 없습니다.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {reservations.map((r) => (
               <div
                 key={r.event_id}
                 style={{
-                  background: "#1f2937",
+                  background: "var(--panel2)",
                   borderRadius: 18,
                   padding: 16,
-                  borderLeft: "6px solid #2ee59d",
+                  borderLeft: "6px solid #2563eb",
+                  border: "1px solid var(--line)",
+                  borderLeftWidth: 6,
+                  borderLeftColor: "#2563eb",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 900,
-                  }}
-                >
+                <div style={{ fontSize: 22, fontWeight: 900 }}>
                   {r.start_datetime?.slice(11, 16)} / {r.customer_name}
                 </div>
-
-                <div style={{ color: "#aaa", marginTop: 8 }}>
-                  {r.branch_name}
-                </div>
+                <div style={{ color: "var(--muted)", marginTop: 8 }}>{r.branch_name}</div>
               </div>
             ))}
           </div>
@@ -462,8 +440,8 @@ export default function MobileOwnerPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "#0f172a",
-          borderTop: "1px solid #1f2937",
+          background: "white",
+          borderTop: "1px solid var(--line)",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
           padding: "10px 0",
@@ -472,66 +450,11 @@ export default function MobileOwnerPage() {
       >
       
 
-        <Link
-          href="/mobile-owner"
-          style={{
-            textAlign: "center",
-            color: "#2ee59d",
-            textDecoration: "none",
-            fontSize: 12,
-            fontWeight: 900,
-          }}
-        >
-          홈
-        </Link>
-
-        <Link
-          href="/mobile-members"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          회원
-        </Link>
-
-        <Link
-          href="/mobile-attendance"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          출석
-        </Link>
-
-        <Link
-          href="/mobile-payments"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          결제
-        </Link>
-
-        <Link
-          href="/mobile-crm"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          상담
-        </Link>
+        <Link href="/mobile-owner" style={{ textAlign: "center", color: "var(--accent)", textDecoration: "none", fontSize: 12, fontWeight: 900 }}>홈</Link>
+        <Link href="/mobile-members" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>회원</Link>
+        <Link href="/mobile-attendance" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>출석</Link>
+        <Link href="/mobile-payments" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>결제</Link>
+        <Link href="/mobile-crm" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>상담</Link>
       </div>
     </div>
   );
