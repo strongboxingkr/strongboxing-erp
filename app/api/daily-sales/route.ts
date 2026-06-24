@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   if (branch) {
     where += " AND branch_name = ?";
     params.push(branch);
-  } else if (!isAdminOrOwner(user)) {
+  } else if (!isAdminOrOwner(user.role)) {
     where += " AND branch_name = ?";
     params.push(user.branch_name);
   }

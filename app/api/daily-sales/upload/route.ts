@@ -6,7 +6,7 @@ import * as xlsx from "xlsx";
 export async function POST(req: NextRequest) {
   const user = await getUserFromRequest(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdminOrOwner(user)) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+  if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "권한 없음" }, { status: 403 });
 
   const formData = await req.formData();
   const file = formData.get("file") as File;
