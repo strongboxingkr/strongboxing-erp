@@ -17,7 +17,9 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
 
   const headers = new Headers(options.headers || {});
 
-  headers.set("Content-Type", "application/json");
+  if (!(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   if (user) {
     headers.set("x-user-id", String(user.user_id || ""));
