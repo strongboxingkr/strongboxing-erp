@@ -14,7 +14,7 @@ export default function LoginPage() {
     password: "",
     phone: "",
     requested_branch: "철산점",
-    role: "MANAGER",
+    role: "COACH",
     request_memo: "",
   });
 
@@ -99,7 +99,7 @@ export default function LoginPage() {
         password: "",
         phone: "",
         requested_branch: "철산점",
-        role: "MANAGER",
+        role: "COACH",
         request_memo: "",
       });
     } else {
