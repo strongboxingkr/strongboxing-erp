@@ -16,9 +16,18 @@ export async function POST(req: Request) {
       `SELECT user_id FROM users WHERE login_id = ? LIMIT 1`,
       [username]
     );
-
     if (exists.length > 0) {
       return NextResponse.json({ success: false, message: "이미 존재하는 아이디입니다." });
+    }
+
+    if (name && phone) {
+      const [dupCheck]: any = await pool.query(
+        `SELECT user_id FROM users WHERE name = ? AND phone = ? LIMIT 1`,
+        [name, phone]
+      );
+      if (dupCheck.length > 0) {
+        return NextResponse.json({ success: false, message: "동일한 이름과 전화번호로 이미 가입된 계정이 있습니다." });
+      }
     }
 
     const hashed = await bcrypt.hash(password, 10);
