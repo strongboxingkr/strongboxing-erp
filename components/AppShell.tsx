@@ -61,6 +61,7 @@ const menuGroups = [
     title: "⚙ 설정",
     items: [
       ["계정관리", "/users"],
+      ["가입 승인", "/users/pending"],
       ["권한관리", "/permissions"],
       ["설정관리", "/settings"],
     ],
