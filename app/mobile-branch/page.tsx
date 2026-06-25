@@ -138,38 +138,36 @@ export default function MobileBranchPage() {
     return () => clearInterval(timer);
   }, []);
 
-  if (!data) return <div style={{ padding: 20, color: "white" }}>로딩중...</div>;
+  if (!data) return <div style={{ padding: 20 }}>로딩중...</div>;
 
   const user = getUser();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#08090d", color: "white", padding: 18 }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", padding: 18, paddingBottom: 80 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <div>
-          <div style={{ fontSize: 28, fontWeight: 900 }}>
-            STRONG <span style={{ color: "#2ee59d" }}>BRANCH</span>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#1e293b" }}>
+            STRONG <span style={{ color: "var(--accent)" }}>BRANCH</span>
           </div>
-          <div style={{ marginTop: 4, color: "#888" }}>{user?.branch_name}</div>
+          <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>{user?.branch_name}</div>
         </div>
-
-        <div style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", padding: "8px 14px", borderRadius: 999, color: "#aaa", fontSize: 13 }}>
+        <div style={{ background: "white", border: "1px solid var(--line)", padding: "6px 14px", borderRadius: 999, color: "var(--muted)", fontSize: 13 }}>
           관장 모바일
         </div>
       </div>
 
-      <div style={{ background: "linear-gradient(135deg, rgba(46,229,157,0.22), rgba(17,24,39,1))", borderRadius: 28, padding: 24, marginBottom: 20 }}>
-        <div style={{ color: "#d1fae5" }}>오늘 총매출</div>
-        <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900 }}>{money(data.sales)}</div>
+      <div className="card" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", border: "1px solid #bfdbfe", borderRadius: 28, padding: 24, marginBottom: 20 }}>
+        <div style={{ color: "#2563eb", fontSize: 14, fontWeight: 600 }}>오늘 총매출</div>
+        <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900, color: "#1e3a8a" }}>{money(data.sales)}</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
-          <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 18, padding: 16 }}>
-            <div style={{ color: "#aaa", fontSize: 13 }}>신규회원</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900 }}>{data.new_members || 0}명</div>
+          <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
+            <div style={{ color: "#64748b", fontSize: 13 }}>신규회원</div>
+            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.new_members || 0}명</div>
           </div>
-
-          <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 18, padding: 16 }}>
-            <div style={{ color: "#aaa", fontSize: 13 }}>오늘 출석</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900 }}>{data.checkins || 0}명</div>
+          <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
+            <div style={{ color: "#64748b", fontSize: 13 }}>오늘 출석</div>
+            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.checkins || 0}명</div>
           </div>
         </div>
       </div>
@@ -211,48 +209,42 @@ export default function MobileBranchPage() {
         <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>빠른 메뉴</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {menus.map(([title, href]) => (
-            <Link key={title} href={href} style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: 20, padding: 20, textDecoration: "none" }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "white" }}>{title}</div>
-              <div style={{ marginTop: 8, color: "#888", fontSize: 13 }}>바로 이동</div>
+            <Link key={title} href={href} style={{ background: "white", border: "1px solid var(--line)", borderRadius: 20, padding: 20, textDecoration: "none" }}>
+              <div style={{ fontSize: 18, fontWeight: 900, color: "var(--text)" }}>{title}</div>
+              <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>바로 이동</div>
             </Link>
           ))}
         </div>
       </div>
 
-      <div style={{ background: "#111827", borderRadius: 24, padding: 18, marginBottom: 18 }}>
+      <div className="card" style={{ borderRadius: 24, padding: 18, marginBottom: 18 }}>
         <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>오늘 예약</div>
-
         {reservations.length === 0 ? (
-          <div style={{ color: "#888" }}>오늘 예약이 없습니다.</div>
+          <div style={{ color: "var(--muted)" }}>오늘 예약이 없습니다.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {reservations.map((r) => (
-              <div key={r.event_id} style={{ background: "#1f2937", borderRadius: 18, padding: 16, borderLeft: "6px solid #2ee59d" }}>
-                <div style={{ fontSize: 24, fontWeight: 900 }}>
-                  {r.start_datetime?.slice(11, 16) || "-"} / {r.customer_name || r.title}
-                </div>
-                <div style={{ color: "#aaa", marginTop: 8 }}>{r.phone}</div>
-                <div style={{ color: "#2ee59d", marginTop: 8, fontWeight: 900 }}>{r.status}</div>
+              <div key={r.event_id} style={{ background: "var(--panel2)", borderRadius: 18, padding: 16, borderLeft: "6px solid #2563eb", border: "1px solid var(--line)", borderLeftWidth: 6, borderLeftColor: "#2563eb" }}>
+                <div style={{ fontSize: 22, fontWeight: 900 }}>{r.start_datetime?.slice(11, 16) || "-"} / {r.customer_name || r.title}</div>
+                <div style={{ color: "var(--muted)", marginTop: 8 }}>{r.phone}</div>
+                <div style={{ color: "var(--accent)", marginTop: 8, fontWeight: 900 }}>{r.status}</div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div style={{ background: "#111827", borderRadius: 24, padding: 18 }}>
+      <div className="card" style={{ borderRadius: 24, padding: 18 }}>
         <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>관리 필요 회원</div>
-
         {alerts.length === 0 ? (
-          <div style={{ color: "#888" }}>관리 필요 회원이 없습니다.</div>
+          <div style={{ color: "var(--muted)" }}>관리 필요 회원이 없습니다.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {alerts.slice(0, 5).map((m) => (
-              <div key={m.member_id} style={{ background: "#1f2937", borderRadius: 18, padding: 16, borderLeft: "6px solid #ff4d6d" }}>
-                <div style={{ fontSize: 22, fontWeight: 900 }}>{m.name}</div>
-                <div style={{ color: "#aaa", marginTop: 8 }}>{m.phone}</div>
-                <div style={{ color: "#ff4d6d", marginTop: 8, fontWeight: 900 }}>
-                  {m.alert_type || "관리 필요"}
-                </div>
+              <div key={m.member_id} style={{ background: "var(--panel2)", borderRadius: 18, padding: 16, borderLeft: "6px solid #ef4444", border: "1px solid var(--line)", borderLeftWidth: 6, borderLeftColor: "#ef4444" }}>
+                <div style={{ fontSize: 20, fontWeight: 900 }}>{m.name}</div>
+                <div style={{ color: "var(--muted)", marginTop: 6 }}>{m.phone}</div>
+                <div style={{ color: "#ef4444", marginTop: 6, fontWeight: 700 }}>{m.alert_type || "관리 필요"}</div>
               </div>
             ))}
           </div>
@@ -284,8 +276,8 @@ export default function MobileBranchPage() {
           bottom: 0,
           left: 0,
           right: 0,
-          background: "#0f172a",
-          borderTop: "1px solid #1f2937",
+          background: "white",
+          borderTop: "1px solid var(--line)",
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
           padding: "10px 0",
@@ -293,65 +285,11 @@ export default function MobileBranchPage() {
         }}
       >
         <Link
-          href="/mobile-branch"
-          style={{
-            textAlign: "center",
-            color: "#2ee59d",
-            textDecoration: "none",
-            fontSize: 12,
-            fontWeight: 900,
-          }}
-        >
-          홈
-        </Link>
-
-        <Link
-          href="/mobile-members"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          회원
-        </Link>
-
-        <Link
-          href="/mobile-attendance"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          출석
-        </Link>
-
-        <Link
-          href="/mobile-payments"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          결제
-        </Link>
-
-        <Link
-          href="/mobile-crm"
-          style={{
-            textAlign: "center",
-            color: "white",
-            textDecoration: "none",
-            fontSize: 12,
-          }}
-        >
-          상담
-        </Link>
+          href="/mobile-branch" style={{ textAlign: "center", color: "var(--accent)", textDecoration: "none", fontSize: 12, fontWeight: 900 }}>홈</Link>
+        <Link href="/mobile-members" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>회원</Link>
+        <Link href="/mobile-attendance" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>출석</Link>
+        <Link href="/mobile-payments" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>결제</Link>
+        <Link href="/mobile-crm" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>상담</Link>
       </div>
     </div>
   );
