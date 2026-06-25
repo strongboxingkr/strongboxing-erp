@@ -104,7 +104,7 @@ export default function AppShell({
 
     const paths =
       data.rows
-        ?.filter((r: any) => r.role === role && r.can_view === "Y")
+        ?.filter((r: any) => r.role === role && (r.can_view === "Y" || r.can_view === 1 || r.can_view === true))
         .map((r: any) => r.path) || [];
 
     setAllowedPaths(paths);
