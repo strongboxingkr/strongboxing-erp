@@ -80,6 +80,8 @@ export default function AppShell({
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
   const [checked, setChecked] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+  const [todayReservations, setTodayReservations] = useState<any[]>([]);
+  const [resOpen, setResOpen] = useState(true);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -93,11 +95,25 @@ export default function AppShell({
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
       loadPermissions(parsedUser.role, parsedUser.role);
+      loadTodayReservations(parsedUser);
+      const timer = setInterval(() => loadTodayReservations(parsedUser), 5 * 60 * 1000);
+      return () => clearInterval(timer);
     } catch (e) {
       localStorage.removeItem("user");
       location.href = "/login";
     }
   }, []);
+
+  const loadTodayReservations = async (u: any) => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const isAdmin = u.role === "ADMIN" || u.role === "OWNER";
+      const branchQ = !isAdmin && u.branch_name ? `&branch_name=${encodeURIComponent(u.branch_name)}` : "";
+      const res = await fetch(`/api/calendar-events?start_date=${today}&end_date=${today}${branchQ}`);
+      const data = await res.json();
+      setTodayReservations(data.rows || []);
+    } catch {}
+  };
 
   const loadPermissions = async (role: string, userRole: string) => {
     const res = await fetch("/api/permissions");
@@ -200,9 +216,43 @@ export default function AppShell({
           })}
         </nav>
 
+        {/* 당일 예약 패널 */}
+        <div style={{ marginTop: 16, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 12 }}>
+          <button
+            onClick={() => setResOpen(o => !o)}
+            style={{ width: "100%", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 0 6px 0", color: "#fff" }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>
+              📅 오늘 예약
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {todayReservations.length > 0 && (
+                <span style={{ background: "#ef4444", color: "#fff", borderRadius: 999, fontSize: 10, fontWeight: 900, padding: "1px 6px" }}>
+                  {todayReservations.length}
+                </span>
+              )}
+              <span style={{ color: "#94a3b8", fontSize: 11 }}>{resOpen ? "−" : "+"}</span>
+            </span>
+          </button>
+          {resOpen && (
+            <div style={{ maxHeight: 180, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+              {todayReservations.length === 0 ? (
+                <div style={{ color: "#64748b", fontSize: 11, padding: "4px 0" }}>오늘 예약 없음</div>
+              ) : (
+                todayReservations.map((r: any, i: number) => (
+                  <a key={i} href="/naver-calendar" style={{ display: "block", padding: "5px 8px", background: "rgba(255,255,255,0.06)", borderRadius: 6, textDecoration: "none", borderLeft: `3px solid ${r.status === "예약확정" ? "#22c55e" : r.status === "노쇼" ? "#ef4444" : "#3b82f6"}` }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#e2e8f0" }}>{String(r.start_datetime || "").slice(11, 16)} {r.customer_name || r.title}</div>
+                    <div style={{ fontSize: 10, color: "#64748b" }}>{r.branch_name} · {r.status}</div>
+                  </a>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         <button
           className="btn secondary"
-          style={{ marginTop: 20, width: "100%" }}
+          style={{ marginTop: 12, width: "100%" }}
           onClick={logout}
         >
           로그아웃
