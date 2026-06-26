@@ -15,6 +15,26 @@ const optionTypes = [
 export default function SettingsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [selectedType, setSelectedType] = useState("BRANCH");
+  const [autoSms, setAutoSms] = useState<any>(null);
+
+  const loadAutoSms = async () => {
+    const res = await fetch("/api/settings?option_type=AUTO_SMS");
+    const data = await res.json();
+    if (data.rows?.length > 0) setAutoSms(data.rows[0]);
+  };
+
+  const toggleAutoSms = async () => {
+    if (!autoSms) return;
+    const newVal = autoSms.option_value === "ON" ? "OFF" : "ON";
+    await fetch("/api/settings/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ option_id: autoSms.option_id, option_value: newVal }),
+    });
+    setAutoSms({ ...autoSms, option_value: newVal });
+  };
+
+  useEffect(() => { loadAutoSms(); }, []);
 
   const [form, setForm] = useState({
     option_name: "",
@@ -95,6 +115,43 @@ export default function SettingsPage() {
 
   return (
     <AppShell title="설정관리">
+      {/* 자동 SMS 설정 */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 16 }}>만료 7일 전 자동 SMS</div>
+            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>
+              회원권 만료 7일 전에 자동으로 문자를 발송합니다.
+            </div>
+          </div>
+          {autoSms && (
+            <div
+              onClick={toggleAutoSms}
+              style={{
+                width: 52, height: 28, borderRadius: 999, cursor: "pointer",
+                background: autoSms.option_value === "ON" ? "var(--accent)" : "#d1d5db",
+                position: "relative", transition: "background 0.2s",
+              }}
+            >
+              <div style={{
+                position: "absolute", top: 3,
+                left: autoSms.option_value === "ON" ? 26 : 3,
+                width: 22, height: 22, borderRadius: "50%", background: "white",
+                transition: "left 0.2s",
+              }} />
+            </div>
+          )}
+          {!autoSms && (
+            <span style={{ color: "var(--muted)", fontSize: 13 }}>DB 설정 필요 (아래 SQL 참고)</span>
+          )}
+        </div>
+        {!autoSms && (
+          <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--panel2)", borderRadius: 8, fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>
+            INSERT INTO settings_options (option_type, option_name, option_value, use_yn, sort_order) VALUES ('AUTO_SMS', '만료 7일 전 자동 SMS', 'OFF', 'Y', 1);
+          </div>
+        )}
+      </div>
+
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>설정 분류</h2>
 

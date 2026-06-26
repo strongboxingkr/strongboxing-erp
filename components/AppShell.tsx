@@ -158,7 +158,7 @@ export default function AppShell({
 
         <div style={{ marginBottom: 20, color: "#aaa", fontSize: 13 }}>
           <div style={{ color: "white", fontWeight: 900 }}>{user.name}</div>
-          <div>{user.role === "OWNER" ? "대표" : "관장"}</div>
+          <div>{user.role === "OWNER" ? "대표" : user.role === "ADMIN" ? "관리자" : user.role === "DIRECTOR" ? "관장" : user.role === "COACH" ? "코치" : user.role}</div>
           <div>{user.branch_name || "전체지점"}</div>
         </div>
 
@@ -185,7 +185,11 @@ export default function AppShell({
                 {opened && (
                   <div className="submenu">
                     {visibleItems.map(([name, path]) => (
-                      <Link href={path} key={path}>
+                      <Link href={path} key={path} style={
+                        typeof window !== "undefined" && window.location.pathname === path
+                          ? { color: "#fff", background: "rgba(255,255,255,0.12)", borderRadius: 8, fontWeight: 900 }
+                          : {}
+                      }>
                         {name}
                       </Link>
                     ))}
@@ -224,7 +228,7 @@ export default function AppShell({
             </button>
 
             <div className="badge">
-              {user.role === "OWNER" ? "대표" : "관장"} /{" "}
+              {user.role === "OWNER" ? "대표" : user.role === "ADMIN" ? "관리자" : user.role === "DIRECTOR" ? "관장" : user.role === "COACH" ? "코치" : user.role} /{" "}
               {user.branch_name || "전체지점"}
             </div>
           </div>
