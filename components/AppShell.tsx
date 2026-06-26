@@ -119,7 +119,6 @@ export default function AppShell({
     setOpenGroups(currentGroup ? [currentGroup.title] : ["📊 홈"]);
 
     if (!paths.includes(currentPath)) {
-      alert("접근 권한이 없습니다.");
       if (userRole === "ADMIN" || userRole === "OWNER") {
         location.href = "/dashboard";
       } else if (paths.includes("/director-dashboard")) {
