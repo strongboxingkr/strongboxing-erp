@@ -4,7 +4,7 @@ import pool from "@/lib/db";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { event_id, memo } = body;
+    const { event_id, memo, status, title, customer_name, phone, start_datetime } = body;
 
     if (!event_id) {
       return NextResponse.json({
@@ -14,12 +14,12 @@ export async function POST(req: Request) {
     }
 
     await pool.query(
-      `
-      UPDATE calendar_events
-      SET memo = ?
-      WHERE event_id = ?
-      `,
-      [memo || "", event_id]
+      `UPDATE calendar_events
+       SET memo = ?, status = COALESCE(?, status), title = COALESCE(?, title),
+           customer_name = COALESCE(?, customer_name), phone = COALESCE(?, phone),
+           start_datetime = COALESCE(?, start_datetime)
+       WHERE event_id = ?`,
+      [memo ?? "", status ?? null, title ?? null, customer_name ?? null, phone ?? null, start_datetime ?? null, event_id]
     );
 
     return NextResponse.json({

@@ -53,13 +53,13 @@ export default function DirectorDashboardPage() {
       });
       setAllBranches(Object.entries(branchMap).map(([branch_name, count]) => ({ branch_name, count })).sort((a, b) => b.count - a.count));
 
-      // 만료 임박 (7일 이내)
-      const sevenDays = new Date();
-      sevenDays.setDate(sevenDays.getDate() + 7);
+      // 만료 임박 (오늘~7일 이내)
+      const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+      const sevenDays = new Date(todayDate); sevenDays.setDate(sevenDays.getDate() + 7);
       const expRows = (expJson.rows || []).filter((m: any) => {
         if (!m.end_date) return false;
-        const end = new Date(m.end_date);
-        return end <= sevenDays;
+        const end = new Date(m.end_date); end.setHours(0,0,0,0);
+        return end >= todayDate && end <= sevenDays;
       });
       setExpiring(expRows.slice(0, 10));
 
