@@ -23,6 +23,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet" />
+      </head>
       <body>{children}</body>
     </html>
   );

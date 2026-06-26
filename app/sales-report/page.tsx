@@ -33,6 +33,9 @@ export default function SalesReportPage() {
   useEffect(() => {
     const u = JSON.parse(localStorage.getItem("user") || "null");
     setUser(u);
+    if (u && u.role !== "ADMIN" && u.role !== "OWNER") {
+      setBranch(u.branch_name || "전체");
+    }
     apiFetch("/api/settings?option_type=BRANCH").then(r => r.json()).then(d => {
       setBranches(d.rows || []);
       if (d.rows?.length) setUploadBranch(d.rows[0].option_name);

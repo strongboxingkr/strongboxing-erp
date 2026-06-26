@@ -4,10 +4,16 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
+const ROLES = ["ADMIN", "OWNER", "DIRECTOR", "COACH"];
+
 export default function PendingUsersPage() {
   const [pending, setPending] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [tab, setTab] = useState<"pending" | "all">("pending");
+
+  const [approveTarget, setApproveTarget] = useState<any>(null);
+  const [approveRole, setApproveRole] = useState("COACH");
+
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState("");
 
@@ -23,19 +29,20 @@ export default function PendingUsersPage() {
     setAllUsers(json.rows || []);
   };
 
-  useEffect(() => {
-    loadPending();
-    loadAll();
-  }, []);
+  useEffect(() => { loadPending(); loadAll(); }, []);
 
-  const approve = async (user_id: number) => {
+  const approve = async () => {
     const res = await apiFetch("/api/users/approve", {
       method: "POST",
-      body: JSON.stringify({ user_id }),
+      body: JSON.stringify({ user_id: approveTarget.user_id, role: approveRole }),
     });
     const json = await res.json();
-    if (json.success) { alert("승인 완료!"); loadPending(); loadAll(); }
-    else alert(json.message || "승인 실패");
+    if (json.success) {
+      alert("승인 완료!");
+      setApproveTarget(null);
+      loadPending();
+      loadAll();
+    } else alert(json.message || "승인 실패");
   };
 
   const resetPassword = async () => {
@@ -53,7 +60,6 @@ export default function PendingUsersPage() {
 
   return (
     <AppShell title="계정 관리">
-      {/* 탭 */}
       <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
         <button className={`btn ${tab === "pending" ? "" : "secondary"}`} onClick={() => setTab("pending")}>
           가입 승인 대기 {pending.length > 0 && `(${pending.length})`}
@@ -85,7 +91,9 @@ export default function PendingUsersPage() {
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {u.status === "PENDING" && (
-                  <button className="btn" onClick={() => approve(u.user_id)}>승인</button>
+                  <button className="btn" onClick={() => { setApproveTarget(u); setApproveRole("COACH"); }}>
+                    승인
+                  </button>
                 )}
                 <button className="btn secondary" onClick={() => { setResetUserId(u.user_id); setNewPassword(""); }}>
                   비번 변경
@@ -96,19 +104,31 @@ export default function PendingUsersPage() {
         </div>
       )}
 
+      {/* 승인 모달 */}
+      {approveTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
+          <div className="card" style={{ width: 360, borderRadius: 16 }}>
+            <h2 style={{ marginTop: 0 }}>{approveTarget.name} 승인</h2>
+            <div style={{ color: "var(--muted)", fontSize: 13, marginBottom: 16 }}>아이디: {approveTarget.login_id} · 지점: {approveTarget.branch_name || "-"}</div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 6 }}>역할 설정</label>
+            <select className="input" value={approveRole} onChange={(e) => setApproveRole(e.target.value)} style={{ marginBottom: 16 }}>
+              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn" onClick={approve}>승인 완료</button>
+              <button className="btn secondary" onClick={() => setApproveTarget(null)}>취소</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 비밀번호 변경 모달 */}
       {resetUserId && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
           <div className="card" style={{ width: 340, borderRadius: 16 }}>
             <h2 style={{ marginTop: 0 }}>비밀번호 변경</h2>
-            <input
-              className="input"
-              type="password"
-              placeholder="새 비밀번호"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              style={{ marginBottom: 12 }}
-            />
+            <input className="input" type="password" placeholder="새 비밀번호" value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)} style={{ marginBottom: 12 }} />
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn" onClick={resetPassword}>변경</button>
               <button className="btn secondary" onClick={() => setResetUserId(null)}>취소</button>

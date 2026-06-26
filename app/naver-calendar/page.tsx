@@ -493,9 +493,8 @@ const getTypeInfo = (r: any) => {
               style={{
                 padding: 40,
                 borderRadius: 18,
-                background:
-                  "#0b1220",
-                color: "#888",
+                background: "var(--panel)",
+                color: "var(--muted)",
                 textAlign:
                   "center",
               }}

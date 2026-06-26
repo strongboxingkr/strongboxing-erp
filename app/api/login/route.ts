@@ -27,9 +27,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "승인되지 않은 계정입니다." });
     }
 
-    const match = await bcrypt.compare(password, user.password_hash);
+    // bcrypt 해시 또는 평문 비밀번호 둘 다 지원
+    const isHashed = user.password_hash?.startsWith("$2");
+    const match = isHashed
+      ? await bcrypt.compare(password, user.password_hash)
+      : password === user.password_hash;
+
     if (!match) {
       return NextResponse.json({ success: false, message: "비밀번호 불일치" });
+    }
+
+    // 평문이면 bcrypt로 업그레이드
+    if (!isHashed) {
+      const hashed = await bcrypt.hash(password, 10);
+      await pool.query(`UPDATE users SET password_hash = ? WHERE user_id = ?`, [hashed, user.user_id]);
     }
 
     return NextResponse.json({

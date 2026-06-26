@@ -269,52 +269,84 @@ tr:hover td {
   display: grid;
   place-items: center;
   background: #0f172a;
+  font-family: 'Black Han Sans', sans-serif;
 }
 
 .kiosk-box {
-  width: min(760px, 94vw);
+  width: min(680px, 94vw);
   text-align: center;
 }
 
 .kiosk-title {
-  font-size: 46px;
-  font-weight: 900;
-  margin-bottom: 18px;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 52px;
+  letter-spacing: 6px;
+  margin-bottom: 6px;
   color: white;
+}
+
+.kiosk-title span {
+  color: #38bdf8;
+}
+
+.kiosk-subtitle {
+  font-size: 16px;
+  color: #475569;
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+  font-family: 'Black Han Sans', sans-serif;
 }
 
 .phone-display {
   background: #1e293b;
-  border: 2px solid #334155;
-  border-radius: 22px;
-  height: 82px;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  height: 90px;
   display: grid;
   place-items: center;
-  font-size: 38px;
-  letter-spacing: 3px;
-  margin-bottom: 18px;
+  font-size: 42px;
+  letter-spacing: 16px;
+  margin-bottom: 20px;
   color: white;
+  font-family: 'Black Han Sans', sans-serif;
 }
 
 .keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
 
 .key {
-  height: 86px;
-  border-radius: 18px;
+  height: 90px;
+  border-radius: 14px;
   background: #1e293b;
-  color: white;
+  color: #cbd5e1;
   border: 1px solid #334155;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 900;
   cursor: pointer;
+  font-family: 'Black Han Sans', sans-serif;
+  transition: background 0.1s, transform 0.08s;
+}
+
+.key:hover {
+  background: #263548;
+}
+
+.key:active {
+  transform: scale(0.95);
+  background: #1a2a3a;
 }
 
 .key.confirm {
-  background: var(--accent);
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #38bdf8;
+}
+
+.key.confirm:hover {
+  background: #7dd3fc;
 }
 
 /* 모바일 */

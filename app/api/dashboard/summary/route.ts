@@ -62,6 +62,16 @@ export async function GET(req: Request) {
       params
     );
 
+    const [todayNew]: any = await pool.query(
+      `SELECT COUNT(*) AS count FROM members WHERE DATE(created_at) = CURDATE() ${branchWhere}`,
+      params
+    );
+
+    const [monthNew]: any = await pool.query(
+      `SELECT COUNT(*) AS count FROM members WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') ${branchWhere}`,
+      params
+    );
+
     return NextResponse.json({
       success: true,
       data: {
@@ -69,6 +79,8 @@ export async function GET(req: Request) {
         month_sales: monthSales[0].amount,
         active_members: activeMembers[0].count,
         today_attendance: todayAttendance[0].count,
+        today_new: todayNew[0].count,
+        month_new: monthNew[0].count,
       },
     });
   } catch (error) {

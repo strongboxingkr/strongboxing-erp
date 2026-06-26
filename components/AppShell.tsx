@@ -9,6 +9,7 @@ const menuGroups = [
     title: "📊 홈",
     items: [
       ["대시보드", "/dashboard"],
+      ["관장 대시보드", "/director-dashboard"],
       ["대표 모바일", "/mobile-owner"],
       ["관장 모바일", "/mobile-branch"],
     ],
@@ -91,14 +92,14 @@ export default function AppShell({
     try {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
-      loadPermissions(parsedUser.role);
+      loadPermissions(parsedUser.role, parsedUser.role);
     } catch (e) {
       localStorage.removeItem("user");
       location.href = "/login";
     }
   }, []);
 
-  const loadPermissions = async (role: string) => {
+  const loadPermissions = async (role: string, userRole: string) => {
     const res = await fetch("/api/permissions");
     const data = await res.json();
 
@@ -119,11 +120,15 @@ export default function AppShell({
 
     if (!paths.includes(currentPath)) {
       alert("접근 권한이 없습니다.");
-      location.href = paths.includes("/dashboard")
-        ? "/dashboard"
-        : paths.includes("/mobile-branch")
-        ? "/mobile-branch"
-        : "/login";
+      if (userRole === "ADMIN" || userRole === "OWNER") {
+        location.href = "/dashboard";
+      } else if (paths.includes("/director-dashboard")) {
+        location.href = "/director-dashboard";
+      } else if (paths.includes("/mobile-branch")) {
+        location.href = "/mobile-branch";
+      } else {
+        location.href = "/login";
+      }
       return;
     }
 
