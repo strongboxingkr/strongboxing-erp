@@ -2,7 +2,7 @@ export type UserRole = "ADMIN" | "OWNER" | "DIRECTOR" | "COACH";
 
 export function getUserFromRequest(req: Request) {
   const role = req.headers.get("x-user-role") as UserRole | null;
-  const branch_name = req.headers.get("x-user-branch");
+  const branch_name = (() => { try { return decodeURIComponent(req.headers.get("x-user-branch") || ""); } catch { return req.headers.get("x-user-branch"); } })();
   const user_id = req.headers.get("x-user-id");
   const login_id = req.headers.get("x-user-login-id");
 
