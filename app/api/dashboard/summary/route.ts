@@ -63,12 +63,12 @@ export async function GET(req: Request) {
     );
 
     const [todayNew]: any = await pool.query(
-      `SELECT COUNT(*) AS count FROM members WHERE DATE(created_at) = CURDATE() ${branchWhere}`,
+      `SELECT COUNT(*) AS count FROM members WHERE join_date = CURDATE() ${branchWhere}`,
       params
     );
 
     const [monthNew]: any = await pool.query(
-      `SELECT COUNT(*) AS count FROM members WHERE DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') ${branchWhere}`,
+      `SELECT COUNT(*) AS count FROM members WHERE DATE_FORMAT(join_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') ${branchWhere}`,
       params
     );
 
