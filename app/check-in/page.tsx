@@ -115,25 +115,23 @@ export default function CheckInPage() {
           <button
             onClick={() => { setMode("CHECK_IN"); setPhone(""); setResult(null); submitOnMode("CHECK_IN"); }}
             style={{
-              flex: 1, padding: "20px 0", borderRadius: 20, fontSize: 22, fontWeight: 900, cursor: "pointer",
-              background: mode === "CHECK_IN" ? "linear-gradient(135deg,#c9a84c,#e8c96a)" : "rgba(255,255,255,0.04)",
-              color: mode === "CHECK_IN" ? "#080c14" : "#475569",
-              border: mode === "CHECK_IN" ? "none" : "1px solid rgba(255,255,255,0.08)",
-              boxShadow: mode === "CHECK_IN" ? "0 4px 20px rgba(201,168,76,0.4)" : "none",
-              fontFamily: "'Black Han Sans', sans-serif",
-              letterSpacing: 2,
+              flex: 1, padding: "18px 0", borderRadius: 14, fontSize: 17, fontWeight: 600, cursor: "pointer",
+              background: mode === "CHECK_IN" ? "#1d1d1f" : "#ffffff",
+              color: mode === "CHECK_IN" ? "#ffffff" : "#1d1d1f",
+              border: "0.5px solid #d2d2d7",
+              letterSpacing: 1,
+              fontFamily: "-apple-system, 'Helvetica Neue', sans-serif",
             }}
           >입장</button>
           <button
             onClick={() => { setMode("CHECK_OUT"); setPhone(""); setResult(null); submitOnMode("CHECK_OUT"); }}
             style={{
-              flex: 1, padding: "20px 0", borderRadius: 20, fontSize: 22, fontWeight: 900, cursor: "pointer",
-              background: mode === "CHECK_OUT" ? "rgba(239,68,68,0.85)" : "rgba(255,255,255,0.04)",
-              color: mode === "CHECK_OUT" ? "#fff" : "#475569",
-              border: mode === "CHECK_OUT" ? "none" : "1px solid rgba(255,255,255,0.08)",
-              boxShadow: mode === "CHECK_OUT" ? "0 4px 20px rgba(239,68,68,0.35)" : "none",
-              fontFamily: "'Black Han Sans', sans-serif",
-              letterSpacing: 2,
+              flex: 1, padding: "18px 0", borderRadius: 14, fontSize: 17, fontWeight: 600, cursor: "pointer",
+              background: mode === "CHECK_OUT" ? "#1d1d1f" : "#ffffff",
+              color: mode === "CHECK_OUT" ? "#ffffff" : "#1d1d1f",
+              border: "0.5px solid #d2d2d7",
+              letterSpacing: 1,
+              fontFamily: "-apple-system, 'Helvetica Neue', sans-serif",
             }}
           >퇴장</button>
         </div>
