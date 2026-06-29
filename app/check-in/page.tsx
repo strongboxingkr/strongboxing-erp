@@ -29,6 +29,18 @@ export default function CheckInPage() {
     }
   };
 
+  const submitOnMode = async (checkMode: "CHECK_IN" | "CHECK_OUT") => {
+    if (phone.length !== 4) return;
+    const res = await fetch("/api/check-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone_last4: phone, check_type: checkMode }),
+    });
+    const data = await res.json();
+    setResult(data);
+    setTimeout(() => { setPhone(""); setResult(null); }, 3000);
+  };
+
   const submitCheckIn = async () => {
     if (phone.length !== 4) return;
 
@@ -54,31 +66,7 @@ export default function CheckInPage() {
       <div className="kiosk-box">
         <div className="kiosk-title">STRONG <span>BOXING</span></div>
 
-        {/* 입장/퇴장 선택 */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 24, justifyContent: "center" }}>
-          <button
-            onClick={() => { setMode("CHECK_IN"); setPhone(""); setResult(null); }}
-            style={{
-              padding: "12px 36px", borderRadius: 999, fontSize: 18, fontWeight: 900, border: "none", cursor: "pointer",
-              background: mode === "CHECK_IN" ? "#38bdf8" : "#1e293b",
-              color: mode === "CHECK_IN" ? "#0f172a" : "#94a3b8",
-              transition: "all 0.15s",
-            }}
-          >입장</button>
-          <button
-            onClick={() => { setMode("CHECK_OUT"); setPhone(""); setResult(null); }}
-            style={{
-              padding: "12px 36px", borderRadius: 999, fontSize: 18, fontWeight: 900, border: "none", cursor: "pointer",
-              background: mode === "CHECK_OUT" ? "#f97316" : "#1e293b",
-              color: mode === "CHECK_OUT" ? "#fff" : "#94a3b8",
-              transition: "all 0.15s",
-            }}
-          >퇴장</button>
-        </div>
-
-        <div className="kiosk-subtitle">
-          {mode === "CHECK_IN" ? "전화번호 뒤 4자리를 입력해주세요" : "퇴장 - 전화번호 뒤 4자리를 입력해주세요"}
-        </div>
+        <div className="kiosk-subtitle">전화번호 뒤 4자리를 입력해주세요</div>
 
         <div className="phone-display">
           {phone || "____"}
@@ -120,6 +108,26 @@ export default function CheckInPage() {
           <button className="key" style={{ gridColumn: "1 / 4" }} onClick={() => press("clear")}>
             초기화
           </button>
+        </div>
+
+        {/* 입장/퇴장 버튼 */}
+        <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+          <button
+            onClick={() => { setMode("CHECK_IN"); setPhone(""); setResult(null); submitOnMode("CHECK_IN"); }}
+            style={{
+              flex: 1, padding: "18px 0", borderRadius: 16, fontSize: 20, fontWeight: 900, border: "none", cursor: "pointer",
+              background: mode === "CHECK_IN" ? "#38bdf8" : "#1e293b",
+              color: mode === "CHECK_IN" ? "#0f172a" : "#64748b",
+            }}
+          >입장</button>
+          <button
+            onClick={() => { setMode("CHECK_OUT"); setPhone(""); setResult(null); submitOnMode("CHECK_OUT"); }}
+            style={{
+              flex: 1, padding: "18px 0", borderRadius: 16, fontSize: 20, fontWeight: 900, border: "none", cursor: "pointer",
+              background: mode === "CHECK_OUT" ? "#f97316" : "#1e293b",
+              color: mode === "CHECK_OUT" ? "#fff" : "#64748b",
+            }}
+          >퇴장</button>
         </div>
       </div>
     </div>
