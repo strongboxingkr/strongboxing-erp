@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 export default function CheckInPage() {
   const [phone, setPhone] = useState("");
   const [result, setResult] = useState<any>(null);
+  const [mode, setMode] = useState<"CHECK_IN" | "CHECK_OUT">("CHECK_IN");
 
   const press = (value: string) => {
     if (value === "clear") {
@@ -33,10 +34,8 @@ export default function CheckInPage() {
 
     const res = await fetch("/api/check-in", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ phone_last4: phone }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone_last4: phone, check_type: mode }),
     });
 
     const data = await res.json();
@@ -54,7 +53,32 @@ export default function CheckInPage() {
     <div className="kiosk">
       <div className="kiosk-box">
         <div className="kiosk-title">STRONG <span>BOXING</span></div>
-        <div className="kiosk-subtitle">전화번호 뒤 4자리를 입력해주세요</div>
+
+        {/* 입장/퇴장 선택 */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 24, justifyContent: "center" }}>
+          <button
+            onClick={() => { setMode("CHECK_IN"); setPhone(""); setResult(null); }}
+            style={{
+              padding: "12px 36px", borderRadius: 999, fontSize: 18, fontWeight: 900, border: "none", cursor: "pointer",
+              background: mode === "CHECK_IN" ? "#38bdf8" : "#1e293b",
+              color: mode === "CHECK_IN" ? "#0f172a" : "#94a3b8",
+              transition: "all 0.15s",
+            }}
+          >입장</button>
+          <button
+            onClick={() => { setMode("CHECK_OUT"); setPhone(""); setResult(null); }}
+            style={{
+              padding: "12px 36px", borderRadius: 999, fontSize: 18, fontWeight: 900, border: "none", cursor: "pointer",
+              background: mode === "CHECK_OUT" ? "#f97316" : "#1e293b",
+              color: mode === "CHECK_OUT" ? "#fff" : "#94a3b8",
+              transition: "all 0.15s",
+            }}
+          >퇴장</button>
+        </div>
+
+        <div className="kiosk-subtitle">
+          {mode === "CHECK_IN" ? "전화번호 뒤 4자리를 입력해주세요" : "퇴장 - 전화번호 뒤 4자리를 입력해주세요"}
+        </div>
 
         <div className="phone-display">
           {phone || "____"}
