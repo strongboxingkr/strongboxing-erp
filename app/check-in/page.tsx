@@ -115,17 +115,25 @@ export default function CheckInPage() {
           <button
             onClick={() => { setMode("CHECK_IN"); setPhone(""); setResult(null); submitOnMode("CHECK_IN"); }}
             style={{
-              flex: 1, padding: "18px 0", borderRadius: 16, fontSize: 20, fontWeight: 900, border: "none", cursor: "pointer",
-              background: mode === "CHECK_IN" ? "#38bdf8" : "#1e293b",
-              color: mode === "CHECK_IN" ? "#0f172a" : "#64748b",
+              flex: 1, padding: "20px 0", borderRadius: 20, fontSize: 22, fontWeight: 900, cursor: "pointer",
+              background: mode === "CHECK_IN" ? "linear-gradient(135deg,#c9a84c,#e8c96a)" : "rgba(255,255,255,0.04)",
+              color: mode === "CHECK_IN" ? "#080c14" : "#475569",
+              border: mode === "CHECK_IN" ? "none" : "1px solid rgba(255,255,255,0.08)",
+              boxShadow: mode === "CHECK_IN" ? "0 4px 20px rgba(201,168,76,0.4)" : "none",
+              fontFamily: "'Black Han Sans', sans-serif",
+              letterSpacing: 2,
             }}
           >입장</button>
           <button
             onClick={() => { setMode("CHECK_OUT"); setPhone(""); setResult(null); submitOnMode("CHECK_OUT"); }}
             style={{
-              flex: 1, padding: "18px 0", borderRadius: 16, fontSize: 20, fontWeight: 900, border: "none", cursor: "pointer",
-              background: mode === "CHECK_OUT" ? "#f97316" : "#1e293b",
-              color: mode === "CHECK_OUT" ? "#fff" : "#64748b",
+              flex: 1, padding: "20px 0", borderRadius: 20, fontSize: 22, fontWeight: 900, cursor: "pointer",
+              background: mode === "CHECK_OUT" ? "rgba(239,68,68,0.85)" : "rgba(255,255,255,0.04)",
+              color: mode === "CHECK_OUT" ? "#fff" : "#475569",
+              border: mode === "CHECK_OUT" ? "none" : "1px solid rgba(255,255,255,0.08)",
+              boxShadow: mode === "CHECK_OUT" ? "0 4px 20px rgba(239,68,68,0.35)" : "none",
+              fontFamily: "'Black Han Sans', sans-serif",
+              letterSpacing: 2,
             }}
           >퇴장</button>
         </div>
