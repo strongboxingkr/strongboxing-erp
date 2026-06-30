@@ -14,7 +14,7 @@ const today = new Date().toISOString().slice(0, 10);
 const pageSize = 15;
 
 const memberGridColumns =
-  "50px 90px 140px 90px 130px 190px 70px 70px 90px 90px 260px";
+  "50px 140px 90px 130px 190px 70px 70px 90px 90px 260px";
 
 const miniBtnStyle = {
   padding: "5px 9px",
@@ -878,7 +878,6 @@ ${
           }}
         >
           <div>No</div>
-          <div>회원번호</div>
           <div>회원명</div>
           <div>지점</div>
           <div>프로그램</div>
@@ -910,11 +909,7 @@ ${
                 location.href = `/member-detail?member_id=${m.member_id}`;
               }}
             >
-              <div>{(page - 1) * pageSize + index + 1}</div>
-
-              <div style={{ color: "#aaa" }}>
-                {m.member_no || m.checkin_code || "-"}
-              </div>
+              <div>{filtered.length - (page - 1) * pageSize - index}</div>
 
               <div style={{ fontWeight: 900 }}>{m.name}</div>
 
