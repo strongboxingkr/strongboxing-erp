@@ -183,8 +183,9 @@ export default function AttendanceMonitorPage() {
           오늘 출석 현황
         </div>
         {/* 헤더 */}
-        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 80px 48px", padding: "8px 16px", fontSize: 11, color: "#334155", borderBottom: "1px solid #1e293b" }}>
-          <span>NO</span><span>이름</span><span>만료일</span><span style={{ textAlign: "right" }}>시간</span>
+        {/* 헤더 */}
+        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 90px 48px", padding: "8px 16px", fontSize: 11, color: "#334155", borderBottom: "1px solid #1e293b" }}>
+          <span>NO</span><span>이름</span><span>만료일/잔여</span><span style={{ textAlign: "right" }}>시간</span>
         </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {successRows.length === 0 ? (
@@ -193,7 +194,7 @@ export default function AttendanceMonitorPage() {
             successRows.map((r, i) => (
               <div key={r.attendance_id} style={{
                 display: "grid",
-                gridTemplateColumns: "36px 1fr 80px 48px",
+                gridTemplateColumns: "36px 1fr 90px 48px",
                 alignItems: "center",
                 padding: "9px 16px",
                 borderBottom: "1px solid #0a0f1e",
@@ -205,7 +206,9 @@ export default function AttendanceMonitorPage() {
                   {r.name || "미등록"}
                 </span>
                 <span style={{ color: "#475569", fontSize: 12 }}>
-                  {r.end_date?.slice(0, 10) || "-"}
+                  {r.pass_type === "COUNT"
+                    ? <span style={{ color: "#f59e0b" }}>{r.remaining_count}회 남음</span>
+                    : (r.end_date?.slice(0, 10) || "-")}
                 </span>
                 <span style={{ color: "#475569", textAlign: "right" }}>
                   {fmt(r.checkin_time)}
