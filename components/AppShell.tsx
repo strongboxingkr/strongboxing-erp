@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import AlertsFloating from "@/components/AlertsFloating";
 
 const menuGroups = [
@@ -72,6 +72,8 @@ export default function AppShell({
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
   const [checked, setChecked] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+  const lastCheckinId = useRef<number>(0);
+  const monitorWin = useRef<Window | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -121,6 +123,31 @@ export default function AppShell({
     }
 
     setChecked(true);
+    startCheckinPolling();
+  };
+
+  const startCheckinPolling = () => {
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/recent-checkins");
+        const data = await res.json();
+        const newest = data.rows?.[0];
+        if (newest && newest.attendance_id !== lastCheckinId.current) {
+          if (lastCheckinId.current !== 0) {
+            if (!monitorWin.current || monitorWin.current.closed) {
+              monitorWin.current = window.open(
+                "/attendance-monitor",
+                "strong-monitor",
+                "width=1400,height=900,menubar=no,toolbar=no,location=no,status=no"
+              );
+            }
+          }
+          lastCheckinId.current = newest.attendance_id;
+        }
+      } catch {}
+    };
+    poll();
+    setInterval(poll, 8000);
   };
 
   const logout = () => {

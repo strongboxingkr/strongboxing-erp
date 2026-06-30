@@ -20,6 +20,7 @@ export default function AttendanceMonitorPage() {
   const [lastId, setLastId] = useState<number>(0);
   const [flash, setFlash] = useState(false);
   const intervalRef = useRef<any>(null);
+  const closeTimerRef = useRef<any>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -57,6 +58,12 @@ export default function AttendanceMonitorPage() {
         setLastId(newest.attendance_id);
         setFlash(true);
         setTimeout(() => setFlash(false), 3000);
+
+        // 새 체크인마다 1분 타이머 리셋
+        if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = setTimeout(() => {
+          window.close();
+        }, 60000);
       }
     }
   };
