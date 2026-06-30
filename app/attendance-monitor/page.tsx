@@ -14,6 +14,7 @@ const RESULT_LABEL: Record<string, { text: string; color: string }> = {
 
 export default function AttendanceMonitorPage() {
   const [branch, setBranch] = useState("");
+  const [userInfo, setUserInfo] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [latest, setLatest] = useState<any>(null);
   const [lastId, setLastId] = useState<number>(0);
@@ -24,20 +25,27 @@ export default function AttendanceMonitorPage() {
     const saved = localStorage.getItem("user");
     if (saved) {
       const u = JSON.parse(saved);
+      setUserInfo(u);
       const isAdmin = u.role === "ADMIN" || u.role === "OWNER";
       if (!isAdmin && u.branch_name) setBranch(u.branch_name);
     }
   }, []);
 
   useEffect(() => {
+    if (!userInfo) return;
     load();
     intervalRef.current = setInterval(load, 10000);
     return () => clearInterval(intervalRef.current);
-  }, [branch]);
+  }, [branch, userInfo]);
 
   const load = async () => {
+    if (!userInfo) return;
     const branchQ = branch ? `&branch_name=${encodeURIComponent(branch)}` : "";
-    const res = await fetch(`/api/attendance?today_only=Y&limit=100${branchQ}`);
+    const headers: Record<string, string> = {
+      "x-user-role": userInfo.role || "",
+      "x-user-branch": encodeURIComponent(userInfo.branch_name || ""),
+    };
+    const res = await fetch(`/api/attendance?today_only=Y&limit=100${branchQ}`, { headers });
     const data = await res.json();
     const newRows: any[] = data.rows || [];
     setRows(newRows);
