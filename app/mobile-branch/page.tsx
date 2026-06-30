@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -7,17 +7,17 @@ import { apiFetch } from "@/lib/api";
 const today = new Date().toISOString().slice(0, 10);
 
 const menus = [
-  ["?뚯썝愿由?, "/mobile-members"],
-  ["異쒖꽍愿由?, "/mobile-attendance"],
-  ["寃곗젣愿由?, "/mobile-payments"],
+  ["회원관리", "/mobile-members"],
+  ["출석관리", "/mobile-attendance"],
+  ["결제관리", "/mobile-payments"],
   ["CRM", "/mobile-crm"],
-  ["?ㅼ씠踰꾩삁??, "/naver-calendar"],
-  ["臾몄옄愿由?, "/sms"],
-  ["?뚯썝留뚮즺", "/member-expiring"],
-  ["?쇱씪留덇컧", "/daily-closing"],
+  ["네이버예약", "/naver-calendar"],
+  ["문자관리", "/sms"],
+  ["회원만료", "/member-expiring"],
+  ["일일마감", "/daily-closing"],
 ];
 
-const money = (v: any) => `${Number(v || 0).toLocaleString()}??;
+const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
 export default function MobileBranchPage() {
   const [data, setData] = useState<any>(null);
@@ -28,7 +28,7 @@ export default function MobileBranchPage() {
   const [consultForm, setConsultForm] = useState({
     customer_name: "",
     phone: "",
-    inquiry_channel: "?꾪솕臾몄쓽",
+    inquiry_channel: "전화문의",
     memo: "",
     reservation_date: today,
     reservation_time: "",
@@ -73,7 +73,7 @@ export default function MobileBranchPage() {
     const targetBranch = user?.branch_name;
 
     if (!consultForm.customer_name.trim()) {
-      alert("?대쫫???낅젰?댁＜?몄슂.");
+      alert("이름을 입력해주세요.");
       return;
     }
 
@@ -83,12 +83,12 @@ export default function MobileBranchPage() {
         branch_name: targetBranch,
         customer_name: consultForm.customer_name,
         phone: consultForm.phone,
-        inquiry_type: "?좉퇋?곷떞",
+        inquiry_type: "신규상담",
         inquiry_channel: consultForm.inquiry_channel,
-        status: "諛⑸Ц?덉빟",
+        status: "방문예약",
         next_contact_date: consultForm.reservation_date,
         memo: [
-          `?덉빟?쇱떆: ${consultForm.reservation_date} ${consultForm.reservation_time || "-"}`,
+          `예약일시: ${consultForm.reservation_date} ${consultForm.reservation_time || "-"}`,
           "",
           consultForm.memo,
         ].join("\n"),
@@ -105,30 +105,30 @@ export default function MobileBranchPage() {
         body: JSON.stringify({
           branch_name: targetBranch,
           event_type: "PHONE",
-          title: `?꾪솕?덉빟 - ${consultForm.customer_name}`,
+          title: `전화예약 - ${consultForm.customer_name}`,
           customer_name: consultForm.customer_name,
           phone: consultForm.phone,
           start_datetime: `${consultForm.reservation_date}T${consultForm.reservation_time || "00:00"}`,
           memo: consultForm.memo,
-          status: "?덉빟?뺤젙",
+          status: "예약확정",
           source_type: "PHONE_RESERVATION",
           source_id: "",
         }),
       });
 
-      alert("?곷떞 ?깅줉 ?꾨즺!");
+      alert("상담 등록 완료!");
       setShowConsult(false);
       setConsultForm({
         customer_name: "",
         phone: "",
-        inquiry_channel: "?꾪솕臾몄쓽",
+        inquiry_channel: "전화문의",
         memo: "",
         reservation_date: today,
         reservation_time: "",
         branch_name: "",
       });
     } else {
-      alert(json.message || "?곷떞 ?깅줉 ?ㅽ뙣");
+      alert(json.message || "상담 등록 실패");
     }
   };
 
@@ -138,7 +138,7 @@ export default function MobileBranchPage() {
     return () => clearInterval(timer);
   }, []);
 
-  if (!data) return <div style={{ padding: 20 }}>濡쒕뵫以?..</div>;
+  if (!data) return <div style={{ padding: 20 }}>로딩중...</div>;
 
   const user = getUser();
 
@@ -152,45 +152,45 @@ export default function MobileBranchPage() {
           <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 13 }}>{user?.branch_name}</div>
         </div>
         <div style={{ background: "white", border: "1px solid var(--line)", padding: "6px 14px", borderRadius: 999, color: "var(--muted)", fontSize: 13 }}>
-          愿??紐⑤컮??
+          관장 모바일
         </div>
       </div>
 
       <div className="card" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)", border: "1px solid #bfdbfe", borderRadius: 28, padding: 24, marginBottom: 20 }}>
-        <div style={{ color: "#2563eb", fontSize: 14, fontWeight: 600 }}>?ㅻ뒛 珥앸ℓ異?/div>
+        <div style={{ color: "#2563eb", fontSize: 14, fontWeight: 600 }}>오늘 총매출</div>
         <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900, color: "#1e3a8a" }}>{money(data.sales)}</div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
           <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
-            <div style={{ color: "#64748b", fontSize: 13 }}>?좉퇋?뚯썝</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.new_members || 0}紐?/div>
+            <div style={{ color: "#64748b", fontSize: 13 }}>신규회원</div>
+            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.new_members || 0}명</div>
           </div>
           <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
-            <div style={{ color: "#64748b", fontSize: 13 }}>?ㅻ뒛 異쒖꽍</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.checkins || 0}紐?/div>
+            <div style={{ color: "#64748b", fontSize: 13 }}>오늘 출석</div>
+            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.checkins || 0}명</div>
           </div>
         </div>
       </div>
 
       <div className="card" style={{ borderRadius: 24, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 24, fontWeight: 900 }}>鍮좊Ⅸ ?곷떞?깅줉</div>
+          <div style={{ fontSize: 24, fontWeight: 900 }}>빠른 상담등록</div>
           <button className="btn" onClick={() => setShowConsult(!showConsult)}>
-            {showConsult ? "?リ린" : "?곷떞?깅줉"}
+            {showConsult ? "닫기" : "상담등록"}
           </button>
         </div>
 
         {showConsult && (
           <div style={{ display: "grid", gap: 10 }}>
-            <input className="input" placeholder="?대쫫" value={consultForm.customer_name} onChange={(e) => setConsultForm({ ...consultForm, customer_name: e.target.value })} />
-            <input className="input" placeholder="?꾪솕踰덊샇" value={consultForm.phone} onChange={(e) => setConsultForm({ ...consultForm, phone: e.target.value })} />
+            <input className="input" placeholder="이름" value={consultForm.customer_name} onChange={(e) => setConsultForm({ ...consultForm, customer_name: e.target.value })} />
+            <input className="input" placeholder="전화번호" value={consultForm.phone} onChange={(e) => setConsultForm({ ...consultForm, phone: e.target.value })} />
 
             <select className="input" value={consultForm.inquiry_channel} onChange={(e) => setConsultForm({ ...consultForm, inquiry_channel: e.target.value })}>
-              <option>?꾪솕臾몄쓽</option>
-              <option>?몄뒪?</option>
-              <option>釉붾줈洹?/option>
-              <option>吏??/option>
-              <option>?꾩옣臾몄쓽</option>
+              <option>전화문의</option>
+              <option>인스타</option>
+              <option>블로그</option>
+              <option>지인</option>
+              <option>현장문의</option>
             </select>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -198,29 +198,29 @@ export default function MobileBranchPage() {
               <input className="input" type="time" value={consultForm.reservation_time} onChange={(e) => setConsultForm({ ...consultForm, reservation_time: e.target.value })} />
             </div>
 
-            <textarea className="input" placeholder="?곷떞 硫붾え" value={consultForm.memo} onChange={(e) => setConsultForm({ ...consultForm, memo: e.target.value })} style={{ minHeight: 90 }} />
+            <textarea className="input" placeholder="상담 메모" value={consultForm.memo} onChange={(e) => setConsultForm({ ...consultForm, memo: e.target.value })} style={{ minHeight: 90 }} />
 
-            <button className="btn" onClick={saveConsult}>?곷떞 ???/button>
+            <button className="btn" onClick={saveConsult}>상담 저장</button>
           </div>
         )}
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>鍮좊Ⅸ 硫붾돱</div>
+        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>빠른 메뉴</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {menus.map(([title, href]) => (
             <Link key={title} href={href} style={{ background: "white", border: "1px solid var(--line)", borderRadius: 20, padding: 20, textDecoration: "none" }}>
               <div style={{ fontSize: 18, fontWeight: 900, color: "var(--text)" }}>{title}</div>
-              <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>諛붾줈 ?대룞</div>
+              <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 13 }}>바로 이동</div>
             </Link>
           ))}
         </div>
       </div>
 
       <div className="card" style={{ borderRadius: 24, padding: 18, marginBottom: 18 }}>
-        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>?ㅻ뒛 ?덉빟</div>
+        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>오늘 예약</div>
         {reservations.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>?ㅻ뒛 ?덉빟???놁뒿?덈떎.</div>
+          <div style={{ color: "var(--muted)" }}>오늘 예약이 없습니다.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {reservations.map((r) => (
@@ -235,16 +235,16 @@ export default function MobileBranchPage() {
       </div>
 
       <div className="card" style={{ borderRadius: 24, padding: 18 }}>
-        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>愿由??꾩슂 ?뚯썝</div>
+        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>관리 필요 회원</div>
         {alerts.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>愿由??꾩슂 ?뚯썝???놁뒿?덈떎.</div>
+          <div style={{ color: "var(--muted)" }}>관리 필요 회원이 없습니다.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {alerts.slice(0, 5).map((m) => (
               <div key={m.member_id} style={{ background: "var(--panel2)", borderRadius: 18, padding: 16, borderLeft: "6px solid #ef4444", border: "1px solid var(--line)", borderLeftWidth: 6, borderLeftColor: "#ef4444" }}>
                 <div style={{ fontSize: 20, fontWeight: 900 }}>{m.name}</div>
                 <div style={{ color: "var(--muted)", marginTop: 6 }}>{m.phone}</div>
-                <div style={{ color: "#ef4444", marginTop: 6, fontWeight: 700 }}>{m.alert_type || "愿由??꾩슂"}</div>
+                <div style={{ color: "#ef4444", marginTop: 6, fontWeight: 700 }}>{m.alert_type || "관리 필요"}</div>
               </div>
             ))}
           </div>
@@ -266,7 +266,7 @@ export default function MobileBranchPage() {
             textDecoration: "underline",
           }}
         >
-          PC踰꾩쟾 蹂닿린
+          PC버전 보기
         </Link>
       </div>
 
@@ -285,11 +285,11 @@ export default function MobileBranchPage() {
         }}
       >
         <Link
-          href="/mobile-branch" style={{ textAlign: "center", color: "var(--accent)", textDecoration: "none", fontSize: 12, fontWeight: 900 }}>??/Link>
-        <Link href="/mobile-members" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>?뚯썝</Link>
-        <Link href="/mobile-attendance" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>異쒖꽍</Link>
-        <Link href="/mobile-payments" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>寃곗젣</Link>
-        <Link href="/mobile-crm" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>?곷떞</Link>
+          href="/mobile-branch" style={{ textAlign: "center", color: "var(--accent)", textDecoration: "none", fontSize: 12, fontWeight: 900 }}>홈</Link>
+        <Link href="/mobile-members" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>회원</Link>
+        <Link href="/mobile-attendance" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>출석</Link>
+        <Link href="/mobile-payments" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>결제</Link>
+        <Link href="/mobile-crm" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>상담</Link>
       </div>
     </div>
   );
