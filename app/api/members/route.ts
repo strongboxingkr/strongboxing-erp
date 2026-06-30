@@ -62,7 +62,7 @@ export async function GET(req: Request) {
       );
     }
 
-    sql += ` ORDER BY end_date ASC `;
+    sql += ` ORDER BY member_id ASC `;
 
     const [rows]: any = await pool.query(sql, params);
 

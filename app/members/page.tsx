@@ -909,7 +909,7 @@ ${
                 location.href = `/member-detail?member_id=${m.member_id}`;
               }}
             >
-              <div>{filtered.length - (page - 1) * pageSize - index}</div>
+              <div>{(page - 1) * pageSize + index + 1}</div>
 
               <div style={{ fontWeight: 900 }}>{m.name}</div>
 
