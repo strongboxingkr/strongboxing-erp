@@ -9,6 +9,7 @@ const menuGroups = [
     title: "📊 홈",
     items: [
       ["대시보드", "/dashboard"],
+      ["관장 대시보드", "/director-dashboard"],
       ["대표 모바일", "/mobile-owner"],
       ["관장 모바일", "/mobile-branch"],
     ],
