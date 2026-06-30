@@ -68,7 +68,8 @@ export default function AttendanceMonitorPage() {
 
   const today = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
 
-  const successCount = rows.filter((r) => r.result === "SUCCESS").length;
+  const successRows = rows.filter((r) => r.result === "SUCCESS");
+  const successCount = successRows.length;
   const checkoutCount = rows.filter((r) => r.result === "CHECK_OUT").length;
 
   return (
@@ -181,40 +182,36 @@ export default function AttendanceMonitorPage() {
         <div style={{ padding: "20px 20px 12px", fontSize: 13, fontWeight: 700, color: "#475569", letterSpacing: 2, borderBottom: "1px solid #1e293b" }}>
           오늘 출석 현황
         </div>
+        {/* 헤더 */}
+        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 80px 48px", padding: "8px 16px", fontSize: 11, color: "#334155", borderBottom: "1px solid #1e293b" }}>
+          <span>NO</span><span>이름</span><span>만료일</span><span style={{ textAlign: "right" }}>시간</span>
+        </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
-          {rows.length === 0 ? (
+          {successRows.length === 0 ? (
             <div style={{ padding: 24, color: "#334155", fontSize: 14, textAlign: "center" }}>아직 출석이 없습니다</div>
           ) : (
-            rows.map((r, i) => {
-              const info = RESULT_LABEL[r.result] || { text: r.result, color: "#6b7280" };
-              return (
-                <div key={r.attendance_id} style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid #0f172a",
-                  background: i === 0 ? "#1e293b" : "transparent",
-                  gap: 10,
-                }}>
-                  <div style={{
-                    width: 6, height: 6, borderRadius: "50%",
-                    background: info.color, flexShrink: 0,
-                  }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: r.name ? "#f8fafc" : "#475569", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {r.name || "미등록"}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>
-                      <span style={{ color: info.color }}>{info.text}</span>
-                      {r.product_name && <span style={{ marginLeft: 6 }}>{r.product_name}</span>}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 13, color: "#475569", flexShrink: 0 }}>
-                    {fmt(r.checkin_time)}
-                  </div>
-                </div>
-              );
-            })
+            successRows.map((r, i) => (
+              <div key={r.attendance_id} style={{
+                display: "grid",
+                gridTemplateColumns: "36px 1fr 80px 48px",
+                alignItems: "center",
+                padding: "9px 16px",
+                borderBottom: "1px solid #0a0f1e",
+                background: i === 0 ? "#1e293b" : "transparent",
+                fontSize: 13,
+              }}>
+                <span style={{ color: "#475569" }}>{successCount - i}</span>
+                <span style={{ fontWeight: 700, color: "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {r.name || "미등록"}
+                </span>
+                <span style={{ color: "#475569", fontSize: 12 }}>
+                  {r.end_date?.slice(0, 10) || "-"}
+                </span>
+                <span style={{ color: "#475569", textAlign: "right" }}>
+                  {fmt(r.checkin_time)}
+                </span>
+              </div>
+            ))
           )}
         </div>
       </div>
