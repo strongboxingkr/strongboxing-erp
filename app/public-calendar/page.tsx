@@ -180,7 +180,7 @@ export default function PublicCalendarPage() {
                         <div style={{ fontSize: 22, fontWeight: 900 }}>{r.start_datetime?.slice(11, 16) || "-"}</div>
                         <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{r.customer_name || "-"}</div>
                         <div style={{ color: "#64748b", marginTop: 4, fontSize: 13 }}>{r.branch_name} · 📞 {r.phone || "-"}</div>
-                        {r.memo && <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 13 }}>{r.memo}</div>}
+                        {r.title && <div style={{ color: "#94a3b8", marginTop: 4, fontSize: 13 }}>{r.title}</div>}
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
                         <span style={{ padding: "4px 10px", borderRadius: 999, background: `${type.color}22`, color: type.color, fontSize: 12, fontWeight: 700, textAlign: "center" }}>
