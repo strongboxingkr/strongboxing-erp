@@ -465,7 +465,7 @@ export async function GET() {
 
         const [calendarRows]: any = await pool.query(
           `
-          SELECT event_id
+          SELECT event_id, status
           FROM calendar_events
           WHERE source_type = ?
             AND source_id = ?
