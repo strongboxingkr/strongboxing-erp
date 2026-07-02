@@ -22,50 +22,23 @@ export async function POST(req: Request) {
       });
     }
 
+    const cleanDatetime = String(start_datetime || "").replace("T", " ").slice(0, 19);
+    const truncMemo = String(memo || "").slice(0, 500);
+
     await pool.query(
-      `
-      UPDATE calendar_events
-      SET
-        customer_name = ?,
-        phone = ?,
-        start_datetime = ?,
-        event_type = ?,
-        status = ?,
-        memo = ?
-      WHERE event_id = ?
-      `,
-      [
-        customer_name || "",
-        phone || "",
-        start_datetime,
-        event_type || "예약",
-        status || "예약접수",
-        memo || "",
-        event_id,
-      ]
+      `UPDATE calendar_events
+       SET customer_name = ?, phone = ?, start_datetime = ?, event_type = ?, status = ?, memo = ?
+       WHERE event_id = ?`,
+      [customer_name || "", phone || "", cleanDatetime, event_type || "예약", status || "예약접수", truncMemo, event_id]
     );
 
-    const date = String(start_datetime || "").slice(0, 10);
-    const time = String(start_datetime || "").slice(11, 16);
+    const date = cleanDatetime.slice(0, 10);
+    const time = cleanDatetime.slice(11, 16);
 
     await pool.query(
-      `
-      UPDATE naver_reservations
-      SET
-        status = ?,
-        memo = ?
-      WHERE
-        phone = ?
-        AND reservation_date = ?
-        AND reservation_time = ?
-      `,
-      [
-        status || "예약접수",
-        memo || "",
-        phone || "",
-        date,
-        time,
-      ]
+      `UPDATE naver_reservations SET status = ?, memo = ?
+       WHERE phone = ? AND reservation_date = ? AND reservation_time = ?`,
+      [status || "예약접수", truncMemo, phone || "", date, time]
     );
 
     return NextResponse.json({
