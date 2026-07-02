@@ -59,6 +59,17 @@ export async function POST(req: Request) {
       });
     }
 
+    // 5분 이내 같은 번호로 RESERVATION_CONFIRM 발송 기록 있으면 중복 방지
+    const [dupCheck]: any = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM sms_logs
+       WHERE receiver_phone = ? AND target_type = 'RESERVATION_CONFIRM'
+       AND created_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
+      [to]
+    );
+    if (dupCheck[0]?.cnt > 0) {
+      return NextResponse.json({ success: true, skipped: true, message: "5분 이내 중복 발송 방지" });
+    }
+
     const apiKey = process.env.SOLAPI_API_KEY;
     const apiSecret = process.env.SOLAPI_API_SECRET;
 
