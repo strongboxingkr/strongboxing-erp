@@ -722,6 +722,30 @@ const getTypeInfo = (r: any) => {
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button className="btn secondary" onClick={() => setSmsModal(null)}>취소</button>
               <button
+                className="btn secondary"
+                onClick={async () => {
+                  const res = await apiFetch("/api/calendar-events/edit", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      event_id: selected.event_id,
+                      customer_name: selected.customer_name,
+                      phone: selected.phone,
+                      start_datetime: selected.start_datetime,
+                      event_type: selected.event_type,
+                      status: smsModal.pendingStatus,
+                      memo: selected.memo,
+                    }),
+                  });
+                  const json = await res.json();
+                  setSmsModal(null);
+                  setSelected(null);
+                  loadReservations();
+                  alert(json.success ? "예약확정 완료 (문자 미발송)" : json.message || "처리 실패");
+                }}
+              >
+                문자 없이 확정
+              </button>
+              <button
                 className="btn"
                 onClick={async () => {
                   const res = await apiFetch("/api/calendar-events/edit", {
