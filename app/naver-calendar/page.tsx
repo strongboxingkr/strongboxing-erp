@@ -820,6 +820,8 @@ ${selected.customer_name}님 예약이 확정되었습니다.
 방문일시 : ${date} ${time}
 예약내용 : ${selected.title || "방문 상담"}
 
+예약하신 시간에 뵙겠습니다.
+
 감사합니다 🥊
 스트롱복싱 ${selected.branch_name}`;
 
