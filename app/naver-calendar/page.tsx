@@ -724,6 +724,57 @@ const getTypeInfo = (r: any) => {
                   key={s}
                   className={selected.status === s ? "btn" : "btn secondary"}
                   onClick={async () => {
+                    if (s === "예약확정") {
+                      const dt = selected.start_datetime || "";
+                      const date = dt.slice(0, 10);
+                      const time = dt.slice(11, 16);
+                      const smsMsg = `[스트롱복싱 ${selected.branch_name}]
+
+${selected.customer_name}님 예약이 확정되었습니다.
+
+방문일시 : ${date} ${time}
+예약내용 : ${selected.title || "방문 상담"}
+
+편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
+처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
+
+감사합니다.
+스트롱복싱 ${selected.branch_name}`;
+
+                      const ok = confirm(`예약확정 처리 및 아래 문자를 발송합니다.\n\n${smsMsg}`);
+                      if (!ok) return;
+
+                      const res = await apiFetch("/api/calendar-events/edit", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          event_id: selected.event_id,
+                          customer_name: selected.customer_name,
+                          phone: selected.phone,
+                          start_datetime: selected.start_datetime,
+                          event_type: selected.event_type,
+                          status: s,
+                          memo: selected.memo,
+                        }),
+                      });
+                      const json = await res.json();
+                      if (!json.success) { alert(json.message || "처리 실패"); return; }
+
+                      await apiFetch("/api/sms/send-reservation", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          phone: selected.phone,
+                          branch_name: selected.branch_name,
+                          message: smsMsg,
+                          receiver_name: selected.customer_name,
+                        }),
+                      });
+
+                      alert("예약확정 및 안내문자 발송 완료");
+                      setSelected(null);
+                      loadReservations();
+                      return;
+                    }
+
                     const res = await apiFetch("/api/calendar-events/edit", {
                       method: "POST",
                       body: JSON.stringify({
