@@ -475,6 +475,10 @@ export async function GET() {
         );
 
         if (calendarRows.length > 0) {
+          const existingStatus = calendarRows[0].status;
+          const lockedStatuses = ["예약확정", "상담완료", "확인완료", "노쇼", "취소"];
+          const keepStatus = lockedStatuses.includes(existingStatus) ? existingStatus : status;
+
           await pool.query(
             `
             UPDATE calendar_events
@@ -498,7 +502,7 @@ export async function GET() {
               phone,
               startDateTime,
               memo,
-              status,
+              keepStatus,
               calendarSourceId,
               calendarRows[0].event_id,
             ]
