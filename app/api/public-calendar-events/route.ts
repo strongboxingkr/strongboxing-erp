@@ -10,7 +10,7 @@ export async function GET(req: Request) {
                       start_datetime, status, event_type, created_at
                FROM calendar_events
                WHERE status != '취소'
-               AND start_datetime >= DATE_SUB(NOW(), INTERVAL 1 MONTH)`;
+               AND start_datetime >= '2026-07-01'`;
     const params: any[] = [];
 
     if (branch_name) {
