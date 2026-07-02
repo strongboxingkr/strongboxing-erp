@@ -18,6 +18,7 @@ export default function NaverCalendarPage() {
   const [user, setUser] = useState<any>(null);
   const [mobile, setMobile] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const [smsModal, setSmsModal] = useState<{ msg: string; pendingStatus: string } | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -678,6 +679,90 @@ const getTypeInfo = (r: any) => {
         </div>
       </div>
       
+      {smsModal && selected && (
+        <div
+          onClick={() => setSmsModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 10000,
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card"
+            style={{ width: "100%", maxWidth: 520, borderRadius: 24 }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 4 }}>📱 문자 내용 확인 및 수정</h3>
+            <p style={{ color: "#94a3b8", fontSize: 13, marginBottom: 14 }}>
+              수신: {selected.phone} ({selected.customer_name})
+            </p>
+            <textarea
+              value={smsModal.msg}
+              onChange={(e) => setSmsModal({ ...smsModal, msg: e.target.value })}
+              style={{
+                width: "100%",
+                minHeight: 260,
+                background: "var(--panel)",
+                color: "var(--text)",
+                border: "1px solid var(--line)",
+                borderRadius: 12,
+                padding: "14px 16px",
+                fontSize: 14,
+                fontFamily: "inherit",
+                resize: "vertical",
+                lineHeight: 1.6,
+                marginBottom: 16,
+              }}
+            />
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button className="btn secondary" onClick={() => setSmsModal(null)}>취소</button>
+              <button
+                className="btn"
+                onClick={async () => {
+                  const res = await apiFetch("/api/calendar-events/edit", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      event_id: selected.event_id,
+                      customer_name: selected.customer_name,
+                      phone: selected.phone,
+                      start_datetime: selected.start_datetime,
+                      event_type: selected.event_type,
+                      status: smsModal.pendingStatus,
+                      memo: selected.memo,
+                    }),
+                  });
+                  const json = await res.json();
+                  if (!json.success) { alert(json.message || "처리 실패"); return; }
+
+                  const smsRes = await apiFetch("/api/sms/send-reservation", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      phone: selected.phone,
+                      branch_name: selected.branch_name,
+                      message: smsModal.msg,
+                      receiver_name: selected.customer_name,
+                    }),
+                  });
+                  const smsJson = await smsRes.json();
+
+                  setSmsModal(null);
+                  setSelected(null);
+                  loadReservations();
+                  alert(smsJson.skipped ? "예약확정 완료 (5분 이내 중복 문자 방지)" : "예약확정 및 안내문자 발송 완료");
+                }}
+              >
+                발송 및 확정
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selected && (
         <div
           onClick={() => setSelected(null)}
@@ -735,43 +820,10 @@ ${selected.customer_name}님 예약이 확정되었습니다.
 방문일시 : ${date} ${time}
 예약내용 : ${selected.title || "방문 상담"}
 
-편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.
-처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.
-
-감사합니다.
+감사합니다 🥊
 스트롱복싱 ${selected.branch_name}`;
 
-                      const ok = confirm(`예약확정 처리 및 아래 문자를 발송합니다.\n\n${smsMsg}`);
-                      if (!ok) return;
-
-                      const res = await apiFetch("/api/calendar-events/edit", {
-                        method: "POST",
-                        body: JSON.stringify({
-                          event_id: selected.event_id,
-                          customer_name: selected.customer_name,
-                          phone: selected.phone,
-                          start_datetime: selected.start_datetime,
-                          event_type: selected.event_type,
-                          status: s,
-                          memo: selected.memo,
-                        }),
-                      });
-                      const json = await res.json();
-                      if (!json.success) { alert(json.message || "처리 실패"); return; }
-
-                      await apiFetch("/api/sms/send-reservation", {
-                        method: "POST",
-                        body: JSON.stringify({
-                          phone: selected.phone,
-                          branch_name: selected.branch_name,
-                          message: smsMsg,
-                          receiver_name: selected.customer_name,
-                        }),
-                      });
-
-                      alert("예약확정 및 안내문자 발송 완료");
-                      setSelected(null);
-                      loadReservations();
+                      setSmsModal({ msg: smsMsg, pendingStatus: s });
                       return;
                     }
 
