@@ -8,7 +8,12 @@ import Holidays from "date-holidays";
 const holidays = new Holidays("KR");
 const BRANCHES = ["철산점", "목동점", "개봉점", "신정점"];
 const STATUS_OPTIONS = ["예약접수", "예약확정", "상담완료", "확인완료", "노쇼", "취소"];
-const TYPE_OPTIONS = ["PHONE", "HOMEPAGE", "KAKAO"];
+const TYPE_OPTIONS = [
+  { value: "PHONE", label: "전화문의" },
+  { value: "HOMEPAGE", label: "홈페이지" },
+  { value: "KAKAO", label: "카카오" },
+  { value: "INSTAGRAM", label: "인스타그램" },
+];
 
 const getStatusColor = (s: string) => {
   if (s === "예약접수") return "#3b82f6";
@@ -46,6 +51,8 @@ const EMPTY_FORM = {
   status: "예약접수",
   event_type: "PHONE",
 };
+
+const getTypeLabel = (v: string) => TYPE_OPTIONS.find((t) => t.value === v)?.label || v;
 
 export default function PublicCalendarPage() {
   const [value, setValue] = useState<any>(new Date());
@@ -288,7 +295,7 @@ export default function PublicCalendarPage() {
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#64748b", display: "block", marginBottom: 5 }}>출처</label>
                 <select className="inp" value={modal.data.event_type} onChange={(e) => upd("event_type", e.target.value)}>
-                  {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{getTypeInfo(t).label}</option>)}
+                  {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
             </div>
