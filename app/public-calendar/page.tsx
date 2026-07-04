@@ -9,10 +9,14 @@ const holidays = new Holidays("KR");
 const BRANCHES = ["철산점", "목동점", "개봉점", "신정점"];
 const STATUS_OPTIONS = ["예약접수", "예약확정", "상담완료", "확인완료", "노쇼", "취소"];
 const TYPE_OPTIONS = [
-  { value: "PHONE", label: "전화문의" },
+  { value: "전화문의", label: "전화문의" },
+  { value: "인스타그램", label: "인스타그램" },
   { value: "HOMEPAGE", label: "홈페이지" },
-  { value: "KAKAO", label: "카카오" },
-  { value: "INSTAGRAM", label: "인스타그램" },
+  { value: "카카오톡", label: "카카오톡" },
+  { value: "지인소개", label: "지인소개" },
+  { value: "방문문의", label: "방문문의" },
+  { value: "당근", label: "당근" },
+  { value: "기타", label: "기타" },
 ];
 
 const getStatusColor = (s: string) => {
@@ -49,7 +53,7 @@ const EMPTY_FORM = {
   title: "방문 상담",
   memo: "",
   status: "예약접수",
-  event_type: "PHONE",
+  event_type: "전화문의",
 };
 
 const getTypeLabel = (v: string) => TYPE_OPTIONS.find((t) => t.value === v)?.label || v;
