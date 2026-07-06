@@ -234,16 +234,6 @@ export default function AppShell({
           <div className="title">{title}</div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <a
-              href="https://strongboxing.kr/hq"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn secondary"
-              style={{ textDecoration: "none" }}
-            >
-              홈페이지 관리
-            </a>
-
             <button
               className="btn secondary"
               onClick={() => {
@@ -281,6 +271,41 @@ export default function AppShell({
       </main>
 
       <AlertsFloating />
+
+      <a
+        href="https://strongboxing.kr/hq"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="홈페이지 관리"
+        style={{
+          position: "fixed",
+          bottom: 28,
+          right: 28,
+          zIndex: 9000,
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          background: "#D01E2E",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 4px 16px rgba(208,30,46,0.35)",
+          textDecoration: "none",
+          fontSize: 22,
+          transition: "transform .15s, box-shadow .15s",
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLElement).style.transform = "scale(1.1)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(208,30,46,0.5)";
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.transform = "scale(1)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(208,30,46,0.35)";
+        }}
+      >
+        🏠
+      </a>
     </div>
   );
 }
