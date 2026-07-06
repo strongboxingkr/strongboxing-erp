@@ -54,6 +54,12 @@ const menuGroups = [
     ],
   },
   {
+    title: "📈 마케팅",
+    items: [
+      ["광고성과 분석", "/hq/marketing-report"],
+    ],
+  },
+  {
     title: "⚙ 설정",
     items: [
       ["계정관리", "/users"],
