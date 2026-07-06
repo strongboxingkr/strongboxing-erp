@@ -234,6 +234,16 @@ export default function AppShell({
           <div className="title">{title}</div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <a
+              href="https://strongboxing.kr/hq"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn secondary"
+              style={{ textDecoration: "none" }}
+            >
+              홈페이지 관리
+            </a>
+
             <button
               className="btn secondary"
               onClick={() => {
