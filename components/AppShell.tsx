@@ -63,7 +63,6 @@ const menuGroups = [
       ["직원 관리", "/hq/staff"],
       ["자산 관리", "/hq/assets"],
       ["콘텐츠 관리", "/hq/contents"],
-      ["AI 콘텐츠", "/hq/ai-content"],
       ["설정", "/hq/settings"],
     ],
   },
