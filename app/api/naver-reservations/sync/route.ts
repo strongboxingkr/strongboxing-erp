@@ -476,8 +476,12 @@ export async function GET() {
 
         if (calendarRows.length > 0) {
           const existingStatus = calendarRows[0].status;
-          const lockedStatuses = ["예약확정", "상담완료", "확인완료", "노쇼", "취소"];
-          const keepStatus = lockedStatuses.includes(existingStatus) ? existingStatus : status;
+          const lockedStatuses = ["예약확정", "상담완료", "확인완료", "노쇼"];
+          // 취소 → 재예약 확정인 경우 naver 측 status를 따름
+          const incomingIsActive = !["취소", "예약취소"].includes(status);
+          const keepStatus = lockedStatuses.includes(existingStatus) && !(existingStatus === "취소" && incomingIsActive)
+            ? existingStatus
+            : status;
 
           await pool.query(
             `
