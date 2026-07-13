@@ -154,10 +154,9 @@ export default function NaverCalendarPage() {
 
     return rows.filter(
       (r) =>
-        r.start_datetime?.slice(
-          0,
-          10
-        ) === target
+        r.start_datetime?.slice(0, 10) === target &&
+        r.status !== "취소" &&
+        r.status !== "痍⑥냼"
     ).length;
   };
 

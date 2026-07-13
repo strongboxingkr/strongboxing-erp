@@ -54,9 +54,26 @@ const menuGroups = [
     ],
   },
   {
+    title: "🌐 홈페이지 관리",
+    items: [
+      ["대시보드", "/hq"],
+      ["상담 템플릿", "/hq/consultation"],
+      ["일정 관리", "/hq/calendar"],
+      ["지점 관리", "/hq/branches"],
+      ["직원 관리", "/hq/staff"],
+      ["자산 관리", "/hq/assets"],
+      ["콘텐츠 관리", "/hq/contents"],
+      ["AI 콘텐츠", "/hq/ai-content"],
+      ["설정", "/hq/settings"],
+    ],
+  },
+  {
     title: "📈 마케팅",
     items: [
       ["광고성과 분석", "/hq/marketing-report"],
+      ["마케팅 통계", "/hq/marketing"],
+      ["애널리틱스", "/hq/analytics"],
+      ["재무", "/hq/finance"],
     ],
   },
   {

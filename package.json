@@ -17,6 +17,7 @@
     "mailparser": "^3.9.9",
     "mysql2": "^3.22.3",
     "next": "latest",
+    "openai": "^6.45.0",
     "papaparse": "^5.5.4",
     "react": "latest",
     "react-calendar": "^6.0.1",

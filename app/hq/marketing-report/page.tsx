@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import AppShell from "@/components/AppShell";
 import { parseCsvFile } from "@/lib/marketing/parseMarketingCsv";
 import { normalizeRows } from "@/lib/marketing/normalizeMarketingRows";
 import {
@@ -414,7 +413,6 @@ export default function MarketingReportPage() {
   };
 
   return (
-    <AppShell title="광고성과 분석">
     <div style={{ padding: "24px 28px", maxWidth: 1200, margin: "0 auto" }}>
       <style>{`
         .mk-card{background:#fff;border-radius:16px;padding:20px 24px;border:1px solid #e2e8f0;margin-bottom:20px}
@@ -792,6 +790,5 @@ export default function MarketingReportPage() {
         </div>
       )}
     </div>
-    </AppShell>
   );
 }
