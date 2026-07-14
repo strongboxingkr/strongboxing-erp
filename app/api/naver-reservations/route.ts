@@ -76,8 +76,8 @@ export async function GET(req: Request) {
     }
 
     sql += `
-      ORDER BY reservation_date ASC,
-               reservation_time ASC,
+      ORDER BY reservation_date DESC,
+               reservation_time DESC,
                reservation_id DESC
     `;
 
