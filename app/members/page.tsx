@@ -318,6 +318,7 @@ export default function MembersPage() {
         ...extendMember,
         end_date: nextEndDate,
         remaining_count: nextCount,
+        status: "ACTIVE",
       }),
     });
 
