@@ -88,7 +88,7 @@ export default function CheckInPage() {
             <div>{result.message}</div>
             {result.member && (
               <div style={{ marginTop: 16, fontSize: 28, color: "white" }}>
-                {result.member.name} / {result.member.product_name} / 남은횟수 {result.member.remaining_count}
+                {result.member.name} / {result.member.product_name} / {result.member.pass_type === "COUNT" ? `남은횟수 ${result.member.remaining_count}` : `남은일수 ${result.member.remaining_count}`}
               </div>
             )}
           </div>

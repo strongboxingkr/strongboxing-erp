@@ -244,7 +244,11 @@ export async function POST(req: Request) {
         product_name: member.product_name,
         pass_type: member.pass_type,
         remaining_count:
-          member.pass_type === "COUNT" ? remainingCount : "기간권",
+          member.pass_type === "COUNT"
+            ? remainingCount
+            : member.end_date
+            ? Math.max(0, Math.ceil((new Date(member.end_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000)) + "일"
+            : "기간권",
         end_date: member.end_date,
       },
     });
