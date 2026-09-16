@@ -324,12 +324,21 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
+      const extendedMonths = extendMember.pass_type === "PERIOD"
+        ? (extendForm.customMonths ? Number(extendForm.customMonths) : extendForm.months)
+        : null;
+      const extendedCount = extendMember.pass_type !== "PERIOD"
+        ? (extendForm.customCount ? Number(extendForm.customCount) : extendForm.count)
+        : null;
+      const extendLabel = extendMember.pass_type === "PERIOD"
+        ? `${extendedMonths}개월 연장`
+        : `${extendedCount}회 연장`;
       const message = `${extendMember.name} 회원님
 안녕하세요 스트롱복싱 ${extendMember.branch_name}입니다 🥊
 
 회원권 연장이 완료되었습니다.
 
-상품 : ${extendMember.product_name}
+상품 : ${extendMember.product_name} (${extendLabel})
 
 ${
   extendMember.pass_type === "PERIOD"
