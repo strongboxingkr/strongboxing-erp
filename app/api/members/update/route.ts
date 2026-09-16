@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     const oldMember = oldRows[0];
     const phoneLast4 = String(phone || oldMember.phone || "").slice(-4);
     const finalCheckinCode = checkin_code || oldMember.checkin_code || phoneLast4;
+    const toDate = (v: any) => v ? String(v).slice(0, 10) : null;
 
     await pool.query(
       `
@@ -97,17 +98,17 @@ export async function POST(req: Request) {
         product_name || oldMember.product_name,
         pass_type || oldMember.pass_type,
         remaining_count ?? oldMember.remaining_count,
-        start_date || oldMember.start_date,
-        end_date || oldMember.end_date,
+        toDate(start_date || oldMember.start_date),
+        toDate(end_date || oldMember.end_date),
         status || oldMember.status,
         memo ?? oldMember.memo,
         locker_no ?? oldMember.locker_no,
         member_no ?? oldMember.member_no,
         gender ?? oldMember.gender,
-        birth_date || oldMember.birth_date,
+        toDate(birth_date || oldMember.birth_date),
         emergency_contact ?? oldMember.emergency_contact,
         address ?? oldMember.address,
-        join_date || oldMember.join_date,
+        toDate(join_date || oldMember.join_date),
         staff_name ?? oldMember.staff_name,
         attendance_sms_enabled ?? oldMember.attendance_sms_enabled ?? 0,
         member_id,
