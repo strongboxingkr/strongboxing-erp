@@ -111,9 +111,9 @@ export async function POST(req: Request) {
         toDate(join_date || oldMember.join_date),
         staff_name ?? oldMember.staff_name,
         attendance_sms_enabled ?? oldMember.attendance_sms_enabled ?? 0,
-        member_id,
         checkin_sms_enabled ?? oldMember.checkin_sms_enabled,
         checkout_sms_enabled ?? oldMember.checkout_sms_enabled,
+        member_id,
       ]
     );
 
