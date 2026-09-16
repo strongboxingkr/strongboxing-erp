@@ -231,6 +231,8 @@ export default function MembersPage() {
   const handleProductChange = (productName: string) => {
     const product = products.find((p) => p.option_name === productName);
     const passType = product?.option_value || "PERIOD";
+    const monthMatch = productName.match(/(\d+)\s*개월/);
+    const months = monthMatch ? parseInt(monthMatch[1]) : 1;
 
     setForm({
       ...form,
@@ -238,7 +240,7 @@ export default function MembersPage() {
       pass_type: passType,
       remaining_count: passType === "COUNT" ? form.remaining_count || 12 : 0,
       end_date:
-        passType === "PERIOD" ? addMonths(form.start_date, 1) : form.end_date,
+        passType === "PERIOD" ? addMonths(form.start_date, months) : form.end_date,
     });
   };
 
@@ -583,7 +585,12 @@ ${
               ))}
             </select>
 
-            <input className="input" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+            <input className="input" type="date" value={form.start_date} onChange={(e) => {
+                const newStart = e.target.value;
+                const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
+                const months = monthMatch ? parseInt(monthMatch[1]) : 1;
+                setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
+              }} />
             <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
 
             {form.pass_type === "COUNT" ? (
