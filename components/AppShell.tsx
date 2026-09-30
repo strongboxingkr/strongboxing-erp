@@ -288,7 +288,7 @@ export default function AppShell({
 
       <AlertsFloating />
 
-      <a
+      {user.role === "OWNER" && <a
         href="https://strongboxing.kr/hq"
         target="_blank"
         rel="noopener noreferrer"
@@ -321,7 +321,7 @@ export default function AppShell({
         }}
       >
         🏠
-      </a>
+      </a>}
     </div>
   );
 }
