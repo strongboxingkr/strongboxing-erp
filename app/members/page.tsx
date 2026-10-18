@@ -732,6 +732,16 @@ ${
             <button className="btn secondary" onClick={() => setShowForm(false)}>
               취소
             </button>
+
+            {isEdit && form.member_id && (
+              <button
+                className="btn secondary"
+                style={{ color: "#ff4d6d", marginLeft: "auto" }}
+                onClick={() => { deleteMember(form); setShowForm(false); }}
+              >
+                삭제
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1066,13 +1076,6 @@ ${
                   재등록
                 </button>
 
-                <button
-                  className="btn secondary"
-                  onClick={() => deleteMember(m)}
-                  style={{ ...miniBtnStyle, color: "#ff4d6d" }}
-                >
-                  삭제
-                </button>
               </div>
             </div>
           );
