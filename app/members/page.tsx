@@ -230,6 +230,16 @@ export default function MembersPage() {
       checkout_sms_enabled: m.checkout_sms_enabled || 0,
     });
 
+    setReregForm({
+      product_name: m.product_name || "",
+      payment_date: today,
+      payment_method: "카드",
+      amount: "",
+      discount_amount: "0",
+      final_amount: "",
+      memo: "",
+    });
+
     setShowForm(true);
     setShowHoldForm(false);
     setShowExtendForm(false);
@@ -709,7 +719,7 @@ ${
 
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
             <button className="btn" onClick={saveMember}>
-              {isEdit ? "수정 저장" : "회원 저장"}
+              {isEdit ? "정보 저장" : "회원 저장"}
             </button>
 
             {isEdit && form.member_id && (
@@ -718,13 +728,13 @@ ${
                   className="btn secondary"
                   onClick={() => { setShowForm(false); openHold({ ...form, member_id: form.member_id }); }}
                 >
-                  휴회 처리
+                  휴회
                 </button>
                 <button
                   className="btn secondary"
                   onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}
                 >
-                  상세 보기
+                  상세
                 </button>
               </>
             )}
@@ -743,6 +753,67 @@ ${
               </button>
             )}
           </div>
+
+          {/* 재등록 섹션 */}
+          {isEdit && form.member_id && (
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>📋 재등록 (회원권 변경 + 결제)</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>상품 선택</div>
+                  <select className="input" value={reregForm.product_name}
+                    onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                    <option value="">상품 선택</option>
+                    {products.map((p: any) => (
+                      <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제일 (시작일)</div>
+                  <input className="input" type="date" value={reregForm.payment_date}
+                    onChange={(e) => setReregForm({ ...reregForm, payment_date: e.target.value })} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제수단</div>
+                  <select className="input" value={reregForm.payment_method}
+                    onChange={(e) => setReregForm({ ...reregForm, payment_method: e.target.value })}>
+                    <option value="카드">카드</option>
+                    <option value="현금">현금</option>
+                    <option value="계좌이체">계좌이체</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>정가</div>
+                  <input className="input" type="number" placeholder="0" value={reregForm.amount}
+                    onChange={(e) => {
+                      const amt = e.target.value;
+                      const disc = Number(reregForm.discount_amount) || 0;
+                      setReregForm({ ...reregForm, amount: amt, final_amount: String(Number(amt) - disc) });
+                    }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>할인금액</div>
+                  <input className="input" type="number" placeholder="0" value={reregForm.discount_amount}
+                    onChange={(e) => {
+                      const disc = e.target.value;
+                      const amt = Number(reregForm.amount) || 0;
+                      setReregForm({ ...reregForm, discount_amount: disc, final_amount: String(amt - Number(disc)) });
+                    }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>실결제금액</div>
+                  <input className="input" type="number" placeholder="0" value={reregForm.final_amount}
+                    style={{ fontWeight: 700, color: "var(--accent)" }}
+                    onChange={(e) => setReregForm({ ...reregForm, final_amount: e.target.value })} />
+                </div>
+              </div>
+              <button className="btn" onClick={() => { setExtendMember({ ...form }); saveRereg(); }}>
+                재등록 저장
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1072,9 +1143,6 @@ ${
                   수정
                 </button>
 
-                <button className="btn" onClick={() => openExtend(m)} style={miniBtnStyle}>
-                  재등록
-                </button>
 
               </div>
             </div>
