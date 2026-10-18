@@ -13,7 +13,7 @@ export default function LockersPage() {
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [tab, setTab] = useState<"grid" | "settings">("grid");
   const [modal, setModal] = useState<any>(null);
-  const [form, setForm] = useState({ member_name: "", gender: "", start_date: "", end_date: "", memo: "" });
+  const [form, setForm] = useState({ member_name: "", gender: "", start_date: "", end_date: "", memo: "", has_luggage: 0 });
   const [zoneForm, setZoneForm] = useState({ zone_name: "", start_no: "", end_no: "", sort_order: "0" });
 
   useEffect(() => {
@@ -71,6 +71,7 @@ export default function LockersPage() {
       start_date: existing?.start_date?.slice(0, 10) || "",
       end_date: existing?.end_date?.slice(0, 10) || "",
       memo: existing?.memo || "",
+      has_luggage: existing?.has_luggage || 0,
     });
   };
 
@@ -86,6 +87,7 @@ export default function LockersPage() {
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         memo: form.memo,
+        has_luggage: form.has_luggage,
       }),
     });
     setModal(null);
@@ -281,6 +283,10 @@ export default function LockersPage() {
                     const locker = getLocker(no, zone.zone_name);
                     const used = !!locker?.member_name;
                     const expired = used && locker.end_date && new Date(locker.end_date) < new Date();
+                    const hasLuggage = expired && locker.has_luggage === 1;
+                    const borderColor = hasLuggage ? "#ec4899" : expired ? "#ef4444" : used ? "#3b82f6" : "var(--line)";
+                    const bgColor = hasLuggage ? "rgba(236,72,153,0.12)" : expired ? "rgba(239,68,68,0.1)" : used ? "rgba(59,130,246,0.12)" : "var(--panel)";
+                    const textColor = hasLuggage ? "#ec4899" : expired ? "#ef4444" : used ? "#3b82f6" : "var(--muted)";
                     return (
                       <div
                         key={no}
@@ -289,8 +295,8 @@ export default function LockersPage() {
                           padding: "10px 6px",
                           borderRadius: 8,
                           cursor: "pointer",
-                          border: expired ? "2px solid #ef4444" : used ? "2px solid #3b82f6" : "1px solid var(--line)",
-                          background: expired ? "rgba(239,68,68,0.1)" : used ? "rgba(59,130,246,0.12)" : "var(--panel)",
+                          border: `2px solid ${borderColor}`,
+                          background: bgColor,
                           textAlign: "center",
                           minHeight: 72,
                           transition: "transform 0.1s",
@@ -298,11 +304,11 @@ export default function LockersPage() {
                         onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
                         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       >
-                        <div style={{ fontSize: 14, fontWeight: 900, color: expired ? "#ef4444" : used ? "#3b82f6" : "var(--muted)" }}>{no}</div>
+                        <div style={{ fontSize: 14, fontWeight: 900, color: textColor }}>{no}</div>
                         {used && (
                           <>
                             <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locker.member_name}</div>
-                            <div style={{ fontSize: 9, color: expired ? "#ef4444" : "var(--muted)", marginTop: 1 }}>
+                            <div style={{ fontSize: 9, color: hasLuggage ? "#ec4899" : expired ? "#ef4444" : "var(--muted)", marginTop: 1 }}>
                               {locker.end_date?.slice(0, 10)}
                             </div>
                           </>
@@ -353,6 +359,16 @@ export default function LockersPage() {
                 <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>메모</div>
                 <input className="input" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} placeholder="메모" />
               </div>
+              {form.end_date && new Date(form.end_date) < new Date() && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.has_luggage === 1}
+                    onChange={(e) => setForm({ ...form, has_luggage: e.target.checked ? 1 : 0 })}
+                  />
+                  <span style={{ color: "#ec4899", fontWeight: 700 }}>🩷 짐 미수령 (핑크 표시)</span>
+                </label>
+              )}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
               {modal.existing?.member_name && (
