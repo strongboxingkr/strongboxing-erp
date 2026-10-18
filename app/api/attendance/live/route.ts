@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       FROM attendance a
       JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-        AND a.result = 'SUCCESS'
+        AND a.result IN ('SUCCESS', 'CHECK_OUT')
         ${branchCondition}
       ORDER BY a.checkin_time DESC
       `,
@@ -58,7 +58,7 @@ export async function GET(req: Request) {
       FROM attendance a
       JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-        AND a.result = 'SUCCESS'
+        AND a.result IN ('SUCCESS', 'CHECK_OUT')
         ${branchCondition}
       GROUP BY COALESCE(a.branch_name, m.branch_name)
       ORDER BY count DESC

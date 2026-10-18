@@ -75,8 +75,8 @@ export default function AttendanceMonitorPage() {
 
   const today = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
 
-  const successRows = rows.filter((r) => r.result === "SUCCESS");
-  const successCount = successRows.length;
+  const successRows = rows.filter((r) => r.result === "SUCCESS" || r.result === "CHECK_OUT");
+  const successCount = rows.filter((r) => r.result === "SUCCESS").length;
   const checkoutCount = rows.filter((r) => r.result === "CHECK_OUT").length;
 
   return (
@@ -209,8 +209,8 @@ export default function AttendanceMonitorPage() {
                 fontSize: 13,
               }}>
                 <span style={{ color: "#475569" }}>{successCount - i}</span>
-                <span style={{ fontWeight: 700, color: "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {r.name || "미등록"}
+                <span style={{ fontWeight: 700, color: r.result === "CHECK_OUT" ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {r.name || "미등록"}{r.result === "CHECK_OUT" ? " ↩" : ""}
                 </span>
                 <span style={{ color: "#475569", fontSize: 12 }}>
                   {r.pass_type === "COUNT"
