@@ -31,6 +31,8 @@ export default function CheckInPage() {
   const isSuccess = result?.success === true;
 
   return (
+    <>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800;1,900&display=swap');`}</style>
     <div style={{
       minHeight: "100vh",
       background: "#fff",
@@ -46,12 +48,13 @@ export default function CheckInPage() {
       {/* 타이틀 */}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{
-          fontSize: "clamp(36px, 10vw, 52px)",
+          fontSize: "clamp(44px, 12vw, 64px)",
           fontWeight: 900,
           color: "#c0392b",
-          letterSpacing: 1,
+          letterSpacing: 2,
           lineHeight: 1,
           fontStyle: "italic",
+          fontFamily: "'Barlow Condensed', Impact, Arial Narrow, sans-serif",
           textTransform: "uppercase",
           whiteSpace: "nowrap",
         }}>
@@ -170,6 +173,7 @@ export default function CheckInPage() {
         </button>
       </div>
     </div>
+    </>
   );
 }
 
