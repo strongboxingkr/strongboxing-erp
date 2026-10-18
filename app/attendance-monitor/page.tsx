@@ -208,7 +208,7 @@ export default function AttendanceMonitorPage() {
                 background: i === 0 ? "#1e293b" : "transparent",
                 fontSize: 13,
               }}>
-                <span style={{ color: "#475569" }}>{successCount - i}</span>
+                <span style={{ color: "#475569" }}>{successRows.length - i}</span>
                 <span style={{ fontWeight: 700, color: r.result === "CHECK_OUT" ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {r.name || "미등록"}{r.result === "CHECK_OUT" ? " ↩" : ""}
                 </span>
