@@ -649,8 +649,7 @@ ${
             </select>
 
             <input className="input" type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
-            <input className="input" placeholder="비상연락처 / 보호자" value={form.emergency_contact} onChange={(e) => setForm({ ...form, emergency_contact: e.target.value })} />
-            <input className="input" placeholder="락카번호" value={form.locker_no} onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
+<input className="input" placeholder="락카번호" value={form.locker_no} onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
 
             <input className="input" placeholder="담당자" value={form.staff_name} onChange={(e) => setForm({ ...form, staff_name: e.target.value })} />
 
