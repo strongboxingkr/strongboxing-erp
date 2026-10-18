@@ -366,7 +366,7 @@ export default function LockersPage() {
                     checked={form.has_luggage === 1}
                     onChange={(e) => setForm({ ...form, has_luggage: e.target.checked ? 1 : 0 })}
                   />
-                  <span style={{ color: "#ec4899", fontWeight: 700 }}>🩷 짐 미수령 (핑크 표시)</span>
+                  <span style={{ color: "#ec4899", fontWeight: 700 }}>짐 미수령 (핑크 표시)</span>
                 </label>
               )}
             </div>
