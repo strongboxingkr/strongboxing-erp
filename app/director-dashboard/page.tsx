@@ -111,7 +111,7 @@ export default function DirectorDashboardPage() {
               {attendance.map((a: any, i: number) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
                   <span style={{ fontWeight: 700 }}>{a.name}</span>
-                  <span style={{ color: "var(--muted)" }}>{String(a.checkin_time || "").slice(11, 16)}</span>
+                  <span style={{ color: "var(--muted)" }}>{a.checkin_time ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" }) : ""}</span>
                 </div>
               ))}
             </div>

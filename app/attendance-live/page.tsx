@@ -146,7 +146,7 @@ export default function AttendanceLivePage() {
             {(data.rows || []).map((r: any) => (
               <tr key={r.attendance_id}>
                 <td style={{ fontWeight: 900 }}>
-                  {r.checkin_time?.slice(11, 19)}
+                  {r.checkin_time ? new Date(r.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Seoul" }) : ""}
                 </td>
                 <td>{r.branch_name}</td>
                 <td style={{ fontWeight: 900, fontSize: 18 }}>{r.name}</td>
