@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     if (check_type === "CHECK_OUT") {
     if (
       Number(member.checkout_sms_enabled || 0) === 1 &&
-      member.emergency_contact
+      (member.emergency_contact || member.phone)
     ) {
       await sendCheckoutSms(member);
     }
@@ -386,7 +386,7 @@ async function sendCheckoutSms(member: any) {
       minute: "2-digit",
     });
 
-    const to = cleanPhone(member.emergency_contact);
+    const to = cleanPhone(member.emergency_contact || member.phone);
 
     if (to.length < 10) return;
 
