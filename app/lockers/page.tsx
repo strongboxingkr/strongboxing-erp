@@ -281,7 +281,6 @@ export default function LockersPage() {
                     const locker = getLocker(no, zone.zone_name);
                     const used = !!locker?.member_name;
                     const expired = used && locker.end_date && new Date(locker.end_date) < new Date();
-                    const isFemale = locker?.gender === "여" || locker?.memo?.includes("여");
                     return (
                       <div
                         key={no}
@@ -290,8 +289,8 @@ export default function LockersPage() {
                           padding: "10px 6px",
                           borderRadius: 8,
                           cursor: "pointer",
-                          border: expired ? "2px solid #ef4444" : used ? (isFemale ? "2px solid #ec4899" : "2px solid #3b82f6") : "1px solid var(--line)",
-                          background: expired ? "rgba(239,68,68,0.1)" : used ? (isFemale ? "rgba(236,72,153,0.12)" : "rgba(59,130,246,0.12)") : "var(--panel)",
+                          border: expired ? "2px solid #ef4444" : used ? "2px solid #3b82f6" : "1px solid var(--line)",
+                          background: expired ? "rgba(239,68,68,0.1)" : used ? "rgba(59,130,246,0.12)" : "var(--panel)",
                           textAlign: "center",
                           minHeight: 72,
                           transition: "transform 0.1s",
@@ -299,7 +298,7 @@ export default function LockersPage() {
                         onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
                         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       >
-                        <div style={{ fontSize: 14, fontWeight: 900, color: used ? (isFemale ? "#ec4899" : "#3b82f6") : "var(--muted)" }}>{no}</div>
+                        <div style={{ fontSize: 14, fontWeight: 900, color: expired ? "#ef4444" : used ? "#3b82f6" : "var(--muted)" }}>{no}</div>
                         {used && (
                           <>
                             <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locker.member_name}</div>
