@@ -13,7 +13,7 @@ export default function LockersPage() {
   const [selectedZone, setSelectedZone] = useState<any>(null);
   const [tab, setTab] = useState<"grid" | "settings">("grid");
   const [modal, setModal] = useState<any>(null);
-  const [form, setForm] = useState({ member_name: "", start_date: "", end_date: "", memo: "" });
+  const [form, setForm] = useState({ member_name: "", gender: "", start_date: "", end_date: "", memo: "" });
   const [zoneForm, setZoneForm] = useState({ zone_name: "", start_no: "", end_no: "", sort_order: "0" });
 
   useEffect(() => {
@@ -67,6 +67,7 @@ export default function LockersPage() {
     setModal({ locker_no: no, zone: selectedZone.zone_name, existing });
     setForm({
       member_name: existing?.member_name || "",
+      gender: existing?.gender || "",
       start_date: existing?.start_date?.slice(0, 10) || "",
       end_date: existing?.end_date?.slice(0, 10) || "",
       memo: existing?.memo || "",
@@ -81,6 +82,7 @@ export default function LockersPage() {
         locker_zone: modal.zone,
         locker_no: modal.locker_no,
         member_name: form.member_name,
+        gender: form.gender,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
         memo: form.memo,
@@ -149,8 +151,8 @@ export default function LockersPage() {
           </select>
         )}
 
-        {/* 구역 탭 */}
-        {branch && zones.length > 0 && tab === "grid" && (
+        {/* 구역 탭 - 단일 구역 선택 (설정 탭에서만) */}
+        {branch && zones.length > 0 && tab === "settings" && (
           <div style={{ display: "flex", gap: 8 }}>
             {zones.map((z) => (
               <button
@@ -257,39 +259,59 @@ export default function LockersPage() {
         </div>
       )}
 
-      {/* 락커 그리드 */}
-      {tab === "grid" && branch && selectedZone && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
-          {zoneNumbers.map((no) => {
-            const locker = getLocker(no, selectedZone.zone_name);
-            const used = !!locker?.member_name;
-            const expired = used && locker.end_date && new Date(locker.end_date) < new Date();
+      {/* 락커 그리드 - 전체 구역 한 화면에 */}
+      {tab === "grid" && branch && zones.length > 0 && (
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+          {zones.map((zone) => {
+            const nums = Array.from({ length: zone.end_no - zone.start_no + 1 }, (_, i) => i + zone.start_no);
+            const zoneUsed = lockers.filter((l) => l.locker_zone === zone.zone_name && l.member_name).length;
             return (
-              <div
-                key={no}
-                onClick={() => openModal(no)}
-                style={{
-                  padding: "12px 8px",
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  border: expired ? "2px solid #ef4444" : used ? "2px solid var(--accent)" : "1px solid var(--line)",
-                  background: expired ? "rgba(239,68,68,0.08)" : used ? "rgba(59,130,246,0.1)" : "var(--panel)",
-                  textAlign: "center",
-                  minHeight: 80,
-                  transition: "transform 0.1s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-              >
-                <div style={{ fontSize: 16, fontWeight: 900, color: used ? "var(--accent)" : "var(--muted)" }}>{no}</div>
-                {used && (
-                  <>
-                    <div style={{ fontSize: 11, fontWeight: 700, marginTop: 4, color: "var(--text)" }}>{locker.member_name}</div>
-                    <div style={{ fontSize: 10, color: expired ? "#ef4444" : "var(--muted)", marginTop: 2 }}>
-                      {locker.end_date?.slice(0, 10)}
-                    </div>
-                  </>
-                )}
+              <div key={zone.zone_id} style={{ flex: "1 1 400px", minWidth: 340 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ fontWeight: 900, fontSize: 18, background: "var(--accent)", color: "#fff", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {zone.zone_name.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{zone.zone_name}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>사용 {zoneUsed} / {nums.length}</div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+                  {nums.map((no) => {
+                    const locker = getLocker(no, zone.zone_name);
+                    const used = !!locker?.member_name;
+                    const expired = used && locker.end_date && new Date(locker.end_date) < new Date();
+                    const isFemale = locker?.gender === "여" || locker?.memo?.includes("여");
+                    return (
+                      <div
+                        key={no}
+                        onClick={() => { setSelectedZone(zone); openModal(no); }}
+                        style={{
+                          padding: "10px 6px",
+                          borderRadius: 8,
+                          cursor: "pointer",
+                          border: expired ? "2px solid #ef4444" : used ? (isFemale ? "2px solid #ec4899" : "2px solid #3b82f6") : "1px solid var(--line)",
+                          background: expired ? "rgba(239,68,68,0.1)" : used ? (isFemale ? "rgba(236,72,153,0.12)" : "rgba(59,130,246,0.12)") : "var(--panel)",
+                          textAlign: "center",
+                          minHeight: 72,
+                          transition: "transform 0.1s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                      >
+                        <div style={{ fontSize: 14, fontWeight: 900, color: used ? (isFemale ? "#ec4899" : "#3b82f6") : "var(--muted)" }}>{no}</div>
+                        {used && (
+                          <>
+                            <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locker.member_name}</div>
+                            <div style={{ fontSize: 9, color: expired ? "#ef4444" : "var(--muted)", marginTop: 1 }}>
+                              {locker.end_date?.slice(0, 10)}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -304,9 +326,19 @@ export default function LockersPage() {
               {modal.zone} {modal.locker_no}번 락커
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>회원명</div>
-                <input className="input" value={form.member_name} onChange={(e) => setForm({ ...form, member_name: e.target.value })} placeholder="회원명 입력" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>회원명</div>
+                  <input className="input" value={form.member_name} onChange={(e) => setForm({ ...form, member_name: e.target.value })} placeholder="회원명 입력" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>성별</div>
+                  <select className="input" style={{ width: 80 }} value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                    <option value="">-</option>
+                    <option value="남">남</option>
+                    <option value="여">여</option>
+                  </select>
+                </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
