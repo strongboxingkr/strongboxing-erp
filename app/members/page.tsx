@@ -707,10 +707,27 @@ ${
             />
           </div>
 
-          <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
             <button className="btn" onClick={saveMember}>
               {isEdit ? "수정 저장" : "회원 저장"}
             </button>
+
+            {isEdit && form.member_id && (
+              <>
+                <button
+                  className="btn secondary"
+                  onClick={() => { setShowForm(false); openHold({ ...form, member_id: form.member_id }); }}
+                >
+                  휴회 처리
+                </button>
+                <button
+                  className="btn secondary"
+                  onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}
+                >
+                  상세 보기
+                </button>
+              </>
+            )}
 
             <button className="btn secondary" onClick={() => setShowForm(false)}>
               취소
@@ -1047,24 +1064,6 @@ ${
 
                 <button className="btn" onClick={() => openExtend(m)} style={miniBtnStyle}>
                   재등록
-                </button>
-
-                <button
-                  className="btn secondary"
-                  onClick={() => openHold(m)}
-                  style={miniBtnStyle}
-                >
-                  휴회
-                </button>
-
-                <button
-                  className="btn secondary"
-                  onClick={() => {
-                    location.href = `/member-detail?member_id=${m.member_id}`;
-                  }}
-                  style={miniBtnStyle}
-                >
-                  상세
                 </button>
 
                 <button
