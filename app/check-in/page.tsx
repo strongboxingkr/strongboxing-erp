@@ -46,13 +46,14 @@ export default function CheckInPage() {
       {/* 타이틀 */}
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{
-          fontSize: 52,
+          fontSize: "clamp(36px, 10vw, 52px)",
           fontWeight: 900,
           color: "#c0392b",
-          letterSpacing: 2,
+          letterSpacing: 1,
           lineHeight: 1,
           fontStyle: "italic",
           textTransform: "uppercase",
+          whiteSpace: "nowrap",
         }}>
           STRONG BOXING
         </div>
