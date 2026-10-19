@@ -8,11 +8,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const branch_name = searchParams.get("branch_name");
+    const all_branches = searchParams.get("all_branches") === "true";
 
     let branchCondition = "";
     const params: any[] = [];
 
-    if (isAdminOrOwner(user.role)) {
+    if (all_branches) {
+      // 전체 지점 조회 (관장 대시보드용)
+    } else if (isAdminOrOwner(user.role)) {
       if (branch_name && branch_name !== "전체") {
         branchCondition = " AND COALESCE(a.branch_name, m.branch_name) = ? ";
         params.push(branch_name);

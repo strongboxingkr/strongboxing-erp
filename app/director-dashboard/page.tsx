@@ -34,24 +34,21 @@ export default function DirectorDashboardPage() {
       const [sumRes, attRes, allAttRes, expRes] = await Promise.all([
         apiFetch(`/api/dashboard/summary`),
         apiFetch(`/api/attendance/live`),
-        apiFetch(`/api/attendance/live`),
+        apiFetch(`/api/attendance/live?all_branches=true`),
         apiFetch(`/api/members?status=ACTIVE&expiring=7`),
       ]);
 
-      const [sumJson, attJson, , expJson] = await Promise.all([
+      const [sumJson, attJson, allAttJson, expJson] = await Promise.all([
         sumRes.json(), attRes.json(), allAttRes.json(), expRes.json(),
       ]);
 
       setSummary(sumJson.data);
       setAttendance(attJson.rows || []);
-
-      // 전체 지점 출석 집계
+      const branchList = ["철산점", "목동점", "개봉점", "신정점"];
       const branchMap: Record<string, number> = {};
-      (attJson.rows || []).forEach((r: any) => {
-        const b = r.branch_name || "기타";
-        branchMap[b] = (branchMap[b] || 0) + 1;
-      });
-      setAllBranches(Object.entries(branchMap).map(([branch_name, count]) => ({ branch_name, count })).sort((a, b) => b.count - a.count));
+      branchList.forEach((b) => (branchMap[b] = 0));
+      (allAttJson.branches || []).forEach((r: any) => { branchMap[r.branch_name] = Number(r.count || 0); });
+      setAllBranches(branchList.map((b) => ({ branch_name: b, count: branchMap[b] })));
 
       // 만료 임박 (오늘~7일 이내)
       const todayDate = new Date(); todayDate.setHours(0,0,0,0);
