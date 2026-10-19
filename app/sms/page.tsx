@@ -129,6 +129,7 @@ export default function SmsPage() {
   };
 
   useEffect(() => {
+    if (!branchName) return;
     loadTargets();
   }, [branchName, targetType]);
 
