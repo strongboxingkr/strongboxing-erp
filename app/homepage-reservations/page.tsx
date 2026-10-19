@@ -64,8 +64,9 @@ export default function HomepageReservationsPage() {
   const [smsReservation, setSmsReservation] = useState<any>(null);
   const [smsMessage, setSmsMessage] = useState("");
 
-  const [startDate, setStartDate] = useState("");
+  const [startDate, setStartDate] = useState("2026-09-01");
   const [endDate, setEndDate] = useState("");
+  const [modalPhone, setModalPhone] = useState("");
 
   const getUser = () => {
     if (typeof window === "undefined") return null;
@@ -129,16 +130,19 @@ const updateReservation = async (
   r: any,
   status: string,
   memo?: string,
-  smsMessage?: string
+  smsMessage?: string,
+  phone?: string
 ) => {
+  const body: any = {
+    reservation_id: r.reservation_id,
+    status,
+    memo: memo ?? r.memo ?? "",
+    sms_message: smsMessage || "",
+  };
+  if (phone !== undefined) body.phone = phone;
   const res = await apiFetch("/api/naver-reservations/update", {
     method: "POST",
-    body: JSON.stringify({
-      reservation_id: r.reservation_id,
-      status,
-      memo: memo ?? r.memo ?? "",
-      sms_message: smsMessage || "",
-    }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
@@ -191,6 +195,7 @@ const updateReservation = async (
   const openModal = (r: any) => {
     setSelected(r);
     setModalMemo(r.memo || "");
+    setModalPhone(r.phone || "");
   };
 
   useEffect(() => {
@@ -353,7 +358,7 @@ const updateReservation = async (
             className="btn secondary"
             onClick={() => {
               setBranch("전체");
-              setStartDate("");
+              setStartDate("2026-09-01");
               setEndDate("");
               setSearch("");
             }}
@@ -575,9 +580,31 @@ const updateReservation = async (
 
               <div className="card">
                 <div style={{ color: "#94a3b8" }}>연락처</div>
-                <div style={{ marginTop: 8, fontSize: 20, fontWeight: 800 }}>
-                  {selected.phone || "-"}
-                </div>
+                {isAdminOrOwner && !String(selected.memo || "").includes("출처: 홈페이지 예약") ? (
+                  <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      className="input"
+                      value={modalPhone}
+                      onChange={(e) => setModalPhone(e.target.value)}
+                      placeholder="전화번호 입력"
+                      style={{ flex: 1, fontSize: 16 }}
+                    />
+                    <button
+                      className="btn"
+                      style={{ whiteSpace: "nowrap", padding: "8px 14px" }}
+                      onClick={async () => {
+                        await updateReservation(selected, selected.status, modalMemo, undefined, modalPhone);
+                        setSelected({ ...selected, phone: modalPhone });
+                      }}
+                    >
+                      저장
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 8, fontSize: 20, fontWeight: 800 }}>
+                    {selected.phone || "-"}
+                  </div>
+                )}
               </div>
 
               <div className="card">

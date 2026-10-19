@@ -38,7 +38,7 @@ ${reservation.customer_name}님 예약이 확정되었습니다.
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { reservation_id, status, memo, sms_message } = body;
+    const { reservation_id, status, memo, sms_message, phone } = body;
 
     const [beforeRows]: any = await pool.query(
       `
@@ -65,6 +65,13 @@ export async function POST(req: Request) {
     if (String(safeBranchName).includes("CHULSAN")) safeBranchName = "철산점";
     if (String(safeBranchName).includes("GAEBONG")) safeBranchName = "개봉점";
     if (String(safeBranchName).includes("SINJEONG")) safeBranchName = "신정점";
+
+    if (phone !== undefined) {
+      await pool.query(
+        `UPDATE naver_reservations SET phone = ? WHERE reservation_id = ?`,
+        [cleanPhone(phone), reservation_id]
+      );
+    }
 
     await pool.query(
       `
