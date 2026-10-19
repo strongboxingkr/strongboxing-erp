@@ -17,13 +17,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { branch_name, zone_name, start_no, end_no, sort_order } = await req.json();
+    const { branch_name, zone_name, start_no, end_no, sort_order, cols } = await req.json();
     if (!branch_name || !zone_name || !start_no || !end_no) {
       return NextResponse.json({ success: false, message: "필수값 누락" });
     }
     await pool.query(
-      `INSERT INTO locker_zones (branch_name, zone_name, start_no, end_no, sort_order) VALUES (?, ?, ?, ?, ?)`,
-      [branch_name, zone_name, start_no, end_no, sort_order || 0]
+      `INSERT INTO locker_zones (branch_name, zone_name, start_no, end_no, sort_order, cols) VALUES (?, ?, ?, ?, ?, ?)`,
+      [branch_name, zone_name, start_no, end_no, sort_order || 0, cols || 10]
     );
     return NextResponse.json({ success: true });
   } catch (error) {

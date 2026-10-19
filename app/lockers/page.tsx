@@ -14,7 +14,7 @@ export default function LockersPage() {
   const [tab, setTab] = useState<"grid" | "settings">("grid");
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState({ member_name: "", gender: "", start_date: "", end_date: "", memo: "", has_luggage: 0 });
-  const [zoneForm, setZoneForm] = useState({ zone_name: "", start_no: "", end_no: "", sort_order: "0" });
+  const [zoneForm, setZoneForm] = useState({ zone_name: "", start_no: "", end_no: "", sort_order: "0", cols: "10" });
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -117,9 +117,10 @@ export default function LockersPage() {
         start_no: Number(zoneForm.start_no),
         end_no: Number(zoneForm.end_no),
         sort_order: Number(zoneForm.sort_order),
+        cols: Number(zoneForm.cols) || 10,
       }),
     });
-    setZoneForm({ zone_name: "", start_no: "", end_no: "", sort_order: "0" });
+    setZoneForm({ zone_name: "", start_no: "", end_no: "", sort_order: "0", cols: "10" });
     loadZones();
   };
 
@@ -239,7 +240,7 @@ export default function LockersPage() {
 
           {/* 새 구역 추가 */}
           <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 14 }}>새 구역 추가</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px 80px", gap: 8, alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 80px 80px 80px", gap: 8, alignItems: "end" }}>
             <div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>구역명 (예: A구역, 남성)</div>
               <input className="input" value={zoneForm.zone_name} onChange={(e) => setZoneForm({ ...zoneForm, zone_name: e.target.value })} placeholder="A구역" />
@@ -251,6 +252,10 @@ export default function LockersPage() {
             <div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>끝번호</div>
               <input className="input" type="number" value={zoneForm.end_no} onChange={(e) => setZoneForm({ ...zoneForm, end_no: e.target.value })} placeholder="50" />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>열 수</div>
+              <input className="input" type="number" value={zoneForm.cols} onChange={(e) => setZoneForm({ ...zoneForm, cols: e.target.value })} placeholder="10" />
             </div>
             <div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>순서</div>
@@ -265,7 +270,16 @@ export default function LockersPage() {
       {tab === "grid" && branch && zones.length > 0 && (
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
           {zones.map((zone) => {
-            const nums = Array.from({ length: zone.end_no - zone.start_no + 1 }, (_, i) => i + zone.start_no);
+            const total = zone.end_no - zone.start_no + 1;
+            const COLS = zone.cols || 10;
+            const rows = Math.ceil(total / COLS);
+            // 열 방향(세로 먼저) 순서로 번호 배열 - 이지스포와 동일
+            const nums = Array.from({ length: COLS * rows }, (_, i) => {
+              const col = i % COLS;
+              const row = Math.floor(i / COLS);
+              const no = col * rows + row + zone.start_no;
+              return no <= zone.end_no ? no : null;
+            });
             const zoneUsed = lockers.filter((l) => l.locker_zone === zone.zone_name && l.member_name).length;
             return (
               <div key={zone.zone_id} style={{ flex: "1 1 400px", minWidth: 340 }}>
@@ -278,8 +292,9 @@ export default function LockersPage() {
                     <div style={{ fontSize: 12, color: "var(--muted)" }}>사용 {zoneUsed} / {nums.length}</div>
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
-                  {nums.map((no) => {
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: 6 }}>
+                  {nums.map((no, idx) => {
+                    if (no === null) return <div key={`empty-${idx}`} />;
                     const locker = getLocker(no, zone.zone_name);
                     const used = !!locker?.member_name;
                     const expired = used && locker.end_date && new Date(locker.end_date) < new Date();
