@@ -213,6 +213,7 @@ export default function LockersPage() {
                   <th>시작번호</th>
                   <th>끝번호</th>
                   <th>총 수량</th>
+                  <th>열 수</th>
                   <th>순서</th>
                   <th></th>
                 </tr>
@@ -224,6 +225,19 @@ export default function LockersPage() {
                     <td>{z.start_no}</td>
                     <td>{z.end_no}</td>
                     <td>{z.end_no - z.start_no + 1}개</td>
+                    <td>
+                      <input
+                        type="number"
+                        defaultValue={z.cols || 10}
+                        style={{ width: 60, padding: "2px 6px", border: "1px solid var(--line)", borderRadius: 4, fontSize: 13 }}
+                        onBlur={async (e) => {
+                          const val = Number(e.target.value);
+                          if (!val || val < 1) return;
+                          await apiFetch("/api/locker-zones", { method: "PATCH", body: JSON.stringify({ zone_id: z.zone_id, cols: val }) });
+                          loadZones();
+                        }}
+                      />
+                    </td>
                     <td>{z.sort_order}</td>
                     <td>
                       <button

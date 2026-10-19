@@ -31,6 +31,17 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  try {
+    const { zone_id, cols } = await req.json();
+    if (!zone_id || !cols) return NextResponse.json({ success: false, message: "필수값 누락" });
+    await pool.query(`UPDATE locker_zones SET cols = ? WHERE zone_id = ?`, [cols, zone_id]);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ success: false, error });
+  }
+}
+
 export async function DELETE(req: Request) {
   try {
     const { zone_id } = await req.json();
