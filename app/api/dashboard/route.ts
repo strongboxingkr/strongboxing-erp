@@ -70,6 +70,16 @@ export async function GET(req: Request) {
       branchParams
     );
 
+    const [activeMembersRows]: any = await pool.query(
+      `
+      SELECT COUNT(*) AS active_members
+      FROM members
+      WHERE status = 'ACTIVE'
+      ${branchFilter}
+      `,
+      branchParams
+    );
+
     const [newMembersRows]: any = await pool.query(
       `
       SELECT COUNT(*) AS new_members
@@ -210,6 +220,15 @@ export async function GET(req: Request) {
       [startDate, endDate]
     );
 
+    const [branchActiveMembersRaw]: any = await pool.query(
+      `
+      SELECT branch_name, COUNT(*) AS active_members
+      FROM members
+      WHERE status = 'ACTIVE'
+      GROUP BY branch_name
+      `
+    );
+
     const [branchCheckinsRaw]: any = await pool.query(
       `
       SELECT m.branch_name, COUNT(*) AS checkins
@@ -265,6 +284,7 @@ export async function GET(req: Request) {
         branch_name: branchName,
         sales: pick(branchSalesRaw, branchName, "sales"),
         new_members: pick(branchNewMembersRaw, branchName, "new_members"),
+        active_members: pick(branchActiveMembersRaw, branchName, "active_members"),
         checkins: pick(branchCheckinsRaw, branchName, "checkins"),
         reservations: pick(branchReservationsRaw, branchName, "reservations"),
         crm_alerts: pick(branchCrmRaw, branchName, "crm_alerts"),
@@ -300,6 +320,7 @@ export async function GET(req: Request) {
 
       checkins: Number(checkinRows[0]?.checkins || 0),
       total_members: Number(totalMembersRows[0]?.total_members || 0),
+      active_members: Number(activeMembersRows[0]?.active_members || 0),
       new_members: Number(newMembersRows[0]?.new_members || 0),
       alert_members: Number(alertMembersRows[0]?.alert_members || 0),
       today_expire: Number(

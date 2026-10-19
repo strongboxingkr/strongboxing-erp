@@ -144,9 +144,9 @@ export default function DashboardPage() {
       bg: "rgba(46,229,157,0.16)",
     },
     {
-      title: "신규회원",
+      title: "유효회원",
       value: `${
-        data.new_members || 0
+        data.active_members || 0
       }명`,
       color: "#5da9ff",
       bg: "rgba(93,169,255,0.16)",
@@ -473,7 +473,7 @@ export default function DashboardPage() {
                           fontSize: 13,
                         }}
                       >
-                        신규회원
+                        유효회원
                       </div>
 
                       <div
@@ -483,7 +483,7 @@ export default function DashboardPage() {
                         }}
                       >
                         {
-                          b.new_members
+                          b.active_members
                         }
                         명
                       </div>
@@ -716,8 +716,8 @@ export default function DashboardPage() {
                 "#5da9ff",
               ],
               [
-                "신규회원",
-                data.new_members,
+                "유효회원",
+                data.active_members,
                 "#2ee59d",
               ],
               [

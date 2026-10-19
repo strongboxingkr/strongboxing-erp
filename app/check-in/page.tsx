@@ -83,7 +83,9 @@ export default function CheckInPage() {
             <div style={{ marginTop: 12, fontSize: 20, color: "#1c1c1e", fontWeight: 600 }}>
               {result.member.name} · {result.member.product_name}
               <div style={{ fontSize: 15, color: "#636366", marginTop: 4, fontWeight: 400 }}>
-                {result.member.pass_type === "COUNT"
+                {result.result === "EXPIRED"
+                  ? `만료일: ${result.member.end_date?.slice(0, 10) || "-"}`
+                  : result.member.pass_type === "COUNT"
                   ? `남은횟수 ${result.member.remaining_count}`
                   : `남은일수 ${result.member.remaining_count}`}
               </div>

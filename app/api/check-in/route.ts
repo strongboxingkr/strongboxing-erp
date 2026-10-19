@@ -162,7 +162,16 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: false,
         result: "EXPIRED",
-        message: "만료된 회원",
+        message: "기간만료 회원",
+        member: {
+          member_id: member.member_id,
+          name: member.name,
+          branch_name: member.branch_name,
+          phone: member.phone,
+          product_name: member.product_name,
+          pass_type: member.pass_type,
+          end_date: member.end_date,
+        },
       });
     }
 
