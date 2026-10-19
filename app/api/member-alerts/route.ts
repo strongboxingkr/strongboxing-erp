@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     }
 
     sql += `
-      ORDER BY end_date ASC, remaining_count ASC
+      ORDER BY ABS(DATEDIFF(end_date, CURDATE())) ASC, remaining_count ASC
     `;
 
     const [rows]: any = await pool.query(sql, params);
