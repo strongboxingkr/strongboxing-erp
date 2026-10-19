@@ -75,6 +75,10 @@ export async function GET(req: Request) {
       SELECT COUNT(*) AS active_members
       FROM members
       WHERE status = 'ACTIVE'
+      AND (
+        (pass_type != 'COUNT' AND end_date >= CURDATE())
+        OR (pass_type = 'COUNT' AND remaining_count > 0)
+      )
       ${branchFilter}
       `,
       branchParams
@@ -225,6 +229,10 @@ export async function GET(req: Request) {
       SELECT branch_name, COUNT(*) AS active_members
       FROM members
       WHERE status = 'ACTIVE'
+      AND (
+        (pass_type != 'COUNT' AND end_date >= CURDATE())
+        OR (pass_type = 'COUNT' AND remaining_count > 0)
+      )
       GROUP BY branch_name
       `
     );
