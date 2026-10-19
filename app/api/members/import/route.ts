@@ -66,11 +66,9 @@ export async function POST(req: Request) {
       const phone = cleanPhone(getValue(row, ["전화번호", "휴대폰", "연락처", "phone"]));
       const checkinCode = String(
         getValue(row, ["회원번호", "출석번호", "출석코드", "checkin_code"])
-      )
-        .replace(/[^0-9]/g, "")
-        .slice(-4);
+      ).replace(/[^0-9]/g, "");
 
-      if (!name || !phone || !checkinCode || checkinCode.length !== 4) {
+      if (!name || !phone || !checkinCode) {
         skipCount++;
         continue;
       }
