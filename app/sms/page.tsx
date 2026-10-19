@@ -62,7 +62,8 @@ const estimateCost = (count: number, message: string) => {
 };
 
 export default function SmsPage() {
-  const [branchName, setBranchName] = useState("철산점");
+  const [user, setUser] = useState<any>(null);
+  const [branchName, setBranchName] = useState("");
   const [targetType, setTargetType] = useState("BRANCH_MEMBERS");
   const [targets, setTargets] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -70,6 +71,16 @@ export default function SmsPage() {
   const [testPhone, setTestPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [targetSearch, setTargetSearch] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("user");
+    if (saved) {
+      const u = JSON.parse(saved);
+      setUser(u);
+      const isAdminOrOwner = u.role === "ADMIN" || u.role === "OWNER";
+      setBranchName(isAdminOrOwner ? "철산점" : u.branch_name || "철산점");
+    }
+  }, []);
 
   const filteredTargets = targets.filter((t) => {
   const q = targetSearch.trim();
@@ -211,15 +222,19 @@ export default function SmsPage() {
                 gap: 12,
               }}
             >
-              <select
-                className="input"
-                value={branchName}
-                onChange={(e) => setBranchName(e.target.value)}
-              >
-                {branches.map((b) => (
-                  <option key={b}>{b}</option>
-                ))}
-              </select>
+              {(user?.role === "ADMIN" || user?.role === "OWNER") ? (
+                <select
+                  className="input"
+                  value={branchName}
+                  onChange={(e) => setBranchName(e.target.value)}
+                >
+                  {branches.map((b) => (
+                    <option key={b}>{b}</option>
+                  ))}
+                </select>
+              ) : (
+                <input className="input" value={branchName} readOnly style={{ background: "var(--panel2)", color: "var(--muted)" }} />
+              )}
 
               <select
                 className="input"
