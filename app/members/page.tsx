@@ -257,14 +257,21 @@ export default function MembersPage() {
     const passType = product?.option_value || "PERIOD";
     const monthMatch = productName.match(/(\d+)\s*개월/);
     const months = monthMatch ? parseInt(monthMatch[1]) : 1;
+    const countValue = Number(product?.count_value || 0);
+    const countMatch = productName.match(/(\d+)\s*회/);
+    const countFromName = countMatch ? parseInt(countMatch[1]) : 0;
+    const finalCount = countValue || countFromName;
+    const countMonths = passType === "COUNT" ? Math.ceil(finalCount / 12) || 1 : 0;
 
     setForm({
       ...form,
       product_name: productName,
       pass_type: passType,
-      remaining_count: passType === "COUNT" ? form.remaining_count || 12 : 0,
+      remaining_count: passType === "COUNT" ? finalCount || form.remaining_count || 12 : 0,
       end_date:
-        passType === "PERIOD" ? addMonths(form.start_date, months) : form.end_date,
+        passType === "PERIOD"
+          ? addMonths(form.start_date, months)
+          : addMonths(form.start_date, countMonths),
     });
   };
 
