@@ -154,7 +154,7 @@ export default function DashboardPage() {
       bg: "rgba(93,169,255,0.16)",
     },
     {
-      title: "출석",
+      title: "출석 (오늘)",
       value: `${
         data.checkins || 0
       }명`,

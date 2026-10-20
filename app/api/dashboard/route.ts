@@ -53,11 +53,11 @@ export async function GET(req: Request) {
       SELECT COUNT(*) AS checkins
       FROM attendance a
       LEFT JOIN members m ON a.member_id = m.member_id
-      WHERE DATE(a.checkin_time) BETWEEN ? AND ?
+      WHERE DATE(a.checkin_time) = CURDATE()
       AND a.result = 'SUCCESS'
       ${branch_name ? "AND m.branch_name = ?" : ""}
       `,
-      branch_name ? [startDate, endDate, branch_name] : [startDate, endDate]
+      branch_name ? [branch_name] : []
     );
 
     const [totalMembersRows]: any = await pool.query(
@@ -242,11 +242,10 @@ export async function GET(req: Request) {
       SELECT m.branch_name, COUNT(*) AS checkins
       FROM attendance a
       LEFT JOIN members m ON a.member_id = m.member_id
-      WHERE DATE(a.checkin_time) BETWEEN ? AND ?
+      WHERE DATE(a.checkin_time) = CURDATE()
       AND a.result = 'SUCCESS'
       GROUP BY m.branch_name
-      `,
-      [startDate, endDate]
+      `
     );
 
     const [branchReservationsRaw]: any = await pool.query(
