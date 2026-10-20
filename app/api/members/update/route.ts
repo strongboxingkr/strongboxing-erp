@@ -29,6 +29,8 @@ export async function POST(req: Request) {
       attendance_sms_enabled,
       checkin_sms_enabled,
       checkout_sms_enabled,
+      has_uniform,
+      has_locker,
     } = body;
 
     if (!member_id) {
@@ -86,7 +88,9 @@ export async function POST(req: Request) {
         staff_name = ?,
         attendance_sms_enabled = ?,
         checkin_sms_enabled = ?,
-        checkout_sms_enabled = ?
+        checkout_sms_enabled = ?,
+        has_uniform = ?,
+        has_locker = ?
       WHERE member_id = ?
       `,
       [
@@ -113,6 +117,8 @@ export async function POST(req: Request) {
         attendance_sms_enabled ?? oldMember.attendance_sms_enabled ?? 0,
         checkin_sms_enabled ?? oldMember.checkin_sms_enabled,
         checkout_sms_enabled ?? oldMember.checkout_sms_enabled,
+        has_uniform ?? oldMember.has_uniform ?? 0,
+        has_locker ?? oldMember.has_locker ?? 0,
         member_id,
       ]
     );

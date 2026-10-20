@@ -256,6 +256,10 @@ export async function POST(req: Request) {
             ? Math.max(0, Math.ceil((new Date(member.end_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000)) + "일"
             : "기간권",
         end_date: member.end_date,
+        start_date: member.start_date,
+        has_uniform: member.has_uniform || 0,
+        has_locker: member.has_locker || 0,
+        locker_no: member.locker_no || "",
       },
     });
   } catch (error) {

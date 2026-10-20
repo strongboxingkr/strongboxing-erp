@@ -48,6 +48,8 @@ const makeDefaultForm = () => ({
   staff_name: "",
   checkin_sms_enabled: 0,
   checkout_sms_enabled: 0,
+  has_uniform: 0,
+  has_locker: 0,
 });
 
 export default function MembersPage() {
@@ -228,6 +230,8 @@ export default function MembersPage() {
       staff_name: m.staff_name || "",
       checkin_sms_enabled: m.checkin_sms_enabled || 0,
       checkout_sms_enabled: m.checkout_sms_enabled || 0,
+      has_uniform: m.has_uniform || 0,
+      has_locker: m.has_locker || 0,
     });
 
     setReregForm({
@@ -704,6 +708,24 @@ ${
                   onChange={(e) => setForm({ ...form, checkout_sms_enabled: e.target.checked ? 1 : 0 })}
                 />{" "}
                 운동 종료 문자 발송
+              </label>
+
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Number(form.has_uniform) === 1}
+                  onChange={(e) => setForm({ ...form, has_uniform: e.target.checked ? 1 : 0 })}
+                />{" "}
+                운동복 대여
+              </label>
+
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Number(form.has_locker) === 1}
+                  onChange={(e) => setForm({ ...form, has_locker: e.target.checked ? 1 : 0 })}
+                />{" "}
+                락카 사용
               </label>
             </div>
 

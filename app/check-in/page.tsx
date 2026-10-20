@@ -80,14 +80,43 @@ export default function CheckInPage() {
             {result.message}
           </div>
           {result.member && (
-            <div style={{ marginTop: 12, fontSize: 20, color: "#1c1c1e", fontWeight: 600 }}>
-              {result.member.name} · {result.member.product_name}
-              <div style={{ fontSize: 15, color: "#636366", marginTop: 4, fontWeight: 400 }}>
-                {result.result === "EXPIRED"
-                  ? `만료일: ${result.member.end_date?.slice(0, 10) || "-"}`
-                  : result.member.pass_type === "COUNT"
-                  ? `남은횟수 ${result.member.remaining_count}`
-                  : `남은일수 ${result.member.remaining_count}`}
+            <div style={{ marginTop: 16, textAlign: "left" }}>
+              {/* 회원명 크게 */}
+              <div style={{ fontSize: 32, fontWeight: 900, color: "#1c1c1e", textAlign: "center", marginBottom: 16 }}>
+                {result.member.name}
+              </div>
+              {/* 상세 정보 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 15 }}>
+                <div style={{ background: "#f2f2f7", borderRadius: 10, padding: "10px 14px" }}>
+                  <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>회원권</div>
+                  <div style={{ fontWeight: 700 }}>{result.member.product_name || "-"}</div>
+                </div>
+                <div style={{ background: "#f2f2f7", borderRadius: 10, padding: "10px 14px" }}>
+                  <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>사용기간</div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>
+                    {result.member.start_date?.slice(0, 10)} ~ {result.member.end_date?.slice(0, 10)}
+                  </div>
+                </div>
+                <div style={{ background: result.result === "EXPIRED" ? "#fff0f0" : "#f2f2f7", borderRadius: 10, padding: "10px 14px" }}>
+                  <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>잔여</div>
+                  <div style={{ fontWeight: 900, color: result.result === "EXPIRED" ? "#ff3b30" : "#1c1c1e" }}>
+                    {result.result === "EXPIRED" ? "만료" : result.member.remaining_count}
+                  </div>
+                </div>
+                <div style={{ background: "#f2f2f7", borderRadius: 10, padding: "10px 14px", display: "flex", gap: 16, alignItems: "center" }}>
+                  <div>
+                    <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>운동복</div>
+                    <div style={{ fontWeight: 900, fontSize: 18, color: result.member.has_uniform ? "#30d158" : "#c7c7cc" }}>
+                      {result.member.has_uniform ? "O" : "X"}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>락카</div>
+                    <div style={{ fontWeight: 900, fontSize: 18, color: result.member.has_locker ? "#30d158" : "#c7c7cc" }}>
+                      {result.member.has_locker ? (result.member.locker_no || "O") : "X"}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
