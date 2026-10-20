@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
@@ -149,7 +150,13 @@ export default function AttendanceLivePage() {
                   {r.checkin_time ? new Date(r.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Seoul" }) : ""}
                 </td>
                 <td>{r.branch_name}</td>
-                <td style={{ fontWeight: 900, fontSize: 18 }}>{r.name}</td>
+                <td style={{ fontWeight: 900, fontSize: 18 }}>
+                  {r.member_id ? (
+                    <Link href={`/member-detail?id=${r.member_id}`} style={{ color: "var(--accent)", textDecoration: "none" }}>
+                      {r.name}
+                    </Link>
+                  ) : r.name}
+                </td>
                 <td>{r.phone}</td>
                 <td>{r.product_name}</td>
                 <td>{r.pass_type === "COUNT" ? "횟수권" : "기간권"}</td>
