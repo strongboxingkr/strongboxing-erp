@@ -33,9 +33,15 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const { zone_id, cols } = await req.json();
-    if (!zone_id || !cols) return NextResponse.json({ success: false, message: "필수값 누락" });
-    await pool.query(`UPDATE locker_zones SET cols = ? WHERE zone_id = ?`, [cols, zone_id]);
+    const { zone_id, cols, row_first } = await req.json();
+    if (!zone_id) return NextResponse.json({ success: false, message: "필수값 누락" });
+    const updates: string[] = [];
+    const params: any[] = [];
+    if (cols !== undefined) { updates.push("cols = ?"); params.push(cols); }
+    if (row_first !== undefined) { updates.push("row_first = ?"); params.push(row_first ? 1 : 0); }
+    if (updates.length === 0) return NextResponse.json({ success: false, message: "변경할 값 없음" });
+    params.push(zone_id);
+    await pool.query(`UPDATE locker_zones SET ${updates.join(", ")} WHERE zone_id = ?`, params);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error });

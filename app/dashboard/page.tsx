@@ -114,6 +114,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboard();
+    const timer = setInterval(loadDashboard, 60000);
+    return () => clearInterval(timer);
   }, [
     branch,
     startDate,

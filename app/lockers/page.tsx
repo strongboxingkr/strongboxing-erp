@@ -287,11 +287,17 @@ export default function LockersPage() {
             const total = zone.end_no - zone.start_no + 1;
             const COLS = zone.cols || 10;
             const rows = Math.ceil(total / COLS);
-            // 열 방향(세로 먼저) 순서로 번호 배열 - 이지스포와 동일
             const nums = Array.from({ length: COLS * rows }, (_, i) => {
-              const col = i % COLS;
-              const row = Math.floor(i / COLS);
-              const no = col * rows + row + zone.start_no;
+              let no: number;
+              if (zone.row_first) {
+                // 행 방향(가로 먼저): 1,2,3...10 / 11,12...
+                no = i + zone.start_no;
+              } else {
+                // 열 방향(세로 먼저)
+                const col = i % COLS;
+                const row = Math.floor(i / COLS);
+                no = col * rows + row + zone.start_no;
+              }
               return no <= zone.end_no ? no : null;
             });
             const zoneUsed = lockers.filter((l) => l.locker_zone === zone.zone_name && l.member_name).length;
