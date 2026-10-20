@@ -349,20 +349,9 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
-      const message = `${extendMember.name} 회원님
-안녕하세요 스트롱복싱 ${extendMember.branch_name}입니다 🥊
-
-회원권 재등록이 완료되었습니다.
-
-상품 : ${reregForm.product_name}
-결제금액 : ${Number(reregForm.final_amount).toLocaleString()}원
-결제일 : ${reregForm.payment_date}
-
-감사합니다 😄`;
-
-      setSmsMessage(message);
-      setShowSmsPreview(true);
+      alert("재등록 완료!");
       setShowExtendForm(false);
+      setExtendMember(null);
       loadMembers(user);
     } else {
       alert(data.message || "재등록 실패");

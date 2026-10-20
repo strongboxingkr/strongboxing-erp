@@ -59,7 +59,10 @@ export async function POST(req: Request) {
 
     const pass_type = product.option_value; // PERIOD / COUNT
     const duration_months = Number(product.duration_months || 0);
-    const count_value = Number(product.count_value || 0);
+    const countFromDB = Number(product.count_value || 0);
+    const countMatch = (product_name || "").match(/(\d+)\s*회/);
+    const countFromName = countMatch ? parseInt(countMatch[1]) : 0;
+    const count_value = countFromDB || countFromName;
 
     const start_date = payment_date;
     const countMonths = pass_type === "COUNT" ? Math.ceil(count_value / 12) : 0;
