@@ -840,7 +840,7 @@ export default function MemberDetailPage() {
 
                     <div>
                       {
-                        p.payment_method
+                        p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method
                       }
                     </div>
                   </div>

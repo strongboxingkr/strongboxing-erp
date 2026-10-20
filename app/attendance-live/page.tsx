@@ -152,7 +152,7 @@ export default function AttendanceLivePage() {
                 <td>{r.branch_name}</td>
                 <td style={{ fontWeight: 900, fontSize: 18 }}>
                   {r.member_id ? (
-                    <Link href={`/member-detail?id=${r.member_id}`} style={{ color: "var(--accent)", textDecoration: "none" }}>
+                    <Link href={`/member-detail?member_id=${r.member_id}`} style={{ color: "var(--accent)", textDecoration: "none" }}>
                       {r.name}
                     </Link>
                   ) : r.name}

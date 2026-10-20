@@ -19,8 +19,15 @@ export default function AttendanceMonitorPage() {
   const [latest, setLatest] = useState<any>(null);
   const [lastId, setLastId] = useState<number>(0);
   const [flash, setFlash] = useState(false);
+  const [modalMember, setModalMember] = useState<any>(null);
   const intervalRef = useRef<any>(null);
   const closeTimerRef = useRef<any>(null);
+
+  const openMemberModal = async (memberId: number) => {
+    const res = await fetch(`/api/members/detail?member_id=${memberId}`);
+    const data = await res.json();
+    if (data?.member) setModalMember(data.member);
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -134,12 +141,9 @@ export default function AttendanceMonitorPage() {
           <>
             {/* 결과 뱃지 */}
             <div style={{
-              fontSize: 18,
-              fontWeight: 700,
-              letterSpacing: 4,
+              fontSize: 18, fontWeight: 700, letterSpacing: 4,
               color: RESULT_LABEL[latest.result]?.color || "#fff",
-              marginBottom: 24,
-              padding: "6px 20px",
+              marginBottom: 20, padding: "6px 20px",
               border: `1px solid ${RESULT_LABEL[latest.result]?.color || "#fff"}`,
               borderRadius: 999,
             }}>
@@ -147,33 +151,45 @@ export default function AttendanceMonitorPage() {
             </div>
 
             {/* 이름 */}
-            <div style={{ fontSize: 80, fontWeight: 900, letterSpacing: -2, lineHeight: 1.1, textAlign: "center" }}>
+            <div style={{ fontSize: 72, fontWeight: 900, letterSpacing: -2, lineHeight: 1.1, textAlign: "center", marginBottom: 8 }}>
               {latest.name || "미등록"}
             </div>
 
             {/* 시간 */}
-            <div style={{ fontSize: 28, color: "#64748b", marginTop: 16 }}>
+            <div style={{ fontSize: 22, color: "#64748b", marginBottom: 32 }}>
               {fmt(latest.checkin_time)}
             </div>
 
-            {/* 회원권 정보 */}
+            {/* 상세 정보 테이블 (이지스포 스타일) */}
             {latest.name && (
-              <div style={{ marginTop: 32, display: "flex", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
-                {latest.product_name && (
-                  <div style={{ background: "#1e293b", borderRadius: 10, padding: "10px 20px", fontSize: 16, color: "#94a3b8" }}>
-                    {latest.product_name}
+              <div style={{ width: "100%", maxWidth: 560, background: "#1e293b", borderRadius: 16, overflow: "hidden" }}>
+                {/* 프로그램 행 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 60px 60px 70px", borderBottom: "1px solid #0f172a" }}>
+                  <div style={{ padding: "10px 16px", fontSize: 12, color: "#64748b", background: "#0f172a" }}>프로그램명</div>
+                  <div style={{ padding: "10px 16px", fontSize: 12, color: "#64748b", background: "#0f172a" }}>(유효)사용기간</div>
+                  <div style={{ padding: "10px 16px", fontSize: 12, color: "#64748b", background: "#0f172a", textAlign: "center" }}>잔여</div>
+                  <div style={{ padding: "10px 16px", fontSize: 12, color: "#64748b", background: "#0f172a", textAlign: "center" }}>옷</div>
+                  <div style={{ padding: "10px 16px", fontSize: 12, color: "#64748b", background: "#0f172a", textAlign: "center" }}>락카</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 60px 60px 70px", borderBottom: "1px solid #0f172a" }}>
+                  <div style={{ padding: "14px 16px", fontWeight: 700, fontSize: 16 }}>{latest.product_name || "-"}</div>
+                  <div style={{ padding: "14px 16px", fontSize: 14, color: "#94a3b8" }}>
+                    {latest.start_date?.slice(0, 10)} ~ {latest.end_date?.slice(0, 10)}
                   </div>
-                )}
-                {latest.end_date && (
-                  <div style={{ background: "#1e293b", borderRadius: 10, padding: "10px 20px", fontSize: 16, color: "#94a3b8" }}>
-                    만료 {latest.end_date?.slice(0, 10)}
+                  <div style={{ padding: "14px 16px", textAlign: "center", fontWeight: 900, fontSize: 16, color: "#f8fafc" }}>
+                    {latest.pass_type === "COUNT"
+                      ? `${latest.remaining_count}회`
+                      : latest.end_date
+                        ? `${Math.max(0, Math.ceil((new Date(latest.end_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000))}일`
+                        : "-"}
                   </div>
-                )}
-                {latest.remaining_count != null && latest.pass_type === "COUNT" && (
-                  <div style={{ background: "#1e293b", borderRadius: 10, padding: "10px 20px", fontSize: 16, color: "#94a3b8" }}>
-                    잔여 {latest.remaining_count}회
+                  <div style={{ padding: "14px 16px", textAlign: "center", fontWeight: 900, fontSize: 20, color: latest.has_uniform ? "#22c55e" : "#475569" }}>
+                    {latest.has_uniform ? "O" : "X"}
                   </div>
-                )}
+                  <div style={{ padding: "14px 16px", textAlign: "center", fontWeight: 900, fontSize: 16, color: latest.has_locker ? "#22c55e" : "#475569" }}>
+                    {latest.has_locker ? (latest.locker_no || "O") : "X"}
+                  </div>
+                </div>
               </div>
             )}
           </>
@@ -201,6 +217,59 @@ export default function AttendanceMonitorPage() {
         </div>
       </div>
 
+      {/* 회원 상세 모달 */}
+      {modalMember && (
+        <div
+          onClick={() => setModalMember(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+            display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#1e293b", borderRadius: 20, padding: "40px 48px", minWidth: 400,
+              color: "#f8fafc", position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setModalMember(null)}
+              style={{ position: "absolute", top: 16, right: 20, background: "none", border: "none", color: "#64748b", fontSize: 24, cursor: "pointer" }}
+            >✕</button>
+            <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 24, textAlign: "center" }}>
+              {modalMember.name}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 15 }}>
+              {[
+                ["지점", modalMember.branch_name],
+                ["회원권", modalMember.product_name || "-"],
+                ["연락처", modalMember.phone || "-"],
+                ["출석번호", modalMember.checkin_code || "-"],
+                ["시작일", modalMember.start_date?.slice(0, 10) || "-"],
+                ["만료일", modalMember.end_date?.slice(0, 10) || "-"],
+                ["운동복", modalMember.has_uniform ? "O" : "X"],
+                ["락카", modalMember.locker_no || (modalMember.has_locker ? "O" : "X")],
+              ].map(([label, val]) => (
+                <div key={label} style={{ background: "#0f172a", borderRadius: 10, padding: "12px 16px" }}>
+                  <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontWeight: 700 }}>{val}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 24, textAlign: "center" }}>
+              <a
+                href={`/member-detail?member_id=${modalMember.member_id}`}
+                target="_blank"
+                style={{ color: "#60a5fa", fontSize: 14, textDecoration: "none" }}
+              >
+                → 전체 상세 보기
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 오른쪽: 출석 리스트 */}
       <div style={{ width: 320, display: "flex", flexDirection: "column", background: "#0a0f1e" }}>
         <div style={{ padding: "20px 20px 12px", fontSize: 13, fontWeight: 700, color: "#475569", letterSpacing: 2, borderBottom: "1px solid #1e293b" }}>
@@ -226,7 +295,10 @@ export default function AttendanceMonitorPage() {
                 fontSize: 13,
               }}>
                 <span style={{ color: "#475569" }}>{successRows.length - i}</span>
-                <span style={{ fontWeight: 700, color: r.checkout_time ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span
+                  onClick={() => r.member_id && openMemberModal(r.member_id)}
+                  style={{ fontWeight: 700, color: r.checkout_time ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: r.member_id ? "pointer" : "default" }}
+                >
                   {r.name || "미등록"}
                 </span>
                 <span style={{ color: "#475569", fontSize: 12 }}>

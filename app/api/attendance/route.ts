@@ -24,9 +24,14 @@ export async function GET(req: Request) {
         a.memo,
         m.phone,
         m.product_name,
+        m.pass_type,
         m.remaining_count,
+        m.start_date,
         m.end_date,
-        m.status
+        m.status,
+        m.has_uniform,
+        m.has_locker,
+        m.locker_no
       FROM attendance a
       LEFT JOIN members m ON a.member_id = m.member_id
       WHERE 1=1

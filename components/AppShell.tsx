@@ -85,6 +85,8 @@ const menuGroups = [
   },
 ];
 
+const MOBILE_ONLY_PATHS = ["/mobile-owner", "/mobile-branch"];
+
 export default function AppShell({
   title,
   children,
@@ -96,6 +98,14 @@ export default function AppShell({
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
   const [checked, setChecked] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 900);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   const lastCheckinId = useRef<number>(0);
   const monitorWin = useRef<Window | null>(null);
 
@@ -205,7 +215,8 @@ export default function AppShell({
         <nav className="nav">
           {menuGroups.map((group) => {
             const visibleItems = group.items.filter((m) =>
-              allowedPaths.includes(m[1])
+              allowedPaths.includes(m[1]) &&
+              (!MOBILE_ONLY_PATHS.includes(m[1]) || isMobile)
             );
 
             if (visibleItems.length === 0) return null;

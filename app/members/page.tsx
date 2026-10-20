@@ -86,7 +86,7 @@ export default function MembersPage() {
   const [reregForm, setReregForm] = useState({
     product_name: "",
     payment_date: today,
-    payment_method: "카드",
+    payment_method: "CARD",
     amount: "",
     discount_amount: "0",
     final_amount: "",
@@ -237,7 +237,7 @@ export default function MembersPage() {
     setReregForm({
       product_name: m.product_name || "",
       payment_date: today,
-      payment_method: "카드",
+      payment_method: "CARD",
       amount: "",
       discount_amount: "0",
       final_amount: "",
@@ -304,7 +304,7 @@ export default function MembersPage() {
     setReregForm({
       product_name: m.product_name || "",
       payment_date: today,
-      payment_method: "카드",
+      payment_method: "CARD",
       amount: "",
       discount_amount: "0",
       final_amount: "",
@@ -815,39 +815,10 @@ ${
                 value={reregForm.payment_method}
                 onChange={(e) => setReregForm({ ...reregForm, payment_method: e.target.value })}
               >
-                <option value="카드">카드</option>
-                <option value="현금">현금</option>
-                <option value="계좌이체">계좌이체</option>
-                <option value="기타">기타</option>
+                <option value="CARD">카드</option>
+                <option value="CASH">현금</option>
+                <option value="TRANSFER">계좌이체</option>
               </select>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>정가</div>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                value={reregForm.amount}
-                onChange={(e) => {
-                  const amt = e.target.value;
-                  const disc = Number(reregForm.discount_amount) || 0;
-                  setReregForm({ ...reregForm, amount: amt, final_amount: String(Number(amt) - disc) });
-                }}
-              />
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>할인금액</div>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                value={reregForm.discount_amount}
-                onChange={(e) => {
-                  const disc = e.target.value;
-                  const amt = Number(reregForm.amount) || 0;
-                  setReregForm({ ...reregForm, discount_amount: disc, final_amount: String(amt - Number(disc)) });
-                }}
-              />
             </div>
             <div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>실결제금액</div>
@@ -856,7 +827,7 @@ ${
                 type="number"
                 placeholder="0"
                 value={reregForm.final_amount}
-                onChange={(e) => setReregForm({ ...reregForm, final_amount: e.target.value })}
+                onChange={(e) => setReregForm({ ...reregForm, final_amount: e.target.value, amount: e.target.value })}
                 style={{ fontWeight: 700, color: "var(--accent)" }}
               />
             </div>
