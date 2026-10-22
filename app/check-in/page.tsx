@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function CheckInPage() {
   const [phone, setPhone] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [branchName, setBranchName] = useState("");
+
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      if (u.branch_name) setBranchName(u.branch_name);
+    } catch {}
+  }, []);
 
   const press = (value: string) => {
     if (result) { setResult(null); }
@@ -19,7 +27,7 @@ export default function CheckInPage() {
     const res = await fetch("/api/check-in", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone_last4: phone, check_type: checkType }),
+      body: JSON.stringify({ phone_last4: phone, check_type: checkType, branch_name: branchName || undefined }),
     });
     const data = await res.json();
     setResult({ ...data, checkType });
