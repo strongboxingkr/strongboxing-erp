@@ -5,8 +5,9 @@ import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
 function addMonths(dateString: string, months: number) {
+  // 30일 × 개월수 (이지스포 방식)
   const date = new Date(dateString);
-  date.setMonth(date.getMonth() + months);
+  date.setDate(date.getDate() + months * 30);
   return date.toISOString().slice(0, 10);
 }
 
@@ -60,6 +61,7 @@ export default function MembersPage() {
   const [user, setUser] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [branch, setBranch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
   const [autoEditId, setAutoEditId] = useState("");
   const [uploading, setUploading] = useState(false);
 
@@ -296,6 +298,24 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
+      const newMemberId = data.member_id;
+      // 신규등록 시 결제금액 입력했으면 결제도 함께 등록
+      const payAmt = Number((targetForm as any).payment_amount || 0);
+      if (!isEdit && newMemberId && payAmt > 0) {
+        await apiFetch("/api/payments/add", {
+          method: "POST",
+          body: JSON.stringify({
+            member_id: newMemberId,
+            branch_name: targetForm.branch_name,
+            payment_date: targetForm.start_date,
+            payment_method: (targetForm as any).payment_method_new || "CARD",
+            product_name: targetForm.product_name,
+            amount: payAmt,
+            final_amount: payAmt,
+            memo: "",
+          }),
+        });
+      }
       alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
       setShowForm(false);
       setIsEdit(false);
@@ -541,7 +561,15 @@ ${
       m.product_name?.includes(search) ||
       m.memo?.includes(search);
 
-    return matchBranch && matchSearch;
+    const isExpired = m.status === "EXPIRED" ||
+      (m.pass_type !== "COUNT" && m.end_date && new Date(m.end_date) < new Date()) ||
+      (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
+    const matchStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "ACTIVE" && !isExpired && m.status !== "REST") ||
+      (statusFilter === "EXPIRED" && isExpired);
+
+    return matchBranch && matchSearch && matchStatus;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -613,6 +641,24 @@ ${
               새로고침
             </button>
           </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          {([["ALL", "전체"], ["ACTIVE", "유효회원"], ["EXPIRED", "만료회원"]] as const).map(([val, label]) => (
+            <button
+              key={val}
+              className={statusFilter === val ? "btn" : "btn secondary"}
+              style={{ fontSize: 13, padding: "5px 16px" }}
+              onClick={() => { setStatusFilter(val); setPage(1); }}
+            >
+              {label}
+              {val === "ACTIVE" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => {
+                const exp = m.status === "EXPIRED" || (m.pass_type !== "COUNT" && m.end_date && new Date(m.end_date) < new Date()) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
+                return !exp && m.status !== "REST";
+              }).length}</span>}
+              {val === "EXPIRED" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => m.status === "EXPIRED" || (m.pass_type !== "COUNT" && m.end_date && new Date(m.end_date) < new Date()) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0)).length}</span>}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -732,6 +778,25 @@ ${
               onChange={(e) => setForm({ ...form, memo: e.target.value })}
               style={{ gridColumn: "1 / 5", minHeight: 82 }}
             />
+
+            {!isEdit && (
+              <>
+                <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>💳 결제 정보 (선택)</div>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="결제금액 (원)"
+                  value={(form as any).payment_amount || ""}
+                  onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
+                    <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ flex: 1, fontSize: 12 }}
+                      onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>

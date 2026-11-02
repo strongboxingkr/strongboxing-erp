@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-function addMonths(dateString: string, months: number) {
+function addDays(dateString: string, days: number) {
   const date = new Date(dateString);
-  date.setMonth(date.getMonth() + months);
+  date.setDate(date.getDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+function addMonths(dateString: string, months: number) {
+  // 30일 × 개월수 방식 (이지스포 동일)
+  return addDays(dateString, months * 30);
 }
 
 export async function POST(req: Request) {
@@ -48,18 +53,21 @@ export async function POST(req: Request) {
       [product_name]
     );
 
-    if (productRows.length === 0) {
-      return NextResponse.json({
-        success: false,
-        message: "회원권 상품 설정을 찾을 수 없습니다.",
-      });
-    }
+    const product = productRows[0] || null;
 
-    const product = productRows[0];
-
-    const pass_type = product.option_value; // PERIOD / COUNT
-    const duration_months = Number(product.duration_months || 0);
-    const countFromDB = Number(product.count_value || 0);
+    // 상품명에서 기간/횟수 파싱 (DB에 없어도 동작)
+    const pass_type = product?.option_value ||
+      (/(회권|회$)/.test(product_name || "") ? "COUNT" : "PERIOD");
+    const duration_months = Number(product?.duration_months || 0) ||
+      (() => {
+        const m = (product_name || "").match(/(\d+)\s*개월/);
+        return m ? parseInt(m[1]) : 0;
+      })() ||
+      (() => {
+        const y = (product_name || "").match(/(\d+)\s*년/);
+        return y ? parseInt(y[1]) * 12 : 0;
+      })() || 1;
+    const countFromDB = Number(product?.count_value || 0);
     const countMatch = (product_name || "").match(/(\d+)\s*회/);
     const countFromName = countMatch ? parseInt(countMatch[1]) : 0;
     const count_value = countFromDB || countFromName;
@@ -68,7 +76,7 @@ export async function POST(req: Request) {
     const countMonths = pass_type === "COUNT" ? Math.ceil(count_value / 12) : 0;
     const end_date =
       pass_type === "PERIOD"
-        ? addMonths(payment_date, duration_months || 1)
+        ? addMonths(payment_date, duration_months)
         : addMonths(payment_date, countMonths || 1);
 
     const remaining_count =
