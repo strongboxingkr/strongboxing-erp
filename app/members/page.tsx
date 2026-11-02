@@ -735,11 +735,10 @@ ${
               }} />
             <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
 
-            {form.pass_type === "COUNT" ? (
-              <input className="input" type="number" placeholder="남은횟수" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
-            ) : (
-              <div className="input" style={{ color: "#aaa" }}>기간권</div>
-            )}
+            <div>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>잔여횟수</div>
+              <input className="input" type="number" placeholder="잔여횟수" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
+            </div>
 
             <div
               style={{
