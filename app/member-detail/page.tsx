@@ -725,28 +725,39 @@ export default function MemberDetailPage() {
                       background: "var(--panel2)",
                       borderRadius: 16,
                       padding: 14,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                     }}
                   >
-                    <div
-                      style={{
-                        fontWeight: 900,
+                    <div>
+                      <div style={{ fontWeight: 900 }}>
+                        {new Date(c.checkin_time).toLocaleString("ko-KR")}
+                      </div>
+                      <div style={{ marginTop: 4, color: "#888", fontSize: 13 }}>
+                        {c.result === "CHECK_OUT" ? "운동 종료" : c.result === "SUCCESS" ? "출석 완료" : c.result}
+                      </div>
+                    </div>
+                    <button
+                      className="btn secondary"
+                      style={{ fontSize: 12, padding: "4px 10px", color: "#ef4444" }}
+                      onClick={async () => {
+                        if (!confirm("이 출석 기록을 삭제할까요?")) return;
+                        const res = await apiFetch("/api/attendance/delete", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            attendance_id: c.attendance_id,
+                            member_id: data?.member?.member_id,
+                            pass_type: data?.member?.pass_type,
+                          }),
+                        });
+                        const json = await res.json();
+                        if (json.success) load();
+                        else alert("삭제 실패");
                       }}
                     >
-                      {new Date(
-                        c.checkin_time
-                      ).toLocaleString()}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#888",
-                        fontSize: 13,
-                      }}
-                    >
-                      {c.result === "CHECK_OUT" ? "운동 종료" : "출석 완료"}
-                      
-                    </div>
+                      삭제
+                    </button>
                   </div>
                 ))}
 

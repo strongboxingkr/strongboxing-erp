@@ -8,6 +8,7 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const branch_name = searchParams.get("branch_name");
+    const member_id = searchParams.get("member_id");
 
     let sql = `
       SELECT
@@ -21,7 +22,11 @@ export async function GET(req: Request) {
 
     const params: any[] = [];
 
-    if (isAdminOrOwner(user.role)) {
+    // 특정 회원 결제만 조회 (회원상세에서 호출)
+    if (member_id) {
+      sql += ` AND p.member_id = ? `;
+      params.push(member_id);
+    } else if (isAdminOrOwner(user.role)) {
       if (branch_name) {
         sql += ` AND p.branch_name = ? `;
         params.push(branch_name);
