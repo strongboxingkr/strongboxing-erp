@@ -74,7 +74,7 @@ export async function GET(req: Request) {
       `
       SELECT COUNT(*) AS active_members
       FROM members
-      WHERE status = 'ACTIVE'
+      WHERE status != 'REST'
       AND (
         (pass_type != 'COUNT' AND end_date >= CURDATE())
         OR (pass_type = 'COUNT' AND remaining_count > 0)
@@ -129,10 +129,10 @@ export async function GET(req: Request) {
       `
       SELECT COUNT(*) AS alert_members
       FROM members
-      WHERE status = 'ACTIVE'
+      WHERE status != 'REST'
       AND (
-        end_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        OR (pass_type = 'COUNT' AND remaining_count <= 3)
+        (pass_type != 'COUNT' AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY))
+        OR (pass_type = 'COUNT' AND remaining_count > 0 AND remaining_count <= 3)
       )
       ${branchFilter}
       `,
@@ -228,7 +228,7 @@ export async function GET(req: Request) {
       `
       SELECT branch_name, COUNT(*) AS active_members
       FROM members
-      WHERE status = 'ACTIVE'
+      WHERE status != 'REST'
       AND (
         (pass_type != 'COUNT' AND end_date >= CURDATE())
         OR (pass_type = 'COUNT' AND remaining_count > 0)
