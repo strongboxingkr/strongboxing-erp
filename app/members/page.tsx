@@ -5,9 +5,9 @@ import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
 function addMonths(dateString: string, months: number) {
-  // 30일 × 개월수 (이지스포 방식)
+  // 시작일 포함 30일 × 개월수 (이지스포 동일: 11/2 등록 → 12/1 만료)
   const date = new Date(dateString);
-  date.setDate(date.getDate() + months * 30);
+  date.setDate(date.getDate() + months * 30 - 1);
   return date.toISOString().slice(0, 10);
 }
 
