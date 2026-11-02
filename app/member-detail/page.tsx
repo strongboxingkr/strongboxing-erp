@@ -312,6 +312,7 @@ export default function MemberDetailPage() {
             alignItems: "center",
           }}
         >
+          <button className="btn secondary" onClick={() => history.back()} style={{ whiteSpace: "nowrap" }}>← 뒤로</button>
           <input
             className="input"
             placeholder="회원 ID 입력"

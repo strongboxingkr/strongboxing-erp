@@ -84,8 +84,35 @@ export async function POST(req: Request) {
         [branchName, checkinCode]
       );
 
+      // 상태 파싱 (정지/휴회 → REST, 만료 → EXPIRED, 나머지 → ACTIVE)
+      const statusRaw = String(getValue(row, ["상태", "회원상태", "status"]) || "").trim();
+      const status =
+        statusRaw === "정지" || statusRaw === "휴회" || statusRaw === "REST" ? "REST" :
+        statusRaw === "만료" || statusRaw === "EXPIRED" ? "EXPIRED" : "ACTIVE";
+
       if (dupRows.length > 0) {
-        skipCount++;
+        // 이미 존재하는 회원 → 상품/날짜/횟수/상태 업데이트 (재등록 처리)
+        const existingId = dupRows[0].member_id;
+        await pool.query(
+          `UPDATE members SET
+            product_name = COALESCE(NULLIF(?, ''), product_name),
+            pass_type = ?,
+            remaining_count = ?,
+            start_date = COALESCE(?, start_date),
+            end_date = COALESCE(?, end_date),
+            status = ?
+          WHERE member_id = ?`,
+          [
+            productName || null,
+            passType,
+            remainingCount,
+            toDate(getValue(row, ["시작일", "등록일", "start_date"])),
+            toDate(getValue(row, ["종료일", "만료일", "end_date"])),
+            status,
+            existingId,
+          ]
+        );
+        successCount++;
         continue;
       }
 
@@ -130,7 +157,7 @@ export async function POST(req: Request) {
           checkin_sms_enabled,
           checkout_sms_enabled
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           branchName,
@@ -144,6 +171,7 @@ export async function POST(req: Request) {
           remainingCount,
           toDate(getValue(row, ["시작일", "등록일", "start_date"])),
           toDate(getValue(row, ["종료일", "만료일", "end_date"])),
+          status,
           String(getValue(row, ["메모", "memo"]) || ""),
           String(getValue(row, ["락카번호", "락커번호", "locker_no"]) || "") || null,
           normalizeGender(getValue(row, ["성별", "gender"])),
