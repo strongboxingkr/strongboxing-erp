@@ -45,7 +45,11 @@ export async function GET(req: Request) {
       `
       SELECT COUNT(*) AS count
       FROM members
-      WHERE status = 'ACTIVE'
+      WHERE status != 'REST'
+      AND (
+        (pass_type != 'COUNT' AND end_date >= CURDATE())
+        OR (pass_type = 'COUNT' AND remaining_count > 0)
+      )
       ${branchWhere}
       `,
       params
