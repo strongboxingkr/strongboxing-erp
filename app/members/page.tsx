@@ -285,6 +285,11 @@ export default function MembersPage() {
       branch_name: isAdminOrOwner ? form.branch_name : user?.branch_name,
     };
 
+    // end_date가 오늘 이후인데 EXPIRED면 자동으로 ACTIVE로 보정
+    if (targetForm.status === "EXPIRED" && targetForm.end_date && targetForm.end_date >= today) {
+      targetForm.status = "ACTIVE";
+    }
+
     if (!targetForm.branch_name) {
       alert("지점을 선택해주세요.");
       return;
@@ -567,8 +572,9 @@ ${
       m.product_name?.includes(search) ||
       m.memo?.includes(search);
 
-    const isExpired = m.status === "EXPIRED" ||
-      (m.pass_type !== "COUNT" && m.end_date && new Date(m.end_date) < new Date()) ||
+    const todayDate = new Date().toISOString().slice(0, 10);
+    const isExpired = (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0, 10) >= todayDate)) ||
+      (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0, 10) < todayDate) ||
       (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
     const matchStatus =
       statusFilter === "ALL" ||
@@ -659,10 +665,14 @@ ${
             >
               {label}
               {val === "ACTIVE" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => {
-                const exp = m.status === "EXPIRED" || (m.pass_type !== "COUNT" && m.end_date && new Date(m.end_date) < new Date()) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
+                const td = new Date().toISOString().slice(0, 10);
+                const exp = (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0,10) >= td)) || (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0,10) < td) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
                 return !exp && m.status !== "REST";
               }).length}</span>}
-              {val === "EXPIRED" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => m.status === "EXPIRED" || (m.pass_type !== "COUNT" && m.end_date && new Date(m.end_date) < new Date()) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0)).length}</span>}
+              {val === "EXPIRED" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => {
+                const td = new Date().toISOString().slice(0, 10);
+                return (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0,10) >= td)) || (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0,10) < td) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
+              }).length}</span>}
             </button>
           ))}
         </div>
