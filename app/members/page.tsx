@@ -556,12 +556,14 @@ ${
 
   const getStatus = (m: any) => {
     if (m.status === "REST") return { text: "휴회", color: "#f59e0b" };
-    if (m.status === "EXPIRED") return { text: "만료", color: "#ef4444" };
 
-    const end = new Date(m.end_date?.slice(0, 10));
-    const now = new Date();
-    const diff = (end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const endStr = m.end_date?.slice(0, 10);
 
+    if (m.status === "EXPIRED" && !(endStr && endStr >= todayStr)) return { text: "만료", color: "#ef4444" };
+    if (!endStr || endStr < todayStr) return { text: "만료", color: "#ef4444" };
+
+    const diff = (new Date(endStr).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24);
     if (diff <= 7) return { text: "만료임박", color: "#ff4d6d" };
 
     return { text: "정상", color: "#22c55e" };
