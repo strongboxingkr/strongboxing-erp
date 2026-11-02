@@ -814,49 +814,58 @@ export default function MemberDetailPage() {
                   marginTop: 10,
                 }}
               >
-                {payments.map((p) => (
+                {payments.map((p) => {
+                  const isCancelled = String(p.memo || "").startsWith("[취소]");
+                  return (
                   <div
                     key={p.payment_id}
                     style={{
                       display: "grid",
-                      gridTemplateColumns:
-                        "120px 1fr 120px 120px",
-                      gap: 12,
-                      background: "var(--panel2)",
+                      gridTemplateColumns: "110px 1fr 110px 100px 70px",
+                      gap: 10,
+                      background: isCancelled ? "rgba(239,68,68,0.07)" : "var(--panel2)",
                       borderRadius: 12,
                       padding: 12,
                       alignItems: "center",
+                      opacity: isCancelled ? 0.6 : 1,
                     }}
                   >
+                    <div style={{ fontSize: 13 }}>
+                      {p.payment_date?.slice(0, 10)}
+                    </div>
+                    <div style={{ fontSize: 13 }}>
+                      {p.product_name || "-"}
+                      {isCancelled && <span style={{ marginLeft: 6, color: "#ef4444", fontWeight: 700, fontSize: 11 }}>취소됨</span>}
+                    </div>
+                    <div style={{ fontWeight: 900 }}>
+                      {isCancelled ? <s style={{ color: "#ef4444" }}>{money(p.refund_amount)}</s> : money(p.final_amount)}
+                    </div>
+                    <div style={{ fontSize: 13 }}>
+                      {p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method}
+                    </div>
                     <div>
-                      {p.payment_date?.slice(
-                        0,
-                        10
+                      {!isCancelled && (
+                        <button
+                          className="btn secondary"
+                          style={{ fontSize: 11, padding: "3px 8px", color: "#ef4444" }}
+                          onClick={async () => {
+                            if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
+                            const res = await apiFetch("/api/payments/cancel", {
+                              method: "POST",
+                              body: JSON.stringify({ payment_id: p.payment_id }),
+                            });
+                            const json = await res.json();
+                            if (json.success) load();
+                            else alert("취소 실패");
+                          }}
+                        >
+                          취소
+                        </button>
                       )}
-                    </div>
-
-                    <div>
-                      {p.product_name ||
-                        "-"}
-                    </div>
-
-                    <div
-                      style={{
-                        fontWeight: 900,
-                      }}
-                    >
-                      {money(
-                        p.final_amount
-                      )}
-                    </div>
-
-                    <div>
-                      {
-                        p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method
-                      }
                     </div>
                   </div>
-                ))}
+                  );
+                })}
 
                 {payments.length ===
                   0 && (
