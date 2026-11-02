@@ -28,8 +28,18 @@ export async function GET() {
         const [rows]: any = await pool.query(`
           SELECT branch_name, name, phone
           FROM members
-          WHERE status = 'ACTIVE'
+          WHERE status != 'REST'
           AND DATE(end_date) = CURDATE()
+        `);
+        targets = rows;
+      }
+
+      if (rule.rule_type === "EXPIRING_2DAYS") {
+        const [rows]: any = await pool.query(`
+          SELECT branch_name, name, phone
+          FROM members
+          WHERE status != 'REST'
+          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL 2 DAY)
         `);
         targets = rows;
       }
