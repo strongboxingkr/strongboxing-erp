@@ -12,6 +12,7 @@ export default function PaymentsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [extraProducts, setExtraProducts] = useState<any[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [reviewRefund, setReviewRefund] = useState(false);
@@ -43,6 +44,12 @@ export default function PaymentsPage() {
     setBranches(data.rows || []);
   };
 
+  const loadProducts = async () => {
+    const res = await apiFetch("/api/settings?option_type=PASS_PRODUCT");
+    const data = await res.json();
+    setProducts(data.rows || []);
+  };
+
   const loadExtraProducts = async () => {
     const res = await apiFetch("/api/settings?option_type=EXTRA_PRODUCT");
     const data = await res.json();
@@ -72,6 +79,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     loadBranches();
     loadMembers();
+    loadProducts();
     loadExtraProducts();
   }, []);
 
@@ -305,14 +313,19 @@ export default function PaymentsPage() {
                 marginBottom: 12,
               }}
             >
-              <input
+              <select
                 className="input"
-                placeholder="상품명"
                 value={form.product_name}
-                onChange={(e) =>
-                  setForm({ ...form, product_name: e.target.value })
-                }
-              />
+                onChange={(e) => {
+                  const p = products.find((p: any) => p.option_name === e.target.value);
+                  setForm({ ...form, product_name: e.target.value, amount: p?.price ? String(p.price) : form.amount });
+                }}
+              >
+                <option value="">상품 선택</option>
+                {products.map((p: any) => (
+                  <option key={p.option_id} value={p.option_name}>{p.option_name}</option>
+                ))}
+              </select>
 
               <input
                 className="input"
