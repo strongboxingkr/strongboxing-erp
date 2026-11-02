@@ -298,6 +298,13 @@ export default function MemberDetailPage() {
 
   return (
     <AppShell title="회원 상세">
+      <button
+        className="btn secondary"
+        onClick={() => history.back()}
+        style={{ marginBottom: 12, fontSize: 15, padding: "8px 20px" }}
+      >
+        ← 뒤로가기
+      </button>
       <div
         className="card"
         style={{
@@ -312,7 +319,6 @@ export default function MemberDetailPage() {
             alignItems: "center",
           }}
         >
-          <button className="btn secondary" onClick={() => history.back()} style={{ whiteSpace: "nowrap" }}>← 뒤로</button>
           <input
             className="input"
             placeholder="회원 ID 입력"
