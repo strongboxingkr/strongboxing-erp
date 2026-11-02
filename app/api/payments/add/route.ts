@@ -91,14 +91,13 @@ export async function POST(req: Request) {
         payment_date,
         payment_method,
         product_name,
-        pass_type,
         amount,
         discount_amount,
         refund_amount,
         final_amount,
         memo
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         member_id,
@@ -106,7 +105,6 @@ export async function POST(req: Request) {
         payment_date,
         payment_method,
         product_name,
-        pass_type,
         amount,
         discount_amount || 0,
         refund_amount || 0,
