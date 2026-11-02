@@ -89,6 +89,7 @@ export default function MembersPage() {
   const [reregForm, setReregForm] = useState({
     product_name: "",
     payment_date: today,
+    start_date: today,
     payment_method: "CARD",
     amount: "",
     discount_amount: "0",
@@ -339,9 +340,11 @@ export default function MembersPage() {
 
   const openExtend = (m: any) => {
     setExtendMember(m);
+    const autoStart = m.end_date && m.end_date.slice(0, 10) > today ? m.end_date.slice(0, 10) : today;
     setReregForm({
       product_name: m.product_name || "",
       payment_date: today,
+      start_date: autoStart,
       payment_method: "CARD",
       amount: "",
       discount_amount: "0",
@@ -362,12 +365,14 @@ export default function MembersPage() {
     if (!reregForm.product_name) { alert("상품을 선택해주세요"); return; }
     if (!reregForm.final_amount) { alert("결제금액을 입력해주세요"); return; }
 
+    const startDate = (reregForm as any).start_date || reregForm.payment_date;
     const res = await apiFetch("/api/payments/add", {
       method: "POST",
       body: JSON.stringify({
         member_id: extendMember.member_id,
         branch_name: extendMember.branch_name,
         payment_date: reregForm.payment_date,
+        start_date: startDate,
         payment_method: reregForm.payment_method,
         product_name: reregForm.product_name,
         amount: Number(reregForm.amount) || Number(reregForm.final_amount),
@@ -877,12 +882,21 @@ ${
               </select>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제일 (시작일)</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제일</div>
               <input
                 className="input"
                 type="date"
                 value={reregForm.payment_date}
                 onChange={(e) => setReregForm({ ...reregForm, payment_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>시작일 <span style={{ color: "#2563eb" }}>(만료일 이후 이어붙이기 가능)</span></div>
+              <input
+                className="input"
+                type="date"
+                value={(reregForm as any).start_date || reregForm.payment_date}
+                onChange={(e) => setReregForm({ ...reregForm, start_date: e.target.value } as any)}
               />
             </div>
             <div>

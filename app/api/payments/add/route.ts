@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       member_id,
       branch_name,
       payment_date,
+      start_date: start_date_input,
       payment_method,
       product_name,
       amount,
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
     const countFromName = countMatch ? parseInt(countMatch[1]) : 0;
     const count_value = countFromDB || countFromName;
 
-    const start_date = payment_date;
+    const start_date = start_date_input || payment_date;
     const countMonths = pass_type === "COUNT" ? Math.ceil(count_value / 12) : 0;
     const end_date =
       pass_type === "PERIOD"
