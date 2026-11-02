@@ -63,6 +63,7 @@ export default function MembersPage() {
   const [branch, setBranch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
   const [autoEditId, setAutoEditId] = useState("");
+  const [returnToDetail, setReturnToDetail] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
@@ -160,6 +161,7 @@ export default function MembersPage() {
 
     const params = new URLSearchParams(window.location.search);
     setAutoEditId(params.get("member_id") || "");
+    setReturnToDetail(params.get("return") === "detail");
 
     loadBranches();
     loadProducts();
@@ -320,6 +322,10 @@ export default function MembersPage() {
       setShowForm(false);
       setIsEdit(false);
       setForm(makeDefaultForm());
+      if (returnToDetail && isEdit && form.member_id) {
+        location.href = `/member-detail?member_id=${form.member_id}`;
+        return;
+      }
       loadMembers(user);
     } else {
       alert(data.message || "저장 실패");

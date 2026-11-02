@@ -375,7 +375,7 @@ export default function MemberDetailPage() {
                   <button
                     className="btn secondary"
                     onClick={() => {
-                      location.href = `/members?member_id=${data.member.member_id}`;
+                      location.href = `/members?member_id=${data.member.member_id}&return=detail`;
                     }}
                   >
                     수정
