@@ -8,9 +8,10 @@ export async function GET(req: Request) {
     if (!member_id) return NextResponse.json({ success: false, message: "member_id 없음" });
 
     const [rows]: any = await pool.query(
-      `SELECT member_id, name, phone, branch_name, product_name, pass_type,
+      `SELECT member_id, name, phone, phone_last4, branch_name, product_name, pass_type,
               start_date, end_date, remaining_count, checkin_code,
-              has_uniform, has_locker, locker_no, status, memo
+              has_uniform, has_locker, locker_no, status, memo,
+              member_no, gender, birth_date, join_date, emergency_contact, address, staff_name
        FROM members WHERE member_id = ? LIMIT 1`,
       [member_id]
     );
