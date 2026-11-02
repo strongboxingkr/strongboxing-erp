@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         amount,
         discount_amount || 0,
         refund_amount || 0,
-        final_amount,
+        final_amount ?? amount,
         memo || "",
       ]
     );
