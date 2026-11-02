@@ -100,7 +100,7 @@ export async function GET() {
             rule.rule_type,
             t.name,
             t.phone,
-            rule.message,
+            rule.message.replace(/{name}/g, t.name || "").replace(/{branch}/g, t.branch_name || ""),
           ]
         );
 
