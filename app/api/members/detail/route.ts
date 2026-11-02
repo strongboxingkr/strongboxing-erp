@@ -10,7 +10,7 @@ export async function GET(req: Request) {
     const [rows]: any = await pool.query(
       `SELECT member_id, name, phone, branch_name, product_name, pass_type,
               start_date, end_date, remaining_count, checkin_code,
-              has_uniform, has_locker, locker_no, status
+              has_uniform, has_locker, locker_no, status, memo
        FROM members WHERE member_id = ? LIMIT 1`,
       [member_id]
     );
