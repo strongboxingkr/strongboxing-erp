@@ -9,6 +9,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "STRONG ERP",
+    startupImage: [],
+  },
+  icons: {
+    apple: "/apple-touch-icon-v2.png",
   },
 };
 
