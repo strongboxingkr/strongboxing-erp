@@ -16,6 +16,7 @@ export default function MonthlySalesPage() {
   const [year, setYear] = useState(String(now.getFullYear()));
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [rows, setRows] = useState<any[]>([]);
+  const [loadErr, setLoadErr] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -35,11 +36,22 @@ export default function MonthlySalesPage() {
 
   const load = async () => {
     setLoading(true);
-    let url = `/api/monthly-sales?year=${year}&month=${month}`;
-    if (branch !== "전체") url += `&branch_name=${encodeURIComponent(branch)}`;
-    const res = await apiFetch(url);
-    const json = await res.json();
-    setRows(json.rows || []);
+    setLoadErr("");
+    try {
+      let url = `/api/monthly-sales?year=${year}&month=${month}`;
+      if (branch !== "전체") url += `&branch_name=${encodeURIComponent(branch)}`;
+      const res = await apiFetch(url);
+      const json = await res.json();
+      if (!json.success) {
+        setLoadErr(JSON.stringify(json.error || json.message || "API 오류"));
+        setRows([]);
+      } else {
+        setRows(json.rows || []);
+      }
+    } catch (e: any) {
+      setLoadErr(String(e));
+      setRows([]);
+    }
     setLoading(false);
     setSelectedDate(null);
     setDetail(null);
@@ -128,8 +140,10 @@ export default function MonthlySalesPage() {
               <tbody>
                 {loading ? (
                   <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>로딩중...</td></tr>
+                ) : loadErr ? (
+                  <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "#ef4444", fontSize: 13 }}>조회 실패: {loadErr}</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>데이터 없음</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>해당 월에 결제 내역이 없습니다.</td></tr>
                 ) : rows.map(r => {
                   const d = new Date(r.sale_date);
                   const day = d.getDate();

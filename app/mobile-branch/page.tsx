@@ -364,24 +364,22 @@ export default function MobileBranchPage() {
 
 function NavLinks({ active }: { active: string }) {
   const items = [
-    { key: "home", label: "홈", href: "/mobile-branch", icon: "⌂" },
-    { key: "members", label: "회원", href: "/mobile-members", icon: "◉" },
-    { key: "attendance", label: "출석", href: "/mobile-attendance", icon: "◈" },
-    { key: "payments", label: "결제", href: "/mobile-payments", icon: "◆" },
-    { key: "crm", label: "상담", href: "/mobile-crm", icon: "◎" },
+    { key: "home", label: "홈", href: "/mobile-branch" },
+    { key: "members", label: "회원", href: "/mobile-members" },
+    { key: "attendance", label: "출석", href: "/mobile-attendance" },
+    { key: "payments", label: "결제", href: "/mobile-payments" },
+    { key: "crm", label: "상담", href: "/mobile-crm" },
   ];
   return (
     <>
       {items.map((item) => (
         <Link key={item.key} href={item.href} style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          justifyContent: "center", padding: "6px 0",
-          fontSize: 10, fontWeight: 600, textDecoration: "none",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "10px 0",
+          fontSize: 12, fontWeight: 600, textDecoration: "none",
           color: item.key === active ? "#2563eb" : "#64748b",
-          gap: 2,
         }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
-          <span>{item.label}</span>
+          {item.label}
         </Link>
       ))}
     </>

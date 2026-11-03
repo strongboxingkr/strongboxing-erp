@@ -420,20 +420,19 @@ export default function MobileOwnerPage() {
       {/* 하단 탭바 */}
       <nav style={styles.bottomNav}>
         {[
-          { href: "/mobile-owner", label: "홈", icon: "⌂", active: true },
-          { href: "/mobile-members", label: "회원", icon: "◉", active: false },
-          { href: "/mobile-attendance", label: "출석", icon: "◈", active: false },
-          { href: "/mobile-payments", label: "결제", icon: "◆", active: false },
-          { href: "/mobile-crm", label: "상담", icon: "◎", active: false },
+          { href: "/mobile-owner", label: "홈", active: true },
+          { href: "/mobile-members", label: "회원", active: false },
+          { href: "/mobile-attendance", label: "출석", active: false },
+          { href: "/mobile-payments", label: "결제", active: false },
+          { href: "/mobile-crm", label: "상담", active: false },
         ].map((item) => (
           <Link key={item.label} href={item.href} style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", padding: "6px 0",
-            fontSize: 10, fontWeight: 600, textDecoration: "none",
-            color: item.active ? "#2563eb" : "#64748b", gap: 2,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "10px 0",
+            fontSize: 12, fontWeight: 600, textDecoration: "none",
+            color: item.active ? "#2563eb" : "#64748b",
           }}>
-            <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
-            <span>{item.label}</span>
+            {item.label}
           </Link>
         ))}
       </nav>
