@@ -207,12 +207,13 @@ export default function MonthlySalesPage() {
                     <th style={th}>상품</th>
                     <th style={th}>결제</th>
                     <th style={th}>금액</th>
+                    {isAdminOrOwner && <th style={th}>시각</th>}
                     <th style={th}>메모</th>
                   </tr>
                 </thead>
                 <tbody>
                   {detail.rows?.length === 0 ? (
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>내역 없음</td></tr>
+                    <tr><td colSpan={isAdminOrOwner ? 6 : 5} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>내역 없음</td></tr>
                   ) : detail.rows?.map((r: any) => (
                     <tr key={r.payment_id} style={{ borderBottom: "1px solid var(--border)" }}>
                       <td style={{ ...td, fontWeight: 700 }}>
@@ -236,6 +237,11 @@ export default function MonthlySalesPage() {
                         </span>
                       </td>
                       <td style={{ ...td, fontWeight: 900, color: "#f59e0b" }}>{fmt(r.final_amount)}</td>
+                      {isAdminOrOwner && (
+                        <td style={{ ...td, color: "#475569", fontSize: 12, whiteSpace: "nowrap" as const }}>
+                          {r.payment_date ? String(r.payment_date).slice(11, 16) : "-"}
+                        </td>
+                      )}
                       <td style={{ ...td, color: "var(--muted)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.memo || ""}</td>
                     </tr>
                   ))}
