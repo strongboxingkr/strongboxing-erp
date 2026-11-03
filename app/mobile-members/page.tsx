@@ -392,7 +392,15 @@ export default function MobileMembersPage() {
                 {/* 상단: 이름 + 상태 + 전화번호 */}
                 <div style={{ padding: "12px 14px 10px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1e293b" }}>{m.name}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1e293b" }}>
+                      {m.name}
+                      {Number(m.payment_count || 0) >= 2 && (
+                        <span style={{
+                          marginLeft: 5, fontSize: 11, fontWeight: 700,
+                          color: "#2563eb", verticalAlign: "middle",
+                        }}>(재)</span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>{m.phone || "-"}</div>
                   </div>
                   <span style={{

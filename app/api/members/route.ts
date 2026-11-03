@@ -11,8 +11,9 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
 
     let sql = `
-      SELECT *
-      FROM members
+      SELECT m.*,
+        (SELECT COUNT(*) FROM payments p WHERE p.member_id = m.member_id AND p.final_amount > 0) AS payment_count
+      FROM members m
       WHERE 1=1
     `;
 
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
 
     if (isAdminOrOwner(user.role)) {
       if (branch_name) {
-        sql += ` AND branch_name = ? `;
+        sql += ` AND m.branch_name = ? `;
         params.push(branch_name);
       }
     } else {
@@ -31,21 +32,21 @@ export async function GET(req: Request) {
         });
       }
 
-      sql += ` AND branch_name = ? `;
+      sql += ` AND m.branch_name = ? `;
       params.push(user.branch_name);
     }
 
     if (search) {
       sql += `
         AND (
-          name LIKE ?
-          OR phone LIKE ?
-          OR checkin_code LIKE ?
-          OR product_name LIKE ?
-          OR memo LIKE ?
-          OR locker_no LIKE ?
-          OR member_no LIKE ?
-          OR staff_name LIKE ?
+          m.name LIKE ?
+          OR m.phone LIKE ?
+          OR m.checkin_code LIKE ?
+          OR m.product_name LIKE ?
+          OR m.memo LIKE ?
+          OR m.locker_no LIKE ?
+          OR m.member_no LIKE ?
+          OR m.staff_name LIKE ?
         )
       `;
 
@@ -62,7 +63,7 @@ export async function GET(req: Request) {
       );
     }
 
-    sql += ` ORDER BY member_id DESC `;
+    sql += ` ORDER BY m.member_id DESC `;
 
     const [rows]: any = await pool.query(sql, params);
 
