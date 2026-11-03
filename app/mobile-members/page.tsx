@@ -121,6 +121,9 @@ export default function MobileMembersPage() {
     if (!savedUser) { window.location.replace("/login"); return; }
     setUser(savedUser);
 
+    const querySearch = getQueryValue("q");
+    if (querySearch) setSearch(querySearch);
+
     const queryName = getQueryValue("name");
     const queryPhone = getQueryValue("phone");
     if (queryName || queryPhone) {

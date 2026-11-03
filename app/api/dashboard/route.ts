@@ -302,14 +302,20 @@ export async function GET(req: Request) {
       `
     );
 
-    // 지난달 지점별 매출
-    const [branchLastMonthSalesRaw]: any = await pool.query(
+    // 이전 동일 기간 지점별 매출 (선택 기간 길이만큼 이전)
+    const daysDiff = Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000);
+    const prevEndDate = new Date(new Date(startDate).getTime() - 86400000).toISOString().slice(0, 10);
+    const prevStartDate = new Date(new Date(startDate).getTime() - (daysDiff + 1) * 86400000).toISOString().slice(0, 10);
+    const compLabel = daysDiff === 0 ? "전일 대비" : daysDiff <= 7 ? "전주 대비" : "전기간 대비";
+
+    const [branchPrevSalesRaw]: any = await pool.query(
       `
-      SELECT branch_name, IFNULL(SUM(final_amount), 0) AS last_month_sales
+      SELECT branch_name, IFNULL(SUM(final_amount), 0) AS prev_sales
       FROM payments
-      WHERE DATE_FORMAT(payment_date, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m')
+      WHERE payment_date BETWEEN ? AND ?
       GROUP BY branch_name
-      `
+      `,
+      [prevStartDate, prevEndDate]
     );
 
     // 이번주 만료 임박 지점별
@@ -348,10 +354,10 @@ export async function GET(req: Request) {
 
     const branchSalesRows = branchNames
       .map((branchName) => {
-        const lastMonthSales = pick(branchLastMonthSalesRaw, branchName, "last_month_sales");
+        const prevSales = pick(branchPrevSalesRaw, branchName, "prev_sales");
         const thisSales = pick(branchSalesRaw, branchName, "sales");
-        const salesGrowth = lastMonthSales > 0
-          ? Math.round(((thisSales - lastMonthSales) / lastMonthSales) * 100)
+        const salesGrowth = prevSales > 0
+          ? Math.round(((thisSales - prevSales) / prevSales) * 100)
           : null;
         const reregRow = branchReregRaw.find((r: any) => r.branch_name === branchName);
         const expiredCount = Number(reregRow?.expired_count || 0);
@@ -360,7 +366,7 @@ export async function GET(req: Request) {
         return {
         branch_name: branchName,
         sales: thisSales,
-        last_month_sales: lastMonthSales,
+        prev_sales: prevSales,
         sales_growth: salesGrowth,
         new_members: pick(branchNewMembersRaw, branchName, "new_members"),
         rereg_count: pick(branchReregCountRaw, branchName, "rereg_count"),
@@ -430,6 +436,7 @@ export async function GET(req: Request) {
     ),
 
       branch_sales: branchSalesRows,
+      comparison_label: compLabel,
     });
   } catch (error) {
     console.error(error);
