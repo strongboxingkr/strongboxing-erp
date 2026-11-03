@@ -27,7 +27,8 @@ export async function GET(req: Request) {
         p.final_amount,
         p.memo,
         p.branch_name,
-        m.name AS member_name
+        m.name AS member_name,
+        (SELECT COUNT(*) FROM payments p2 WHERE p2.member_id = p.member_id AND p2.final_amount > 0) AS payment_count
       FROM payments p
       LEFT JOIN members m ON p.member_id = m.member_id
       WHERE DATE(p.payment_date) = ?

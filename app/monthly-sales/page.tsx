@@ -215,7 +215,17 @@ export default function MonthlySalesPage() {
                     <tr><td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>내역 없음</td></tr>
                   ) : detail.rows?.map((r: any) => (
                     <tr key={r.payment_id} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ ...td, fontWeight: 700 }}>{r.member_name || "-"}</td>
+                      <td style={{ ...td, fontWeight: 700 }}>
+                      {branch === "전체" && r.branch_name && (
+                        <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, marginRight: 4 }}>
+                          [{r.branch_name.replace("점", "")}]
+                        </span>
+                      )}
+                      {r.member_name || "-"}
+                      {Number(r.payment_count || 0) >= 2 && (
+                        <span style={{ marginLeft: 4, fontSize: 10, color: "#2563eb", fontWeight: 700 }}>(재)</span>
+                      )}
+                    </td>
                       <td style={td}>{r.product_name || "-"}</td>
                       <td style={td}>
                         <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 12, fontWeight: 700,
