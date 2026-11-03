@@ -304,6 +304,14 @@ async function saveAttendance(member: any, result: string, memo?: string) {
 
 async function sendAttendanceSms(member: any) {
   try {
+    // 오늘 이미 입장 문자 보냈으면 스킵
+    const [already]: any = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM sms_logs
+       WHERE receiver_phone = ? AND target_type = 'ATTENDANCE' AND DATE(created_at) = CURDATE()`,
+      [String(member.emergency_contact || "").replace(/[^0-9]/g, "")]
+    );
+    if (already[0].cnt > 0) return;
+
     const from = getFromNumber(member.branch_name);
 
     if (!from) return;
@@ -372,6 +380,14 @@ ${member.name} 회원님이 ${timeText} 출석했습니다.`;
 
 async function sendCheckoutSms(member: any) {
   try {
+    // 오늘 이미 퇴실 문자 보냈으면 스킵
+    const [already]: any = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM sms_logs
+       WHERE receiver_phone = ? AND target_type = 'CHECKOUT' AND DATE(created_at) = CURDATE()`,
+      [String(member.phone || "").replace(/[^0-9]/g, "")]
+    );
+    if (already[0].cnt > 0) return;
+
     const from = getFromNumber(member.branch_name);
 
     if (!from) return;
@@ -408,6 +424,12 @@ ${member.name} 회원님이 ${timeText} 퇴실했습니다.`;
       from: cleanPhone(from),
       text,
     });
+
+    await pool.query(
+      `INSERT INTO sms_logs (branch_name, target_type, receiver_name, receiver_phone, message, send_status, provider)
+       VALUES (?, 'CHECKOUT', ?, ?, ?, 'SENT', 'SOLAPI')`,
+      [member.branch_name, member.name, member.phone, text]
+    );
   } catch (error) {
     console.error("퇴실 문자 발송 실패", error);
   }

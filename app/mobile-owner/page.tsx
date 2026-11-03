@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
 import {
   ResponsiveContainer,
   LineChart,
@@ -11,451 +10,601 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-
 import { apiFetch } from "@/lib/api";
 
 const branches = ["전체", "철산점", "목동점", "개봉점", "신정점"];
-const consultBranches = ["철산점", "목동점", "개봉점", "신정점"];
 
-const today = new Date().toISOString().slice(0, 10);
-
-const getYesterday = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-};
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+const today = fmt(new Date());
 
 const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
-const menus = [
-  ["회원관리", "/mobile-members"],
-  ["출석관리", "/mobile-attendance"],
-  ["결제관리", "/mobile-payments"],
-  ["CRM", "/mobile-crm"],
-  ["네이버예약", "/naver-calendar"],
-  ["문자관리", "/sms"],
-  ["재무요약", "/finance-summary"],
-  ["일일마감", "/daily-closing"],
-  ["직원관리", "/staff"],
-  ["권한관리", "/permissions"],
+const getWeekStart = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return fmt(d);
+};
+
+const getMonthStart = () => {
+  const d = new Date();
+  d.setDate(1);
+  return fmt(d);
+};
+
+const PRESETS = [
+  { label: "오늘", start: () => today, end: () => today },
+  { label: "이번주", start: getWeekStart, end: () => today },
+  { label: "이번달", start: getMonthStart, end: () => today },
 ];
 
 export default function MobileOwnerPage() {
   const [data, setData] = useState<any>(null);
-  const [chartRows, setChartRows] = useState<any[]>([]);
+  const [chartRows, setChartRows] = useState<any[] | null>(null);
+  const [chartError, setChartError] = useState(false);
   const [reservations, setReservations] = useState<any[]>([]);
 
-  const [datePreset, setDatePreset] = useState("TODAY");
+  const [preset, setPreset] = useState(0);
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [branch, setBranch] = useState("전체");
-
   const [showConsult, setShowConsult] = useState(false);
-
   const [consultForm, setConsultForm] = useState({
-    customer_name: "",
-    phone: "",
-    inquiry_channel: "전화문의",
-    memo: "",
-    reservation_date: today,
-    reservation_time: "",
-    branch_name: "철산점",
+    customer_name: "", phone: "", inquiry_channel: "전화문의",
+    memo: "", reservation_date: today, reservation_time: "", branch_name: "철산점",
   });
 
-  const load = async () => {
-    let url = `/api/dashboard?start_date=${startDate}&end_date=${endDate}`;
-
-    if (branch !== "전체") {
-      url += `&branch_name=${encodeURIComponent(branch)}`;
-    }
-
-    const res = await fetch(url);
-    const json = await res.json();
-    setData(json);
-
-    let chartUrl = "/api/dashboard/chart";
-
-    if (branch !== "전체") {
-      chartUrl += `?branch_name=${encodeURIComponent(branch)}`;
-    }
-
-    const chartRes = await fetch(chartUrl);
-    const chartJson = await chartRes.json();
-    setChartRows(chartJson.rows || []);
-
-    const reservationRes = await apiFetch("/api/calendar-events");
-    const reservationJson = await reservationRes.json();
-
-    setReservations(
-      (reservationJson.rows || []).filter(
-        (r: any) =>
-          r.start_datetime?.slice(0, 10) === today
-      )
-    );
-  };
-
   const saveConsult = async () => {
-    if (!consultForm.customer_name.trim()) {
-      alert("이름을 입력해주세요.");
-      return;
-    }
-
-    if (!consultForm.branch_name) {
-      alert("지점을 선택해주세요.");
-      return;
-    }
-
-    const res = await apiFetch("/api/crm/add", {
-      method: "POST",
-      body: JSON.stringify({
-        branch_name: consultForm.branch_name,
-        customer_name: consultForm.customer_name,
-        phone: consultForm.phone,
-        inquiry_type: "신규상담",
-        inquiry_channel: consultForm.inquiry_channel,
-        status: "방문예약",
-        next_contact_date: consultForm.reservation_date,
-        memo: [
-          `예약일시: ${consultForm.reservation_date} ${consultForm.reservation_time || "-"}`,
-          "",
-          consultForm.memo,
-        ].join("\n"),
-        auto_create_member: false,
-        go_payment_after_save: false,
-      }),
-    });
-
-    const json = await res.json();
-
-    if (json.success) {
-      await apiFetch("/api/calendar-events/add", {
+    if (!consultForm.customer_name.trim()) { alert("이름을 입력해주세요."); return; }
+    try {
+      const res = await apiFetch("/api/crm/add", {
         method: "POST",
         body: JSON.stringify({
           branch_name: consultForm.branch_name,
-          event_type: "PHONE",
-          title: `전화예약 - ${consultForm.customer_name}`,
           customer_name: consultForm.customer_name,
           phone: consultForm.phone,
-          start_datetime: `${consultForm.reservation_date}T${consultForm.reservation_time || "00:00"}`,
-          memo: consultForm.memo,
-          status: "예약확정",
-          source_type: "PHONE_RESERVATION",
-          source_id: "",
+          inquiry_type: "신규상담",
+          inquiry_channel: consultForm.inquiry_channel,
+          status: "방문예약",
+          next_contact_date: consultForm.reservation_date,
+          memo: `예약일시: ${consultForm.reservation_date} ${consultForm.reservation_time || "-"}\n\n${consultForm.memo}`,
+          auto_create_member: false,
+          go_payment_after_save: false,
         }),
       });
+      const json = await res.json();
+      if (json.success) {
+        if (consultForm.reservation_time) {
+          await apiFetch("/api/calendar-events/add", {
+            method: "POST",
+            body: JSON.stringify({
+              branch_name: consultForm.branch_name,
+              event_type: "PHONE",
+              title: `전화예약 - ${consultForm.customer_name}`,
+              customer_name: consultForm.customer_name,
+              phone: consultForm.phone,
+              start_datetime: `${consultForm.reservation_date}T${consultForm.reservation_time}`,
+              memo: consultForm.memo,
+              status: "예약확정",
+              source_type: "PHONE_RESERVATION",
+              source_id: "",
+            }),
+          });
+        }
+        alert("상담 등록 완료!");
+        setShowConsult(false);
+        setConsultForm({ customer_name: "", phone: "", inquiry_channel: "전화문의", memo: "", reservation_date: today, reservation_time: "", branch_name: "철산점" });
+      } else {
+        alert(json.message || "상담 등록 실패");
+      }
+    } catch { alert("저장 중 오류가 발생했습니다."); }
+  };
 
-  alert("상담 등록 완료!");
+  const applyPreset = (idx: number) => {
+    setPreset(idx);
+    setStartDate(PRESETS[idx].start());
+    setEndDate(PRESETS[idx].end());
+  };
 
-  setShowConsult(false);
+  const load = async () => {
+    let url = `/api/dashboard?start_date=${startDate}&end_date=${endDate}`;
+    if (branch !== "전체") url += `&branch_name=${encodeURIComponent(branch)}`;
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      setData(json);
+    } catch {}
 
-  setConsultForm({
-    customer_name: "",
-    phone: "",
-    inquiry_channel: "전화문의",
-    memo: "",
-    reservation_date: today,
-    reservation_time: "",
-    branch_name: "철산점",
-  });
-} else {
-  alert(json.message || "상담 등록 실패");
-}
+    try {
+      let chartUrl = "/api/dashboard/chart";
+      if (branch !== "전체") chartUrl += `?branch_name=${encodeURIComponent(branch)}`;
+      const cRes = await fetch(chartUrl);
+      const cJson = await cRes.json();
+      if (cJson.success) {
+        setChartRows(cJson.rows || []);
+        setChartError(false);
+      } else {
+        setChartError(true);
+      }
+    } catch {
+      setChartError(true);
+    }
+
+    try {
+      const rRes = await apiFetch("/api/calendar-events");
+      const rJson = await rRes.json();
+      setReservations(
+        (rJson.rows || []).filter((r: any) => r.start_datetime?.slice(0, 10) === today)
+      );
+    } catch {}
   };
 
   useEffect(() => {
-      if (datePreset === "TODAY") {
-        setStartDate(today);
-        setEndDate(today);
-      }
-
-      if (datePreset === "YESTERDAY") {
-        const y = getYesterday();
-        setStartDate(y);
-        setEndDate(y);
-      }
-
-      if (datePreset === "LAST7") {
-        const d = new Date();
-        d.setDate(d.getDate() - 6);
-
-        setStartDate(d.toISOString().slice(0, 10));
-        setEndDate(today);
-      }
-
-      if (datePreset === "LAST30") {
-        const d = new Date();
-        d.setDate(d.getDate() - 29);
-
-        setStartDate(d.toISOString().slice(0, 10));
-        setEndDate(today);
-      }
-    }, [datePreset]);
-
-  useEffect(() => {
     load();
-    const timer = setInterval(load, 15000);
+    const timer = setInterval(load, 30000);
     return () => clearInterval(timer);
   }, [startDate, endDate, branch]);
 
-  if (!data) return <div className="mobile">로딩중...</div>;
+  if (!data) {
+    return (
+      <div style={styles.page}>
+        <div style={{ padding: 24, color: "#94a3b8", fontSize: 14 }}>로딩중...</div>
+      </div>
+    );
+  }
 
   const branchSales = data.branch_sales || [];
+  const totalSales = Number(data.sales || 0);
+
+  const opsItems = [
+    { label: "오늘 만료", value: data.today_expire || 0, href: "/member-expiring", warn: true },
+    { label: "관리 필요 회원", value: data.alert_members || 0, href: "/member-alerts", warn: true },
+    { label: "재연락 상담", value: data.crm_alerts || 0, href: "/crm-alerts", warn: false },
+  ];
+
+  const hasChartData = chartRows !== null && !chartError;
+  const maxSales = hasChartData ? Math.max(...chartRows!.map((r) => Number(r.sales || 0))) : 0;
+  const chartDomain: [number, number] = [0, maxSales > 0 ? maxSales : 1];
+
+  const todayReservations = reservations.slice(0, 3);
 
   return (
-    <div className="mobile" style={{ background: "var(--bg)", minHeight: "100vh", paddingBottom: 50 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-        <div style={{ fontWeight: 900, fontSize: 20, letterSpacing: 1, color: "#1e293b" }}>
-          STRONG <span style={{ color: "var(--accent)" }}>OWNER</span>
+    <div style={styles.page}>
+      {/* 헤더 */}
+      <div style={styles.header}>
+        <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: 0.5, color: "#1e293b" }}>
+          STRONG <span style={{ color: "#2563eb" }}>OWNER</span>
         </div>
-
-        <div style={{ background: "white", border: "1px solid var(--line)", padding: "6px 14px", borderRadius: 999, fontSize: 13, color: "var(--muted)" }}>
-          대표 모바일
-        </div>
+        <span style={styles.badge}>대표 모바일</span>
       </div>
 
-      <div className="card" style={{ padding: 24, borderRadius: 28, background: "linear-gradient(135deg, #eff6ff, #dbeafe)", border: "1px solid #bfdbfe", marginBottom: 20 }}>
-        <div style={{ color: "#2563eb", fontSize: 14, fontWeight: 600 }}>
-          {startDate === endDate
-          ? startDate
-          : `${startDate} ~ ${endDate}`}{" "}
-        {branch}
-        </div>
-        <div style={{ marginTop: 10, fontSize: 18, color: "#374151" }}>오늘 총매출</div>
-        <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900, color: "#1e3a8a" }}>{money(data.sales)}</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 20 }}>
-          <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
-            <div style={{ color: "#64748b", fontSize: 13 }}>신규회원</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.new_members || 0}명</div>
-          </div>
-
-          <div style={{ background: "white", borderRadius: 18, padding: 16, border: "1px solid #bfdbfe" }}>
-            <div style={{ color: "#64748b", fontSize: 13 }}>오늘 출석</div>
-            <div style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: "#111827" }}>{data.checkins || 0}명</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ borderRadius: 24, marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 24, fontWeight: 900 }}>빠른 상담등록</div>
-          <button className="btn" onClick={() => setShowConsult(!showConsult)}>
-            {showConsult ? "닫기" : "상담등록"}
-          </button>
-        </div>
-
-        {showConsult && (
-          <div style={{ display: "grid", gap: 10 }}>
-            <input className="input" placeholder="이름" value={consultForm.customer_name} onChange={(e) => setConsultForm({ ...consultForm, customer_name: e.target.value })} />
-            <input className="input" placeholder="전화번호" value={consultForm.phone} onChange={(e) => setConsultForm({ ...consultForm, phone: e.target.value })} />
-
-            <select className="input" value={consultForm.branch_name} onChange={(e) => setConsultForm({ ...consultForm, branch_name: e.target.value })}>
-              {consultBranches.map((b) => (
-                <option key={b}>{b}</option>
-              ))}
-            </select>
-
-            <select className="input" value={consultForm.inquiry_channel} onChange={(e) => setConsultForm({ ...consultForm, inquiry_channel: e.target.value })}>
-              <option>전화문의</option>
-              <option>인스타</option>
-              <option>블로그</option>
-              <option>지인</option>
-              <option>현장문의</option>
-            </select>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <input className="input" type="date" value={consultForm.reservation_date} onChange={(e) => setConsultForm({ ...consultForm, reservation_date: e.target.value })} />
-              <input className="input" type="time" value={consultForm.reservation_time} onChange={(e) => setConsultForm({ ...consultForm, reservation_time: e.target.value })} />
-            </div>
-
-            <textarea className="input" placeholder="상담 메모" value={consultForm.memo} onChange={(e) => setConsultForm({ ...consultForm, memo: e.target.value })} style={{ minHeight: 90 }} />
-
-            <button className="btn" onClick={saveConsult}>상담 저장</button>
-          </div>
-        )}
-      </div>
-
-      <div
-        className="card"
-        style={{
-          marginBottom: 20,
-          borderRadius: 22,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 900,
-            marginBottom: 12,
-          }}
-        >
-          조회 조건
-        </div>
-
-        <div style={{ display: "grid", gap: 10 }}>
-          <select
-            className="input"
-            value={datePreset}
-            onChange={(e) => setDatePreset(e.target.value)}
-          >
-            <option value="TODAY">오늘</option>
-            <option value="YESTERDAY">어제</option>
-            <option value="LAST7">최근 7일</option>
-            <option value="LAST30">최근 30일</option>
-            <option value="CUSTOM">직접선택</option>
-          </select>
-
-          {datePreset === "CUSTOM" && (
-            <div
+      {/* 필터 바 */}
+      <div style={styles.filterBar}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {PRESETS.map((p, i) => (
+            <button
+              key={p.label}
+              onClick={() => applyPreset(i)}
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 10,
+                ...styles.presetBtn,
+                background: preset === i ? "#2563eb" : "#f1f5f9",
+                color: preset === i ? "#fff" : "#374151",
               }}
             >
-              <input
-                className="input"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <select
+          value={branch}
+          onChange={(e) => setBranch(e.target.value)}
+          style={styles.smallSelect}
+        >
+          {branches.map((b) => <option key={b}>{b}</option>)}
+        </select>
+      </div>
 
-              <input
-                className="input"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          )}
-
-          <select
-            className="input"
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-          >
-            {branches.map((b) => (
-              <option key={b}>{b}</option>
-            ))}
-          </select>
+      {/* 전체 실적 요약 */}
+      <div style={styles.summaryCard}>
+        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>
+          {startDate === endDate ? startDate : `${startDate} ~ ${endDate}`} · {branch}
+        </div>
+        <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}>총 매출</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: "#1e3a8a", lineHeight: 1.1 }}>
+          {money(totalSales)}
+        </div>
+        <div style={styles.metricRow}>
+          <div style={styles.metric}>
+            <div style={styles.metricLabel}>신규회원</div>
+            <div style={styles.metricValue}>{data.new_members || 0}명</div>
+          </div>
+          <div style={styles.metric}>
+            <div style={styles.metricLabel}>유효회원</div>
+            <div style={styles.metricValue}>{data.active_members || 0}명</div>
+          </div>
+          <div style={styles.metric}>
+            <div style={styles.metricLabel}>오늘 출석</div>
+            <div style={{ ...styles.metricValue, color: "#2563eb" }}>{data.checkins || 0}명</div>
+          </div>
         </div>
       </div>
 
-      {branch === "전체" && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>지점별 매출</div>
-
-          <div style={{ display: "grid", gap: 12 }}>
-            {branchSales.map((b: any) => (
-              <div key={b.branch_name} className="card" style={{ borderRadius: 22 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* 지점별 실적 */}
+      {branch === "전체" && branchSales.length > 0 && (
+        <div style={styles.section}>
+          <div style={styles.sectionTitle}>지점별 실적</div>
+          <div style={styles.card}>
+            {branchSales.map((b: any, i: number) => (
+              <div key={b.branch_name}>
+                {i > 0 && <div style={styles.divider} />}
+                <div style={styles.branchRow}>
                   <div>
-                    <div style={{ fontSize: 22, fontWeight: 900 }}>{b.branch_name}</div>
-                    <div style={{ marginTop: 6, color: "#888" }}>신규회원 {b.new_members || 0}명</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>{b.branch_name}</div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                      신규 {b.new_members || 0}명 · 출석 {b.checkins || 0}명
+                    </div>
                   </div>
-
-                  <div style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)" }}>
-                    {money(b.sales || b.total)}
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 17, fontWeight: 900, color: "#2563eb", whiteSpace: "nowrap" }}>
+                      {money(b.sales || b.total || 0)}
+                    </div>
+                    {b.sales_growth !== null && b.sales_growth !== undefined && (
+                      <div style={{
+                        fontSize: 11, fontWeight: 700, color: b.sales_growth >= 0 ? "#16a34a" : "#dc2626",
+                        marginTop: 2,
+                      }}>
+                        {b.sales_growth >= 0 ? "▲" : "▼"} {Math.abs(b.sales_growth)}%
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
-
-            {branchSales.length === 0 && (
-              <div className="card">
-                <p style={{ color: "#aaa" }}>지점별 데이터가 없습니다.</p>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      <div>
-        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>최근 7일 매출</div>
-
-        <div className="card" style={{ height: 320, borderRadius: 24 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartRows}>
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="sales" stroke="#2563eb" strokeWidth={4} />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* 운영 확인 */}
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>운영 확인</div>
+        <div style={styles.card}>
+          {opsItems.map((item, i) => (
+            <div key={item.label}>
+              {i > 0 && <div style={styles.divider} />}
+              <div style={styles.opsRow}>
+                <span style={{ fontSize: 14, color: "#374151", fontWeight: 600 }}>{item.label}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    fontSize: 16, fontWeight: 900,
+                    color: item.value > 0 ? (item.warn ? "#dc2626" : "#9333ea") : "#94a3b8",
+                  }}>
+                    {item.value}건
+                  </span>
+                  {item.value > 0 && (
+                    <Link href={item.href} style={styles.viewBtn}>보기</Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="card" style={{ borderRadius: 24, padding: 18, marginTop: 20 }}>
-        <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 14 }}>오늘 예약</div>
+      {/* 최근 7일 매출 차트 */}
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>최근 7일 매출</div>
+        <div style={{ ...styles.card, padding: "14px 8px 8px 0" }}>
+          {chartError ? (
+            <div style={{ padding: "20px 16px", color: "#94a3b8", fontSize: 13 }}>
+              차트 조회 실패. 잠시 후 다시 시도해주세요.
+            </div>
+          ) : chartRows === null ? (
+            <div style={{ padding: "20px 16px", color: "#94a3b8", fontSize: 13 }}>로딩중...</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={chartRows} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 11, fill: "#94a3b8" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={chartDomain}
+                  tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  tickFormatter={(v) => v === 0 ? "0" : `${Math.round(v / 10000)}만`}
+                  axisLine={false}
+                  tickLine={false}
+                  width={36}
+                />
+                <Tooltip
+                  formatter={(v: any) => [`${Number(v).toLocaleString()}원`, "매출"]}
+                  labelStyle={{ fontSize: 12 }}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#2563eb"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: "#2563eb" }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
 
-        {reservations.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>오늘 예약이 없습니다.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {reservations.map((r) => (
-              <div
-                key={r.event_id}
-                style={{
-                  background: "var(--panel2)",
-                  borderRadius: 18,
-                  padding: 16,
-                  borderLeft: "6px solid #2563eb",
-                  border: "1px solid var(--line)",
-                  borderLeftWidth: 6,
-                  borderLeftColor: "#2563eb",
-                }}
-              >
-                <div style={{ fontSize: 22, fontWeight: 900 }}>
-                  {r.start_datetime?.slice(11, 16)} / {r.customer_name}
+      {/* 오늘 예약 */}
+      <div style={styles.section}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={styles.sectionTitle}>오늘 예약</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {reservations.length > 0 && (
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>총 {reservations.length}건</span>
+            )}
+            <Link href="/naver-calendar" style={styles.viewBtn}>전체보기</Link>
+          </div>
+        </div>
+
+        <div style={styles.card}>
+          {todayReservations.length === 0 ? (
+            <div style={{ padding: "12px 16px", color: "#94a3b8", fontSize: 13 }}>오늘 예약이 없습니다.</div>
+          ) : (
+            todayReservations.map((r, i) => (
+              <div key={r.event_id}>
+                {i > 0 && <div style={styles.divider} />}
+                <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{
+                    width: 4, alignSelf: "stretch", minHeight: 36,
+                    background: "#2563eb", borderRadius: 2, flexShrink: 0,
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
+                      {r.start_datetime?.slice(11, 16)} · {r.customer_name}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                      {r.branch_name} {r.status ? `· ${r.status}` : ""}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ color: "var(--muted)", marginTop: 8 }}>{r.branch_name}</div>
               </div>
-            ))}
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 빠른 상담등록 */}
+      <div style={styles.section}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={styles.sectionTitle}>빠른 상담등록</div>
+          <button
+            onClick={() => setShowConsult(!showConsult)}
+            style={{
+              padding: "5px 14px", borderRadius: 8, border: "none",
+              background: showConsult ? "#1d4ed8" : "#2563eb",
+              color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            {showConsult ? "닫기" : "등록하기"}
+          </button>
+        </div>
+
+        {showConsult && (
+          <div style={{ ...styles.card, padding: 14 }}>
+            <div style={{ display: "grid", gap: 8 }}>
+              <input className="input" placeholder="이름" value={consultForm.customer_name}
+                onChange={(e) => setConsultForm({ ...consultForm, customer_name: e.target.value })} />
+              <input className="input" placeholder="전화번호" type="tel" value={consultForm.phone}
+                onChange={(e) => setConsultForm({ ...consultForm, phone: e.target.value })} />
+              <select className="input" value={consultForm.branch_name}
+                onChange={(e) => setConsultForm({ ...consultForm, branch_name: e.target.value })}>
+                {["철산점","목동점","개봉점","신정점"].map((b) => <option key={b}>{b}</option>)}
+              </select>
+              <select className="input" value={consultForm.inquiry_channel}
+                onChange={(e) => setConsultForm({ ...consultForm, inquiry_channel: e.target.value })}>
+                <option>전화문의</option><option>인스타</option><option>블로그</option>
+                <option>지인</option><option>현장문의</option>
+              </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <input className="input" type="date" value={consultForm.reservation_date}
+                  onChange={(e) => setConsultForm({ ...consultForm, reservation_date: e.target.value })} />
+                <input className="input" type="time" value={consultForm.reservation_time}
+                  onChange={(e) => setConsultForm({ ...consultForm, reservation_time: e.target.value })} />
+              </div>
+              <textarea className="input" placeholder="메모" value={consultForm.memo}
+                onChange={(e) => setConsultForm({ ...consultForm, memo: e.target.value })}
+                style={{ minHeight: 70 }} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <button className="btn" onClick={saveConsult}>저장</button>
+                <button className="btn secondary" onClick={() => setShowConsult(false)}>취소</button>
+              </div>
+            </div>
           </div>
         )}
       </div>
-      
-      <div
-        style={{
-          textAlign: "center",
-          paddingTop: 30,
-          paddingBottom: 90,
-        }}
-      >
-        <Link
-          href="/dashboard"
-          style={{
-            color: "#666",
-            fontSize: 13,
-            textDecoration: "underline",
-          }}
-        >
+
+      {/* PC버전 링크 */}
+      <div style={{ textAlign: "center", padding: "16px 0 100px" }}>
+        <Link href="/dashboard" style={{ color: "#94a3b8", fontSize: 12, textDecoration: "underline" }}>
           PC버전 보기
         </Link>
       </div>
 
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: "white",
-          borderTop: "1px solid var(--line)",
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          padding: "10px 0",
-          zIndex: 999,
-        }}
-      >
-      
-
-        <Link href="/mobile-owner" style={{ textAlign: "center", color: "var(--accent)", textDecoration: "none", fontSize: 12, fontWeight: 900 }}>홈</Link>
-        <Link href="/mobile-members" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>회원</Link>
-        <Link href="/mobile-attendance" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>출석</Link>
-        <Link href="/mobile-payments" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>결제</Link>
-        <Link href="/mobile-crm" style={{ textAlign: "center", color: "var(--muted)", textDecoration: "none", fontSize: 12 }}>상담</Link>
-      </div>
+      {/* 하단 고정 메뉴 */}
+      <nav style={styles.bottomNav}>
+        <Link href="/mobile-owner" style={{ ...styles.navItem, color: "#2563eb" }}>
+          <span style={styles.navIcon}>🏠</span>
+          <span>홈</span>
+        </Link>
+        <Link href="/mobile-members" style={{ ...styles.navItem, color: "#94a3b8" }}>
+          <span style={styles.navIcon}>👥</span>
+          <span>회원</span>
+        </Link>
+        <Link href="/mobile-attendance" style={{ ...styles.navItem, color: "#94a3b8" }}>
+          <span style={styles.navIcon}>✅</span>
+          <span>출석</span>
+        </Link>
+        <Link href="/mobile-payments" style={{ ...styles.navItem, color: "#94a3b8" }}>
+          <span style={styles.navIcon}>💳</span>
+          <span>결제</span>
+        </Link>
+        <Link href="/mobile-crm" style={{ ...styles.navItem, color: "#94a3b8" }}>
+          <span style={styles.navIcon}>📞</span>
+          <span>상담</span>
+        </Link>
+      </nav>
     </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    background: "#f1f5f9",
+    minHeight: "100vh",
+    fontFamily: "inherit",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "16px 16px 10px",
+    background: "#fff",
+    borderBottom: "1px solid #e2e8f0",
+  },
+  badge: {
+    background: "#f1f5f9",
+    border: "1px solid #e2e8f0",
+    padding: "4px 12px",
+    borderRadius: 999,
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: 600,
+  },
+  filterBar: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 16px",
+    background: "#fff",
+    borderBottom: "1px solid #e2e8f0",
+    gap: 8,
+  },
+  presetBtn: {
+    padding: "5px 12px",
+    borderRadius: 7,
+    border: "none",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  smallSelect: {
+    padding: "5px 8px",
+    borderRadius: 8,
+    border: "1px solid #e2e8f0",
+    fontSize: 13,
+    background: "#f8fafc",
+    color: "#374151",
+    cursor: "pointer",
+  },
+  summaryCard: {
+    margin: "12px 12px 0",
+    background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
+    border: "1px solid #bfdbfe",
+    borderRadius: 14,
+    padding: "16px 18px",
+  },
+  metricRow: {
+    display: "flex",
+    gap: 0,
+    marginTop: 14,
+    background: "rgba(255,255,255,0.7)",
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  metric: {
+    flex: 1,
+    padding: "10px 8px",
+    textAlign: "center" as const,
+    borderRight: "1px solid #bfdbfe",
+  },
+  metricLabel: {
+    fontSize: 11,
+    color: "#64748b",
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: 900,
+    color: "#1e293b",
+    whiteSpace: "nowrap" as const,
+  },
+  section: {
+    padding: "14px 12px 0",
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 800,
+    color: "#1e293b",
+    marginBottom: 8,
+  },
+  card: {
+    background: "#fff",
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
+    overflow: "hidden",
+  },
+  divider: {
+    height: 1,
+    background: "#f1f5f9",
+    margin: "0 14px",
+  },
+  branchRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "12px 14px",
+  },
+  opsRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "12px 14px",
+  },
+  viewBtn: {
+    padding: "4px 10px",
+    background: "#2563eb",
+    color: "#fff",
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 700,
+    textDecoration: "none",
+    whiteSpace: "nowrap" as const,
+  },
+  bottomNav: {
+    position: "fixed" as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    background: "#fff",
+    borderTop: "1px solid #e2e8f0",
+    display: "grid",
+    gridTemplateColumns: "repeat(5, 1fr)",
+    paddingBottom: "env(safe-area-inset-bottom, 8px)",
+    zIndex: 999,
+  },
+  navItem: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "8px 0",
+    fontSize: 11,
+    fontWeight: 600,
+    textDecoration: "none",
+    gap: 2,
+  },
+  navIcon: {
+    fontSize: 18,
+  },
+};

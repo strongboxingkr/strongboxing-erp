@@ -50,11 +50,11 @@ export async function GET(req: Request) {
 
     const [checkinRows]: any = await pool.query(
       `
-      SELECT COUNT(*) AS checkins
+      SELECT COUNT(DISTINCT a.member_id) AS checkins
       FROM attendance a
       LEFT JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-      AND a.result = 'SUCCESS'
+      AND a.result IN ('SUCCESS', 'CHECK_OUT')
       ${branch_name ? "AND m.branch_name = ?" : ""}
       `,
       branch_name ? [branch_name] : []
@@ -214,14 +214,35 @@ export async function GET(req: Request) {
       [startDate, endDate]
     );
 
+    // 신규 = 이번 기간에 처음 가입한 회원 (join_date 기준, 기존 결제 없음)
     const [branchNewMembersRaw]: any = await pool.query(
       `
       SELECT branch_name, COUNT(*) AS new_members
       FROM members
-      WHERE DATE(created_at) BETWEEN ? AND ?
+      WHERE DATE(join_date) BETWEEN ? AND ?
+      AND NOT EXISTS (
+        SELECT 1 FROM payments p
+        WHERE p.member_id = members.member_id
+        AND p.payment_date < ?
+        AND p.final_amount > 0
+      )
       GROUP BY branch_name
       `,
-      [startDate, endDate]
+      [startDate, endDate, startDate]
+    );
+
+    // 재등록 = 이번 기간에 결제했지만 신규가 아닌 회원
+    const [branchReregCountRaw]: any = await pool.query(
+      `
+      SELECT m.branch_name, COUNT(DISTINCT p.member_id) AS rereg_count
+      FROM payments p
+      JOIN members m ON p.member_id = m.member_id
+      WHERE p.payment_date BETWEEN ? AND ?
+      AND p.final_amount > 0
+      AND DATE(m.join_date) < ?
+      GROUP BY m.branch_name
+      `,
+      [startDate, endDate, startDate]
     );
 
     const [branchActiveMembersRaw]: any = await pool.query(
@@ -239,11 +260,11 @@ export async function GET(req: Request) {
 
     const [branchCheckinsRaw]: any = await pool.query(
       `
-      SELECT m.branch_name, COUNT(*) AS checkins
+      SELECT m.branch_name, COUNT(DISTINCT a.member_id) AS checkins
       FROM attendance a
       LEFT JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-      AND a.result = 'SUCCESS'
+      AND a.result IN ('SUCCESS', 'CHECK_OUT')
       GROUP BY m.branch_name
       `
     );
@@ -281,22 +302,77 @@ export async function GET(req: Request) {
       `
     );
 
+    // 지난달 지점별 매출
+    const [branchLastMonthSalesRaw]: any = await pool.query(
+      `
+      SELECT branch_name, IFNULL(SUM(final_amount), 0) AS last_month_sales
+      FROM payments
+      WHERE DATE_FORMAT(payment_date, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m')
+      GROUP BY branch_name
+      `
+    );
+
+    // 이번주 만료 임박 지점별
+    const [branchExpiringSoonRaw]: any = await pool.query(
+      `
+      SELECT branch_name, COUNT(*) AS expiring_soon
+      FROM members
+      WHERE status != 'REST'
+      AND pass_type != 'COUNT'
+      AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY branch_name
+      `
+    );
+
+    // 재등록율: 지난달 만료 회원 중 이후 결제한 비율
+    const [branchReregRaw]: any = await pool.query(
+      `
+      SELECT m.branch_name,
+        COUNT(*) AS expired_count,
+        SUM(CASE WHEN EXISTS (
+          SELECT 1 FROM payments p
+          WHERE p.member_id = m.member_id
+          AND p.payment_date > m.end_date
+          AND p.final_amount > 0
+        ) THEN 1 ELSE 0 END) AS reregistered_count
+      FROM members m
+      WHERE DATE_FORMAT(m.end_date, '%Y-%m') = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m')
+      GROUP BY m.branch_name
+      `
+    );
+
     const pick = (rows: any[], branchName: string, key: string) => {
       const row = rows.find((r) => r.branch_name === branchName);
       return Number(row?.[key] || 0);
     };
 
     const branchSalesRows = branchNames
-      .map((branchName) => ({
+      .map((branchName) => {
+        const lastMonthSales = pick(branchLastMonthSalesRaw, branchName, "last_month_sales");
+        const thisSales = pick(branchSalesRaw, branchName, "sales");
+        const salesGrowth = lastMonthSales > 0
+          ? Math.round(((thisSales - lastMonthSales) / lastMonthSales) * 100)
+          : null;
+        const reregRow = branchReregRaw.find((r: any) => r.branch_name === branchName);
+        const expiredCount = Number(reregRow?.expired_count || 0);
+        const reregisteredCount = Number(reregRow?.reregistered_count || 0);
+        const reregRate = expiredCount > 0 ? Math.round((reregisteredCount / expiredCount) * 100) : null;
+        return {
         branch_name: branchName,
-        sales: pick(branchSalesRaw, branchName, "sales"),
+        sales: thisSales,
+        last_month_sales: lastMonthSales,
+        sales_growth: salesGrowth,
         new_members: pick(branchNewMembersRaw, branchName, "new_members"),
+        rereg_count: pick(branchReregCountRaw, branchName, "rereg_count"),
         active_members: pick(branchActiveMembersRaw, branchName, "active_members"),
         checkins: pick(branchCheckinsRaw, branchName, "checkins"),
         reservations: pick(branchReservationsRaw, branchName, "reservations"),
         crm_alerts: pick(branchCrmRaw, branchName, "crm_alerts"),
+        expiring_soon: pick(branchExpiringSoonRaw, branchName, "expiring_soon"),
+        rereg_rate: reregRate,
         alert_members: pick(branchAlertRaw, branchName, "alert_members"),
-      }))
+        };
+      })
       .sort((a, b) => b.sales - a.sales);
 
     const sales = Number(salesRows[0]?.sales || 0);
