@@ -49,7 +49,7 @@ export async function GET(req: Request) {
         SELECT MAX(attendance_id) AS max_id
         FROM attendance
         WHERE DATE(checkin_time) = CURDATE()
-          AND result = 'SUCCESS'
+          AND result IN ('SUCCESS', 'CHECK_OUT')
         GROUP BY member_id
       ) latest ON a.attendance_id = latest.max_id
       WHERE 1=1
@@ -67,7 +67,7 @@ export async function GET(req: Request) {
       FROM attendance a
       JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
-        AND a.result = 'SUCCESS'
+        AND a.result IN ('SUCCESS', 'CHECK_OUT')
         ${branchCondition}
       GROUP BY COALESCE(a.branch_name, m.branch_name)
       ORDER BY count DESC
