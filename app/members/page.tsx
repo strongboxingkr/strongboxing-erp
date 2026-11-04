@@ -618,18 +618,20 @@ ${
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <select
-              className="input"
-              style={{ width: 140 }}
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-            >
-              <option value="">전체 지점</option>
-              <option value="철산점">철산점</option>
-              <option value="목동점">목동점</option>
-              <option value="신정점">신정점</option>
-              <option value="개봉점">개봉점</option>
-            </select>
+            {isAdminOrOwner && (
+              <select
+                className="input"
+                style={{ width: 140 }}
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+              >
+                <option value="">전체 지점</option>
+                <option value="철산점">철산점</option>
+                <option value="목동점">목동점</option>
+                <option value="신정점">신정점</option>
+                <option value="개봉점">개봉점</option>
+              </select>
+            )}
 
             <input
               className="input"

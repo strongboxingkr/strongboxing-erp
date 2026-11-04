@@ -104,7 +104,15 @@ export async function POST(req: Request) {
         remaining_count ?? oldMember.remaining_count,
         toDate(start_date || oldMember.start_date),
         toDate(end_date || oldMember.end_date),
-        status || oldMember.status,
+        (() => {
+          const finalStatus = status || oldMember.status;
+          const finalEndDate = toDate(end_date || oldMember.end_date);
+          // 만료 상태인데 종료일이 오늘 이후면 자동으로 ACTIVE 복구
+          if (finalStatus === "EXPIRED" && finalEndDate && new Date(finalEndDate) >= new Date(new Date().toISOString().slice(0, 10))) {
+            return "ACTIVE";
+          }
+          return finalStatus;
+        })(),
         memo ?? oldMember.memo,
         locker_no ?? oldMember.locker_no,
         member_no ?? oldMember.member_no,

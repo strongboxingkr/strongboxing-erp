@@ -9,6 +9,7 @@ const money = (v: any) =>
 
 export default function MemberDetailPage() {
   const [memberId, setMemberId] = useState("");
+  const [inputId, setInputId] = useState("");
   const [data, setData] = useState<any>(null);
   const [memo, setMemo] = useState("");
 
@@ -289,6 +290,7 @@ export default function MemberDetailPage() {
 
     if (id) {
       setMemberId(id);
+      // 텍스트박스는 비워둠 — URL에서 자동 조회
     }
   }, []);
 
@@ -324,12 +326,11 @@ export default function MemberDetailPage() {
           <input
             className="input"
             placeholder="회원 ID 입력"
-            value={memberId}
-            onChange={(e) =>
-              setMemberId(
-                e.target.value
-              )
-            }
+            value={inputId}
+            onChange={(e) => {
+              setInputId(e.target.value);
+              setMemberId(e.target.value);
+            }}
             style={{
               width: 260,
             }}
