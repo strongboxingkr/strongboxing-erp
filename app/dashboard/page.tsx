@@ -366,12 +366,12 @@ export default function DashboardPage() {
               /* 전체 선택: 지점별 시간대 비교 */
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 24 }}>
                 {attendStats.branchHours.map((bh: any) => {
-                  const activeHours = bh.hours.filter((h: any) => h.cnt > 0);
-                  const max = Math.max(...bh.hours.map((h: any) => h.cnt), 1);
-                  const top = [...bh.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
                   const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
                   const color = BRANCH_COLOR[bh.branch_name] || "#6366f1";
                   const opHours = bh.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
+                  const max = Math.max(...opHours.map((h: any) => h.cnt), 1);
+                  const top = [...opHours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                  const activeHours = opHours.filter((h: any) => h.cnt > 0);
                   return (
                     <div key={bh.branch_name} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
                       <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 12 }}>{bh.branch_name}</div>
@@ -380,7 +380,7 @@ export default function DashboardPage() {
                       <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 120, marginBottom: 6 }}>
                         {opHours.map((h: any) => {
                           const hp = Math.round((h.cnt / max) * 100);
-                          const isTop = h.cnt === top.cnt && h.cnt > 0;
+                          const isTop = top && h.cnt === top.cnt && h.cnt > 0;
                           return (
                             <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
                               {isTop && h.cnt > 0 && (
@@ -408,7 +408,7 @@ export default function DashboardPage() {
                         <div style={{ fontSize: 12, color: "#ef4444", fontWeight: 700 }}>🔥 {top.hour}시 ({top.cnt}명)</div>
                       )}
 
-                      {/* 활성 시간대 목록 (상위 5개) */}
+                      {/* 활성 시간대 목록 상위 5개 (10~23시 기준) */}
                       <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
                         {[...activeHours].sort((a: any, b: any) => b.cnt - a.cnt).slice(0, 5).map((h: any) => (
                           <div key={h.hour} style={{ display: "flex", alignItems: "center", gap: 6 }}>

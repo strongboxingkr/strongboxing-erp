@@ -71,8 +71,11 @@ export async function GET(req: Request) {
       let checkout = row.checkout_t ? new Date(row.checkout_t) : null;
       if (!checkin && !checkout) return;
 
-      // 보정
-      if (!checkin) checkin = new Date(checkout!.getTime() - 60 * 60 * 1000);
+      // 보정 (최소 10시 이전으로 내려가지 않게 클램프)
+      if (!checkin) {
+        checkin = new Date(checkout!.getTime() - 60 * 60 * 1000);
+        if (checkin.getHours() < 10) checkin.setHours(10, 0, 0, 0);
+      }
       if (!checkout) checkout = new Date(checkin!.getTime() + 60 * 60 * 1000);
 
       // 요일 카운트 (체크인 날짜 기준)
@@ -134,7 +137,10 @@ export async function GET(req: Request) {
         let checkin = row.checkin_t ? new Date(row.checkin_t) : null;
         let checkout = row.checkout_t ? new Date(row.checkout_t) : null;
         if (!checkin && !checkout) return;
-        if (!checkin) checkin = new Date(checkout!.getTime() - 60 * 60 * 1000);
+        if (!checkin) {
+          checkin = new Date(checkout!.getTime() - 60 * 60 * 1000);
+          if (checkin.getHours() < 10) checkin.setHours(10, 0, 0, 0);
+        }
         if (!checkout) checkout = new Date(checkin!.getTime() + 60 * 60 * 1000);
         const startH = checkin.getHours();
         const endH = checkout.getHours();
