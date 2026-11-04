@@ -808,13 +808,20 @@ const getTypeInfo = (r: any) => {
           >
             <h2 style={{ marginTop: 0 }}>{selected.customer_name || "-"}</h2>
 
-            {/* 문의사항 강조 표시 */}
-            {selected.memo && (
-              <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#a16207", marginBottom: 6 }}>💬 문의사항</div>
-                <div style={{ fontSize: 14, color: "#1e293b", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{selected.memo}</div>
-              </div>
-            )}
+            {/* 문의사항 강조 표시 - 요청사항만 파싱 */}
+            {(() => {
+              const memo = selected.memo || "";
+              // "요청사항" 키워드 뒤 내용 추출
+              const reqMatch = memo.match(/요청사항[^\n]*[\n\s]*([\s\S]*?)(?:\n[가-힣]+\s*[-:ㅡ]|$)/);
+              const inquiry = reqMatch ? reqMatch[1].trim() : "";
+              if (!inquiry || inquiry === "-" || inquiry === "") return null;
+              return (
+                <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#a16207", marginBottom: 6 }}>💬 고객 요청사항</div>
+                  <div style={{ fontSize: 15, color: "#1e293b", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{inquiry}</div>
+                </div>
+              );
+            })()}
 
             <input className="input" value={selected.customer_name || ""} onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })} placeholder="이름" style={{ marginBottom: 10 }} />
             <input className="input" value={selected.phone || ""} onChange={(e) => setSelected({ ...selected, phone: e.target.value })} placeholder="전화번호" style={{ marginBottom: 10 }} />
