@@ -18,8 +18,8 @@ export async function GET() {
 
     const [thisRows]: any = await pool.query(
       `SELECT branch_name, COUNT(*) AS cnt
-       FROM naver_reservations
-       WHERE reservation_date BETWEEN ? AND ?
+       FROM calendar_events
+       WHERE DATE(start_datetime) BETWEEN ? AND ?
          AND status NOT IN ('취소', '예약취소')
        GROUP BY branch_name`,
       [thisStart, thisEnd]
@@ -27,8 +27,8 @@ export async function GET() {
 
     const [prevRows]: any = await pool.query(
       `SELECT branch_name, COUNT(*) AS cnt
-       FROM naver_reservations
-       WHERE reservation_date BETWEEN ? AND ?
+       FROM calendar_events
+       WHERE DATE(start_datetime) BETWEEN ? AND ?
          AND status NOT IN ('취소', '예약취소')
        GROUP BY branch_name`,
       [prevStart, prevEnd]
