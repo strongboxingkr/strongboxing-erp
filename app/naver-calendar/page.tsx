@@ -808,6 +808,14 @@ const getTypeInfo = (r: any) => {
           >
             <h2 style={{ marginTop: 0 }}>{selected.customer_name || "-"}</h2>
 
+            {/* 문의사항 강조 표시 */}
+            {selected.memo && (
+              <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#a16207", marginBottom: 6 }}>💬 문의사항</div>
+                <div style={{ fontSize: 14, color: "#1e293b", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{selected.memo}</div>
+              </div>
+            )}
+
             <input className="input" value={selected.customer_name || ""} onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })} placeholder="이름" style={{ marginBottom: 10 }} />
             <input className="input" value={selected.phone || ""} onChange={(e) => setSelected({ ...selected, phone: e.target.value })} placeholder="전화번호" style={{ marginBottom: 10 }} />
             <input className="input" type="datetime-local" value={selected.start_datetime?.slice(0, 16) || ""} onChange={(e) => setSelected({ ...selected, start_datetime: e.target.value })} style={{ marginBottom: 10 }} />
@@ -820,8 +828,8 @@ const getTypeInfo = (r: any) => {
               className="input"
               value={selected.memo || ""}
               onChange={(e) => setSelected({ ...selected, memo: e.target.value })}
-              placeholder="메모"
-              style={{ width: "100%", minHeight: 100, resize: "none", marginBottom: 10 }}
+              placeholder="메모 (문의사항 수정)"
+              style={{ width: "100%", minHeight: 80, resize: "none", marginBottom: 10 }}
             />
 
             <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
