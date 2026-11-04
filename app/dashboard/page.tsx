@@ -364,41 +364,64 @@ export default function DashboardPage() {
               <div style={{ color: "#94a3b8", fontSize: 13, padding: "20px 0", textAlign: "center" }}>로딩중...</div>
             ) : branch === "전체" && attendStats.branchHours?.length > 0 ? (
               /* 전체 선택: 지점별 시간대 비교 */
-              <div>
-                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 20 }}>
-                  {attendStats.branchHours.map((bh: any) => {
-                    const max = Math.max(...bh.hours.map((h: any) => h.cnt), 1);
-                    const top = [...bh.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                    const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
-                    const color = BRANCH_COLOR[bh.branch_name] || "#6366f1";
-                    return (
-                      <div key={bh.branch_name}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>{bh.branch_name}</div>
-                        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80 }}>
-                          {bh.hours.map((h: any) => {
-                            const hp = Math.round((h.cnt / max) * 100);
-                            const isTop = h.cnt === top.cnt && h.cnt > 0;
-                            return (
-                              <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                <div title={`${h.hour}시: ${h.cnt}명`} style={{
-                                  width: "100%", height: `${hp}%`, minHeight: h.cnt > 0 ? 3 : 0,
-                                  background: isTop ? "#ef4444" : color + "99",
-                                  borderRadius: "2px 2px 0 0",
-                                }} />
-                                {h.hour % 6 === 0 && <div style={{ fontSize: 8, color: "#94a3b8" }}>{h.hour}</div>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {top?.cnt > 0 && (
-                          <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 700, marginTop: 4 }}>
-                            🔥 {top.hour}시 ({top.cnt}명)
-                          </div>
-                        )}
+              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 24 }}>
+                {attendStats.branchHours.map((bh: any) => {
+                  const activeHours = bh.hours.filter((h: any) => h.cnt > 0);
+                  const max = Math.max(...bh.hours.map((h: any) => h.cnt), 1);
+                  const top = [...bh.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                  const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
+                  const color = BRANCH_COLOR[bh.branch_name] || "#6366f1";
+                  return (
+                    <div key={bh.branch_name} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 12 }}>{bh.branch_name}</div>
+
+                      {/* 막대 차트 */}
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 120, marginBottom: 6 }}>
+                        {bh.hours.map((h: any) => {
+                          const hp = Math.round((h.cnt / max) * 100);
+                          const isTop = h.cnt === top.cnt && h.cnt > 0;
+                          return (
+                            <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                              {isTop && h.cnt > 0 && (
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", marginBottom: 2 }}>{h.cnt}</div>
+                              )}
+                              <div style={{
+                                width: "100%", height: `${hp}%`, minHeight: h.cnt > 0 ? 4 : 0,
+                                background: isTop ? "#ef4444" : color + "bb",
+                                borderRadius: "3px 3px 0 0",
+                              }} />
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+
+                      {/* x축 시간 라벨 */}
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                        {[6, 9, 12, 15, 18, 21].map(h => (
+                          <div key={h} style={{ fontSize: 10, color: "#94a3b8" }}>{h}시</div>
+                        ))}
+                      </div>
+
+                      {/* 피크 요약 */}
+                      {top?.cnt > 0 && (
+                        <div style={{ fontSize: 12, color: "#ef4444", fontWeight: 700 }}>🔥 {top.hour}시 ({top.cnt}명)</div>
+                      )}
+
+                      {/* 활성 시간대 목록 (상위 5개) */}
+                      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
+                        {[...activeHours].sort((a: any, b: any) => b.cnt - a.cnt).slice(0, 5).map((h: any) => (
+                          <div key={h.hour} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div style={{ fontSize: 11, color: "#64748b", width: 32 }}>{h.hour}시</div>
+                            <div style={{ flex: 1, background: "#e2e8f0", borderRadius: 3, height: 8, overflow: "hidden" }}>
+                              <div style={{ width: `${Math.round((h.cnt / max) * 100)}%`, height: "100%", background: color, borderRadius: 3 }} />
+                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", width: 24, textAlign: "right" }}>{h.cnt}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 24 }}>
