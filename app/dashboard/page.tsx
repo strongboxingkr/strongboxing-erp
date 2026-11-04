@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [attendStats, setAttendStats] = useState<any>(null);
   const [attendPeriod, setAttendPeriod] = useState("month");
+  const [salesDaily, setSalesDaily] = useState<any>(null);
 
   useEffect(() => {
     const check = () => setMobile(window.innerWidth < 900);
@@ -63,6 +64,14 @@ export default function DashboardPage() {
     setData(json);
   };
 
+  const loadSalesDaily = async (b: string) => {
+    let url = "/api/sales-daily";
+    if (b !== "전체") url += `?branch_name=${encodeURIComponent(b)}`;
+    const res = await apiFetch(url);
+    const json = await res.json();
+    if (json.success) setSalesDaily(json);
+  };
+
   const loadAttendStats = async (period: string, b: string) => {
     let url = `/api/attendance-stats?period=${period}`;
     if (b !== "전체") url += `&branch_name=${encodeURIComponent(b)}`;
@@ -82,6 +91,9 @@ export default function DashboardPage() {
       if (["ADMIN", "OWNER"].includes(u.role)) {
         loadAttendStats("month", "전체");
       }
+      if (u.role === "OWNER") {
+        loadSalesDaily("전체");
+      }
     }
   }, []);
 
@@ -94,6 +106,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user && ["ADMIN", "OWNER"].includes(user.role)) {
       loadAttendStats(attendPeriod, branch);
+    }
+    if (user && user.role === "OWNER") {
+      loadSalesDaily(branch);
     }
   }, [branch, user]);
 
@@ -282,6 +297,113 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 일별 매출 비교 (OWNER 전용) */}
+        {user?.role === "OWNER" && salesDaily && (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>📈 일별 매출 비교</div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                  {salesDaily.prevMonth} 전체 <strong style={{ color: "#64748b" }}>{salesDaily.prevTotal.toLocaleString()}원</strong>
+                  {" · "}
+                  {salesDaily.thisMonth} {salesDaily.todayDay}일까지 <strong style={{ color: "#2563eb" }}>{salesDaily.thisTotal.toLocaleString()}원</strong>
+                  {salesDaily.prevSameDay > 0 && (
+                    <span style={{ marginLeft: 8, color: salesDaily.thisTotal >= salesDaily.prevSameDay ? "#16a34a" : "#dc2626", fontWeight: 700 }}>
+                      {salesDaily.thisTotal >= salesDaily.prevSameDay ? "▲" : "▼"}
+                      {Math.abs(salesDaily.thisTotal - salesDaily.prevSameDay).toLocaleString()}원
+                      ({salesDaily.prevSameDay.toLocaleString()}원 대비)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 차트 */}
+            {(() => {
+              const days = salesDaily.days.filter((d: any) => d.this > 0 || d.prev > 0);
+              const maxVal = Math.max(...salesDaily.days.map((d: any) => Math.max(d.this, d.prev)), 1);
+              const today = salesDaily.todayDay;
+              return (
+                <div>
+                  {/* 막대 차트 */}
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 140, marginBottom: 6 }}>
+                    {salesDaily.days.map((d: any) => {
+                      const thisPct = Math.round((d.this / maxVal) * 100);
+                      const prevPct = Math.round((d.prev / maxVal) * 100);
+                      const isFuture = d.day > today;
+                      return (
+                        <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", gap: 1, minWidth: 0 }}>
+                          {/* 이번달 */}
+                          {d.this > 0 && (
+                            <div title={`${d.day}일 이번달: ${d.this.toLocaleString()}원`} style={{
+                              width: "100%", height: `${thisPct}%`, minHeight: 3,
+                              background: isFuture ? "#e2e8f0" : "#2563eb",
+                              borderRadius: "2px 2px 0 0", opacity: isFuture ? 0.3 : 1,
+                            }} />
+                          )}
+                          {/* 저번달 (반투명) */}
+                          {d.prev > 0 && d.this === 0 && (
+                            <div title={`${d.day}일 저번달: ${d.prev.toLocaleString()}원`} style={{
+                              width: "100%", height: `${prevPct}%`, minHeight: 3,
+                              background: "#2563eb33", borderRadius: "2px 2px 0 0",
+                            }} />
+                          )}
+                          {d.this > 0 && d.prev > 0 && (
+                            <div title={`${d.day}일 저번달: ${d.prev.toLocaleString()}원`} style={{
+                              width: "60%", height: `${prevPct}%`, minHeight: 2,
+                              background: "#2563eb44", borderRadius: "2px 2px 0 0",
+                              position: "relative", alignSelf: "flex-start", marginLeft: "20%",
+                            }} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* x축 날짜 라벨 */}
+                  <div style={{ display: "flex", gap: 2 }}>
+                    {salesDaily.days.map((d: any) => (
+                      <div key={d.day} style={{ flex: 1, fontSize: 9, color: d.day === today ? "#2563eb" : "#cbd5e1", textAlign: "center", fontWeight: d.day === today ? 700 : 400, minWidth: 0 }}>
+                        {d.day % 5 === 1 || d.day === today ? d.day : ""}
+                      </div>
+                    ))}
+                  </div>
+                  {/* 범례 */}
+                  <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 12, color: "#64748b" }}>
+                    <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#2563eb", borderRadius: 2, marginRight: 4 }} />{salesDaily.thisMonth}</span>
+                    <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#2563eb44", borderRadius: 2, marginRight: 4 }} />{salesDaily.prevMonth}</span>
+                    <span style={{ marginLeft: "auto", color: "#94a3b8" }}>세로 막대 = 이번달 · 가는 막대 = 저번달</span>
+                  </div>
+
+                  {/* 상위 매출일 TOP 5 */}
+                  {(() => {
+                    const top5 = [...salesDaily.days].filter((d: any) => d.this > 0).sort((a: any, b: any) => b.this - a.this).slice(0, 5);
+                    return top5.length > 0 ? (
+                      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 5 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 4 }}>이번달 매출 TOP 5일</div>
+                        {top5.map((d: any, i: number) => (
+                          <div key={d.day} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 20, fontSize: 11, fontWeight: 700, color: i === 0 ? "#ef4444" : "#94a3b8" }}>{i + 1}위</div>
+                            <div style={{ width: 36, fontSize: 12, color: "#374151" }}>{d.day}일</div>
+                            <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 4, height: 12, overflow: "hidden" }}>
+                              <div style={{ width: `${Math.round((d.this / top5[0].this) * 100)}%`, height: "100%", background: i === 0 ? "#ef4444" : "#93c5fd", borderRadius: 4 }} />
+                            </div>
+                            <div style={{ width: 80, fontSize: 12, fontWeight: 700, color: "#374151", textAlign: "right" }}>{d.this.toLocaleString()}원</div>
+                            {d.prev > 0 && (
+                              <div style={{ width: 60, fontSize: 11, color: d.this >= d.prev ? "#16a34a" : "#dc2626", textAlign: "right" }}>
+                                {d.this >= d.prev ? "▲" : "▼"}{Math.abs(d.this - d.prev).toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* 예약 월별 비교 차트 */}
         {branch === "전체" && reservStats && (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 20 }}>
@@ -333,203 +455,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 피크타임 분석 (ADMIN/OWNER) */}
-        {user && ["ADMIN", "OWNER"].includes(user.role) && (
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>⏰ 피크타임 분석</div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
-                  시간대 · 요일 · 평균 입장 현황
-                  {attendStats && attendPeriod !== "today" && (
-                    <span style={{ marginLeft: 6, color: "#2563eb" }}>
-                      · 하루 평균 = 총 입장 ÷ 실출석일 {attendStats.totalDays}일
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[["당일", "today"], ["1주", "week"], ["당월", "month"], ["3개월", "3month"]].map(([label, val]) => (
-                  <button key={val} onClick={() => { setAttendPeriod(val); loadAttendStats(val, branch); }} style={{
-                    padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0",
-                    background: attendPeriod === val ? "#2563eb" : "#f8fafc",
-                    color: attendPeriod === val ? "#fff" : "#374151",
-                    fontSize: 12, fontWeight: 600, cursor: "pointer",
-                  }}>{label}</button>
-                ))}
-              </div>
-            </div>
-
-            {!attendStats ? (
-              <div style={{ color: "#94a3b8", fontSize: 13, padding: "20px 0", textAlign: "center" }}>로딩중...</div>
-            ) : branch === "전체" && attendStats.branchHours?.length > 0 ? (
-              /* 전체 선택: 지점별 시간대 비교 */
-              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 24 }}>
-                {attendStats.branchHours.map((bh: any) => {
-                  const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
-                  const color = BRANCH_COLOR[bh.branch_name] || "#6366f1";
-                  const opHours = bh.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
-                  const max = Math.max(...opHours.map((h: any) => h.cnt), 1);
-                  const top = [...opHours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                  const activeHours = opHours.filter((h: any) => h.cnt > 0);
-                  return (
-                    <div key={bh.branch_name} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 12 }}>{bh.branch_name}</div>
-
-                      {/* 막대 차트 */}
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 120, marginBottom: 6 }}>
-                        {opHours.map((h: any) => {
-                          const hp = Math.round((h.cnt / max) * 100);
-                          const isTop = top && h.cnt === top.cnt && h.cnt > 0;
-                          return (
-                            <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                              {isTop && h.cnt > 0 && (
-                                <div style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", marginBottom: 2 }}>{h.cnt}</div>
-                              )}
-                              <div style={{
-                                width: "100%", height: `${hp}%`, minHeight: h.cnt > 0 ? 4 : 0,
-                                background: isTop ? "#ef4444" : color + "bb",
-                                borderRadius: "3px 3px 0 0",
-                              }} />
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* x축 시간 라벨 */}
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                        {[10, 13, 16, 19, 22].map(h => (
-                          <div key={h} style={{ fontSize: 10, color: "#94a3b8" }}>{h}시</div>
-                        ))}
-                      </div>
-
-                      {/* 피크 요약 */}
-                      {top?.cnt > 0 && (
-                        <div style={{ fontSize: 12, color: "#ef4444", fontWeight: 700 }}>🔥 {top.hour}시 ({top.cnt}명)</div>
-                      )}
-
-                      {/* 활성 시간대 목록 상위 5개 (10~23시 기준) */}
-                      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
-                        {[...activeHours].sort((a: any, b: any) => b.cnt - a.cnt).slice(0, 5).map((h: any) => (
-                          <div key={h.hour} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <div style={{ fontSize: 11, color: "#64748b", width: 32 }}>{h.hour}시</div>
-                            <div style={{ flex: 1, background: "#e2e8f0", borderRadius: 3, height: 8, overflow: "hidden" }}>
-                              <div style={{ width: `${Math.round((h.cnt / max) * 100)}%`, height: "100%", background: color, borderRadius: 3 }} />
-                            </div>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: "#374151", width: 24, textAlign: "right" }}>{h.cnt}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              (() => {
-                const opHours = attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
-                const peakH = [...opHours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                const peakAvgH = attendPeriod !== "today" ? [...opHours].sort((a: any, b: any) => b.avg - a.avg)[0] : null;
-                const peakDay = [...attendStats.days].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                const maxCnt = Math.max(...opHours.map((h: any) => h.cnt), 1);
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    {/* 요약 카드 3개 */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                      <div style={{ background: "#fef2f2", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
-                        <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 600, marginBottom: 6 }}>🔥 전체 피크</div>
-                        <div style={{ fontSize: 28, fontWeight: 900, color: "#ef4444", lineHeight: 1 }}>{peakH?.hour ?? "-"}시</div>
-                        <div style={{ fontSize: 12, color: "#7f1d1d", marginTop: 4 }}>{peakH?.cnt ?? 0}명</div>
-                      </div>
-                      <div style={{ background: "#eff6ff", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
-                        <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 6 }}>📅 최다 요일</div>
-                        <div style={{ fontSize: 28, fontWeight: 900, color: "#2563eb", lineHeight: 1 }}>{peakDay?.name ?? "-"}요일</div>
-                        <div style={{ fontSize: 12, color: "#1e3a8a", marginTop: 4 }}>{peakDay?.cnt ?? 0}명</div>
-                      </div>
-                      <div style={{ background: attendPeriod !== "today" ? "#fffbeb" : "#f8fafc", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
-                        <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, marginBottom: 6 }}>📊 평균 피크</div>
-                        <div style={{ fontSize: 28, fontWeight: 900, color: "#f59e0b", lineHeight: 1 }}>{peakAvgH ? `${peakAvgH.hour}시` : "-"}</div>
-                        <div style={{ fontSize: 12, color: "#78350f", marginTop: 4 }}>{peakAvgH ? `평균 ${peakAvgH.avg}명/일` : "당일만 해당"}</div>
-                      </div>
-                    </div>
-
-                    {/* 큰 막대 차트 */}
-                    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 14px" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 14 }}>시간대별 입장 인원</div>
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 160 }}>
-                        {opHours.map((h: any) => {
-                          const pct = Math.round((h.cnt / maxCnt) * 100);
-                          const isPeak = peakH && h.hour === peakH.hour && h.cnt > 0;
-                          return (
-                            <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                              {h.cnt > 0 && (
-                                <div style={{ fontSize: isPeak ? 11 : 9, fontWeight: 700, color: isPeak ? "#ef4444" : "#64748b" }}>{h.cnt}</div>
-                              )}
-                              <div style={{
-                                width: "100%", height: `${pct}%`, minHeight: h.cnt > 0 ? 6 : 2,
-                                background: isPeak ? "#ef4444" : "#93c5fd",
-                                borderRadius: "4px 4px 0 0",
-                                transition: "height 0.4s",
-                              }} />
-                              <div style={{ fontSize: 10, color: isPeak ? "#ef4444" : "#94a3b8", fontWeight: isPeak ? 700 : 400 }}>{h.hour}시</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* 요일별 피크시간 한줄 목록 */}
-                    {attendStats.heatmap && (
-                      <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 14px" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 12 }}>요일별 피크 시간대</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {attendStats.heatmap.map((d: any) => {
-                            const opH = Array.from({ length: 14 }, (_, i) => i + 10);
-                            const dayCounts = opH.map((h: number) => ({ hour: h, cnt: d.hours[h]?.cnt || 0 }));
-                            const dayMax = Math.max(...dayCounts.map((x: any) => x.cnt), 1);
-                            const dayPeak = [...dayCounts].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                            const dowColor = d.dow === 0 ? "#ef4444" : d.dow === 6 ? "#3b82f6" : "#374151";
-                            const top3 = [...dayCounts].sort((a: any, b: any) => b.cnt - a.cnt).filter((x: any) => x.cnt > 0).slice(0, 3);
-                            return (
-                              <div key={d.dow} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{ width: 24, fontSize: 13, fontWeight: 800, color: dowColor, flexShrink: 0 }}>{d.name}</div>
-                                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 2, height: 36 }}>
-                                  {dayCounts.map((h: any) => {
-                                    const hp = Math.round((h.cnt / dayMax) * 100);
-                                    const isPeak = h.hour === dayPeak.hour && h.cnt > 0;
-                                    return (
-                                      <div key={h.hour} title={`${h.hour}시: ${h.cnt}명`} style={{
-                                        flex: 1, height: `${hp}%`, minHeight: h.cnt > 0 ? 3 : 1,
-                                        background: isPeak ? dowColor : `${dowColor}44`,
-                                        borderRadius: "2px 2px 0 0",
-                                      }} />
-                                    );
-                                  })}
-                                </div>
-                                <div style={{ flexShrink: 0, textAlign: "right" }}>
-                                  {top3.length > 0 ? (
-                                    <div style={{ fontSize: 12, color: "#374151" }}>
-                                      {top3.map((x: any, i: number) => (
-                                        <span key={x.hour} style={{ marginLeft: i > 0 ? 6 : 0, color: i === 0 ? dowColor : "#94a3b8", fontWeight: i === 0 ? 700 : 400 }}>
-                                          {x.hour}시{i === 0 ? `(${x.cnt}명)` : ""}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <span style={{ fontSize: 11, color: "#cbd5e1" }}>데이터 없음</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()
-            )}
-          </div>
-        )}
 
         {/* 하단 2열 */}
         <div style={{
