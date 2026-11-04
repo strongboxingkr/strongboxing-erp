@@ -43,58 +43,96 @@ export async function GET(req: Request) {
       params.push(branch_name);
     }
 
-    // 시간대별 입장 수
-    const [hourRows]: any = await pool.query(
-      `SELECT HOUR(checkin_time) AS hour, COUNT(*) AS cnt
+    // 멤버별 날짜별 체크인/체크아웃 pair 조회
+    // 체크인 없이 체크아웃만 → 1시간 전 입장 가정
+    // 체크아웃 없이 체크인만 → 60분 후 퇴장 가정
+    const [pairRows]: any = await pool.query(
+      `SELECT
+         member_id,
+         DATE(checkin_time) AS visit_date,
+         MAX(CASE WHEN result = 'SUCCESS' THEN checkin_time END) AS checkin_t,
+         MAX(CASE WHEN result = 'CHECK_OUT' THEN checkin_time END) AS checkout_t
        FROM attendance
-       WHERE result = 'SUCCESS'
+       WHERE result IN ('SUCCESS', 'CHECK_OUT')
          AND DATE(checkin_time) >= ?
          ${branchFilter}
-       GROUP BY HOUR(checkin_time)
-       ORDER BY hour`,
+       GROUP BY member_id, DATE(checkin_time)`,
       params
     );
 
-    // 요일별 입장 수 (0=일, 1=월 ... 6=토)
-    const [dayRows]: any = await pool.query(
-      `SELECT DAYOFWEEK(checkin_time) - 1 AS dow, COUNT(*) AS cnt
-       FROM attendance
-       WHERE result = 'SUCCESS'
-         AND DATE(checkin_time) >= ?
-         ${branchFilter}
-       GROUP BY DAYOFWEEK(checkin_time)
-       ORDER BY dow`,
-      params
-    );
+    // 시간대별 카운트 (체류 기반)
+    const hourCounts = Array(24).fill(0);
+    const dowCounts = Array(7).fill(0);
+
+    pairRows.forEach((row: any) => {
+      let checkin = row.checkin_t ? new Date(row.checkin_t) : null;
+      let checkout = row.checkout_t ? new Date(row.checkout_t) : null;
+      if (!checkin && !checkout) return;
+
+      // 보정
+      if (!checkin) checkin = new Date(checkout!.getTime() - 60 * 60 * 1000);
+      if (!checkout) checkout = new Date(checkin!.getTime() + 60 * 60 * 1000);
+
+      // 요일 카운트 (체크인 날짜 기준)
+      const dow = checkin.getDay(); // 0=일~6=토
+      dowCounts[dow]++;
+
+      // 체류 시간대 카운트
+      const startH = checkin.getHours();
+      const endH = checkout.getHours();
+      if (endH >= startH) {
+        for (let h = startH; h <= endH; h++) hourCounts[h]++;
+      } else {
+        // 자정 넘어가는 케이스
+        for (let h = startH; h < 24; h++) hourCounts[h]++;
+        for (let h = 0; h <= endH; h++) hourCounts[h]++;
+      }
+    });
 
     // 시간대 배열 (0~23) + 하루 평균
-    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, cnt: 0, avg: 0 }));
-    hourRows.forEach((r: any) => {
-      hours[r.hour].cnt = Number(r.cnt);
-      hours[r.hour].avg = Math.round((Number(r.cnt) / totalDays) * 10) / 10;
-    });
+    const hours = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      cnt: hourCounts[i],
+      avg: Math.round((hourCounts[i] / totalDays) * 10) / 10,
+    }));
 
     // 요일 배열
     const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-    const days = dayNames.map((name, i) => ({ dow: i, name, cnt: 0 }));
-    dayRows.forEach((r: any) => { days[r.dow].cnt = Number(r.cnt); });
+    const days = dayNames.map((name, i) => ({ dow: i, name, cnt: dowCounts[i] }));
 
-    // 지점별 시간대 (전체 조회 시)
+    // 지점별 시간대 (전체 조회 시, 체류 기반)
     const by_branch = searchParams.get("by_branch");
     let branchHours: any[] = [];
     if (by_branch === "Y") {
-      const [bRows]: any = await pool.query(
-        `SELECT COALESCE(branch_name, '미지정') AS branch_name, HOUR(checkin_time) AS hour, COUNT(*) AS cnt
+      const [bPairRows]: any = await pool.query(
+        `SELECT
+           COALESCE(branch_name, '미지정') AS branch_name,
+           member_id,
+           DATE(checkin_time) AS visit_date,
+           MAX(CASE WHEN result = 'SUCCESS' THEN checkin_time END) AS checkin_t,
+           MAX(CASE WHEN result = 'CHECK_OUT' THEN checkin_time END) AS checkout_t
          FROM attendance
-         WHERE result = 'SUCCESS' AND DATE(checkin_time) >= ?
-         GROUP BY branch_name, HOUR(checkin_time)
-         ORDER BY branch_name, hour`,
+         WHERE result IN ('SUCCESS', 'CHECK_OUT') AND DATE(checkin_time) >= ?
+         GROUP BY branch_name, member_id, DATE(checkin_time)`,
         [startDate]
       );
       const branchMap: Record<string, number[]> = {};
-      bRows.forEach((r: any) => {
-        if (!branchMap[r.branch_name]) branchMap[r.branch_name] = Array(24).fill(0);
-        branchMap[r.branch_name][r.hour] = Number(r.cnt);
+      bPairRows.forEach((row: any) => {
+        const bn = row.branch_name;
+        if (!branchMap[bn]) branchMap[bn] = Array(24).fill(0);
+        let checkin = row.checkin_t ? new Date(row.checkin_t) : null;
+        let checkout = row.checkout_t ? new Date(row.checkout_t) : null;
+        if (!checkin && !checkout) return;
+        if (!checkin) checkin = new Date(checkout!.getTime() - 60 * 60 * 1000);
+        if (!checkout) checkout = new Date(checkin!.getTime() + 60 * 60 * 1000);
+        const startH = checkin.getHours();
+        const endH = checkout.getHours();
+        if (endH >= startH) {
+          for (let h = startH; h <= endH; h++) branchMap[bn][h]++;
+        } else {
+          for (let h = startH; h < 24; h++) branchMap[bn][h]++;
+          for (let h = 0; h <= endH; h++) branchMap[bn][h]++;
+        }
       });
       branchHours = Object.entries(branchMap).map(([name, counts]) => ({
         branch_name: name,
