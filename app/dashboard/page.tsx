@@ -336,13 +336,20 @@ export default function DashboardPage() {
         {/* 피크타임 분석 (ADMIN/OWNER) */}
         {user && ["ADMIN", "OWNER"].includes(user.role) && (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>⏰ 피크타임 분석</div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>시간대별 입장 현황 (취소 제외)</div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
+                  시간대 · 요일 · 평균 입장 현황
+                  {attendStats && attendPeriod !== "today" && (
+                    <span style={{ marginLeft: 6, color: "#2563eb" }}>
+                      · 하루 평균 = 기간 총 입장 ÷ {attendStats.totalDays}일
+                    </span>
+                  )}
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {[["1주", "week"], ["1개월", "month"], ["3개월", "3month"]].map(([label, val]) => (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[["당일", "today"], ["1주", "week"], ["1개월", "month"], ["3개월", "3month"]].map(([label, val]) => (
                   <button key={val} onClick={() => { setAttendPeriod(val); loadAttendStats(val, branch); }} style={{
                     padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0",
                     background: attendPeriod === val ? "#2563eb" : "#f8fafc",
@@ -394,10 +401,10 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr 1fr", gap: 24 }}>
                 {/* 시간대별 */}
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>시간대별</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>시간대별 (총 입장)</div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
                     {attendStats.hours.map((h: any) => {
                       const max = Math.max(...attendStats.hours.map((x: any) => x.cnt), 1);
@@ -419,11 +426,44 @@ export default function DashboardPage() {
                     const top = [...attendStats.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
                     return top?.cnt > 0 ? (
                       <div style={{ marginTop: 8, fontSize: 13, color: "#ef4444", fontWeight: 700 }}>
-                        🔥 가장 붐비는 시간: {top.hour}시 ({top.cnt}명)
+                        🔥 {top.hour}시 ({top.cnt}명)
                       </div>
                     ) : null;
                   })()}
                 </div>
+
+                {/* 하루 평균 (당일 제외) */}
+                {attendPeriod !== "today" && (
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>시간대별 (하루 평균)</div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
+                      {attendStats.hours.map((h: any) => {
+                        const max = Math.max(...attendStats.hours.map((x: any) => x.avg), 0.1);
+                        const heightPct = Math.round((h.avg / max) * 100);
+                        const isTop = h.avg === max && max > 0;
+                        return (
+                          <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                            <div title={`${h.hour}시 평균: ${h.avg}명`} style={{
+                              width: "100%", height: `${heightPct}%`, minHeight: h.avg > 0 ? 4 : 0,
+                              background: isTop ? "#f59e0b" : "#a7f3d0",
+                              borderRadius: "3px 3px 0 0", transition: "height 0.4s",
+                            }} />
+                            {h.hour % 3 === 0 && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {(() => {
+                      const top = [...attendStats.hours].sort((a: any, b: any) => b.avg - a.avg)[0];
+                      return top?.avg > 0 ? (
+                        <div style={{ marginTop: 8, fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>
+                          📊 평균 피크: {top.hour}시 (평균 {top.avg}명/일)
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+
                 {/* 요일별 */}
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>요일별</div>
@@ -437,11 +477,19 @@ export default function DashboardPage() {
                           <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 4, height: 14, overflow: "hidden" }}>
                             <div style={{ width: `${p}%`, height: "100%", background: "#2563eb", borderRadius: 4, transition: "width 0.4s" }} />
                           </div>
-                          <div style={{ width: 28, fontSize: 12, color: "#64748b", textAlign: "right" }}>{d.cnt}명</div>
+                          <div style={{ width: 36, fontSize: 12, color: "#64748b", textAlign: "right" }}>{d.cnt}명</div>
                         </div>
                       );
                     })}
                   </div>
+                  {(() => {
+                    const top = [...attendStats.days].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                    return top?.cnt > 0 ? (
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#2563eb", fontWeight: 700 }}>
+                        📅 가장 많은 요일: {top.name}요일 ({top.cnt}명)
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             )}

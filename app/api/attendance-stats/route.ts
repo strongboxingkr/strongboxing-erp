@@ -11,22 +11,29 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const branch_name = searchParams.get("branch_name");
-    const period = searchParams.get("period") || "month"; // week | month | 3month
+    const period = searchParams.get("period") || "month"; // today | week | month | 3month
 
     const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
     let startDate: string;
-    if (period === "week") {
-      const d = new Date(now);
-      d.setDate(d.getDate() - 7);
+    let endDate: string = todayStr;
+    let totalDays = 1;
+
+    if (period === "today") {
+      startDate = todayStr;
+      totalDays = 1;
+    } else if (period === "week") {
+      const d = new Date(now); d.setDate(d.getDate() - 7);
       startDate = d.toISOString().slice(0, 10);
+      totalDays = 7;
     } else if (period === "3month") {
-      const d = new Date(now);
-      d.setMonth(d.getMonth() - 3);
+      const d = new Date(now); d.setMonth(d.getMonth() - 3);
       startDate = d.toISOString().slice(0, 10);
+      totalDays = 90;
     } else {
-      const d = new Date(now);
-      d.setMonth(d.getMonth() - 1);
+      const d = new Date(now); d.setMonth(d.getMonth() - 1);
       startDate = d.toISOString().slice(0, 10);
+      totalDays = 30;
     }
 
     const params: any[] = [startDate];
@@ -60,9 +67,12 @@ export async function GET(req: Request) {
       params
     );
 
-    // 시간대 배열 (0~23)
-    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, cnt: 0 }));
-    hourRows.forEach((r: any) => { hours[r.hour].cnt = Number(r.cnt); });
+    // 시간대 배열 (0~23) + 하루 평균
+    const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, cnt: 0, avg: 0 }));
+    hourRows.forEach((r: any) => {
+      hours[r.hour].cnt = Number(r.cnt);
+      hours[r.hour].avg = Math.round((Number(r.cnt) / totalDays) * 10) / 10;
+    });
 
     // 요일 배열
     const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
@@ -92,7 +102,7 @@ export async function GET(req: Request) {
       }));
     }
 
-    return NextResponse.json({ success: true, hours, days, period, startDate, branchHours });
+    return NextResponse.json({ success: true, hours, days, period, startDate, totalDays, branchHours });
   } catch (error) {
     return NextResponse.json({ success: false, error });
   }
