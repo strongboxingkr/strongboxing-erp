@@ -77,8 +77,8 @@ export async function POST(req: Request) {
     const countMonths = pass_type === "COUNT" ? Math.ceil(count_value / 12) : 0;
     const end_date =
       pass_type === "PERIOD"
-        ? addMonths(payment_date, duration_months)
-        : addMonths(payment_date, countMonths || 1);
+        ? addMonths(start_date, duration_months)
+        : addMonths(start_date, countMonths || 1);
 
     const remaining_count =
       pass_type === "COUNT" ? count_value : 0;

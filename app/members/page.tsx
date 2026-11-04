@@ -315,7 +315,7 @@ export default function MembersPage() {
           body: JSON.stringify({
             member_id: newMemberId,
             branch_name: targetForm.branch_name,
-            payment_date: targetForm.start_date,
+            payment_date: today,
             payment_method: (targetForm as any).payment_method_new || "CARD",
             product_name: targetForm.product_name,
             amount: payAmt,
