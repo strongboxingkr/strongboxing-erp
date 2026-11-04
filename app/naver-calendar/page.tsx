@@ -804,6 +804,8 @@ const getTypeInfo = (r: any) => {
               width: "100%",
               maxWidth: 620,
               borderRadius: 24,
+              maxHeight: "90vh",
+              overflowY: "auto",
             }}
           >
             <h2 style={{ marginTop: 0 }}>{selected.customer_name || "-"}</h2>
