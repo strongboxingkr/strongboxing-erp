@@ -57,9 +57,9 @@ export async function GET(req: Request) {
 
     const [todayAttendance]: any = await pool.query(
       `
-      SELECT COUNT(*) AS count
+      SELECT COUNT(DISTINCT member_id) AS count
       FROM attendance
-      WHERE result = 'SUCCESS'
+      WHERE result IN ('SUCCESS', 'CHECK_OUT')
         AND DATE(checkin_time) = CURDATE()
       ${branchWhere}
       `,
