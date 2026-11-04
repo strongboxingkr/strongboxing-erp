@@ -315,7 +315,8 @@ export default function MembersPage() {
           body: JSON.stringify({
             member_id: newMemberId,
             branch_name: targetForm.branch_name,
-            payment_date: today,
+            payment_date: (targetForm as any).payment_date_new || today,
+            start_date: targetForm.start_date,
             payment_method: (targetForm as any).payment_method_new || "CARD",
             product_name: targetForm.product_name,
             amount: payAmt,
@@ -729,13 +730,19 @@ ${
               ))}
             </select>
 
-            <input className="input" type="date" value={form.start_date} onChange={(e) => {
+            <div>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>시작일</div>
+              <input className="input" type="date" value={form.start_date} onChange={(e) => {
                 const newStart = e.target.value;
                 const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
                 const months = monthMatch ? parseInt(monthMatch[1]) : 1;
                 setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
               }} />
-            <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>만료일</div>
+              <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+            </div>
 
             <div>
               <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>잔여횟수</div>
@@ -816,6 +823,15 @@ ${
                     <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ flex: 1, fontSize: 12 }}
                       onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
                   ))}
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={(form as any).payment_date_new || today}
+                    onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
+                  />
                 </div>
               </>
             )}

@@ -371,13 +371,14 @@ export default function DashboardPage() {
                   const top = [...bh.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
                   const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
                   const color = BRANCH_COLOR[bh.branch_name] || "#6366f1";
+                  const opHours = bh.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
                   return (
                     <div key={bh.branch_name} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
                       <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 12 }}>{bh.branch_name}</div>
 
                       {/* 막대 차트 */}
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 120, marginBottom: 6 }}>
-                        {bh.hours.map((h: any) => {
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 120, marginBottom: 6 }}>
+                        {opHours.map((h: any) => {
                           const hp = Math.round((h.cnt / max) * 100);
                           const isTop = h.cnt === top.cnt && h.cnt > 0;
                           return (
@@ -397,7 +398,7 @@ export default function DashboardPage() {
 
                       {/* x축 시간 라벨 */}
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                        {[6, 9, 12, 15, 18, 21].map(h => (
+                        {[10, 13, 16, 19, 22].map(h => (
                           <div key={h} style={{ fontSize: 10, color: "#94a3b8" }}>{h}시</div>
                         ))}
                       </div>
@@ -428,9 +429,9 @@ export default function DashboardPage() {
                 {/* 시간대별 */}
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>시간대별 (총 입장)</div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
-                    {attendStats.hours.map((h: any) => {
-                      const max = Math.max(...attendStats.hours.map((x: any) => x.cnt), 1);
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 120 }}>
+                    {attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23).map((h: any) => {
+                      const max = Math.max(...attendStats.hours.filter((x: any) => x.hour >= 10 && x.hour <= 23).map((x: any) => x.cnt), 1);
                       const heightPct = Math.round((h.cnt / max) * 100);
                       const isTop = h.cnt === max && max > 0;
                       return (
@@ -440,7 +441,7 @@ export default function DashboardPage() {
                             background: isTop ? "#ef4444" : "#93c5fd",
                             borderRadius: "3px 3px 0 0", transition: "height 0.4s",
                           }} />
-                          {h.hour % 3 === 0 && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>}
+                          {(h.hour % 3 === 1 || h.hour === 10) && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>}
                         </div>
                       );
                     })}
@@ -459,9 +460,9 @@ export default function DashboardPage() {
                 {attendPeriod !== "today" && (
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>시간대별 (하루 평균)</div>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
-                      {attendStats.hours.map((h: any) => {
-                        const max = Math.max(...attendStats.hours.map((x: any) => x.avg), 0.1);
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 120 }}>
+                      {attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23).map((h: any) => {
+                        const max = Math.max(...attendStats.hours.filter((x: any) => x.hour >= 10 && x.hour <= 23).map((x: any) => x.avg), 0.1);
                         const heightPct = Math.round((h.avg / max) * 100);
                         const isTop = h.avg === max && max > 0;
                         return (
@@ -471,7 +472,7 @@ export default function DashboardPage() {
                               background: isTop ? "#f59e0b" : "#a7f3d0",
                               borderRadius: "3px 3px 0 0", transition: "height 0.4s",
                             }} />
-                            {h.hour % 3 === 0 && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>}
+                            {(h.hour % 3 === 1 || h.hour === 10) && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>}
                           </div>
                         );
                       })}
@@ -744,7 +745,7 @@ export default function DashboardPage() {
                       {peakHour && <span style={{ marginLeft: 8, color: "#2563eb" }}>피크 {peakHour.hour}시 ({peakHour.cnt}명)</span>}
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80 }}>
-                      {hours.filter((_: any, i: number) => i >= 6 && i <= 23).map((h: any) => (
+                      {hours.filter((h: any) => h.hour >= 10 && h.hour <= 23).map((h: any) => (
                         <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                           <div style={{
                             width: "100%", borderRadius: "3px 3px 0 0",
@@ -753,7 +754,7 @@ export default function DashboardPage() {
                             minHeight: h.cnt > 0 ? 3 : 0,
                             transition: "height 0.3s",
                           }} />
-                          {(h.hour % 3 === 0) && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}</div>}
+                          {(h.hour % 3 === 1 || h.hour === 10) && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}</div>}
                         </div>
                       ))}
                     </div>
