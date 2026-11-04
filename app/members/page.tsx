@@ -730,23 +730,25 @@ ${
               ))}
             </select>
 
-            <div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>시작일</div>
-              <input className="input" type="date" value={form.start_date} onChange={(e) => {
-                const newStart = e.target.value;
-                const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
-                const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-                setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
-              }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>만료일</div>
-              <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
-            </div>
-
-            <div>
-              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>잔여횟수</div>
-              <input className="input" type="number" placeholder="잔여횟수" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
+            {/* 시작일 / 만료일 / 잔여횟수 — 라벨 포함, 3열 나란히 */}
+            <div style={{ gridColumn: "2 / 5", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>시작일</div>
+                <input className="input" type="date" value={form.start_date} onChange={(e) => {
+                  const newStart = e.target.value;
+                  const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
+                  const months = monthMatch ? parseInt(monthMatch[1]) : 1;
+                  setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
+                }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>만료일</div>
+                <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>잔여횟수</div>
+                <input className="input" type="number" placeholder="잔여횟수" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
+              </div>
             </div>
 
             <div
@@ -824,15 +826,13 @@ ${
                       onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
                   ))}
                 </div>
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
-                  <input
-                    className="input"
-                    type="date"
-                    value={(form as any).payment_date_new || today}
-                    onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
-                  />
-                </div>
+                <input
+                  className="input"
+                  type="date"
+                  title="결제일"
+                  value={(form as any).payment_date_new || today}
+                  onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
+                />
               </>
             )}
           </div>
