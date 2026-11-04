@@ -69,7 +69,30 @@ export async function GET(req: Request) {
     const days = dayNames.map((name, i) => ({ dow: i, name, cnt: 0 }));
     dayRows.forEach((r: any) => { days[r.dow].cnt = Number(r.cnt); });
 
-    return NextResponse.json({ success: true, hours, days, period, startDate });
+    // 지점별 시간대 (전체 조회 시)
+    const by_branch = searchParams.get("by_branch");
+    let branchHours: any[] = [];
+    if (by_branch === "Y") {
+      const [bRows]: any = await pool.query(
+        `SELECT COALESCE(branch_name, '미지정') AS branch_name, HOUR(checkin_time) AS hour, COUNT(*) AS cnt
+         FROM attendance
+         WHERE result = 'SUCCESS' AND DATE(checkin_time) >= ?
+         GROUP BY branch_name, HOUR(checkin_time)
+         ORDER BY branch_name, hour`,
+        [startDate]
+      );
+      const branchMap: Record<string, number[]> = {};
+      bRows.forEach((r: any) => {
+        if (!branchMap[r.branch_name]) branchMap[r.branch_name] = Array(24).fill(0);
+        branchMap[r.branch_name][r.hour] = Number(r.cnt);
+      });
+      branchHours = Object.entries(branchMap).map(([name, counts]) => ({
+        branch_name: name,
+        hours: counts.map((cnt, hour) => ({ hour, cnt })),
+      }));
+    }
+
+    return NextResponse.json({ success: true, hours, days, period, startDate, branchHours });
   } catch (error) {
     return NextResponse.json({ success: false, error });
   }

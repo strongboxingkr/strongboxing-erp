@@ -66,6 +66,7 @@ export default function DashboardPage() {
   const loadAttendStats = async (period: string, b: string) => {
     let url = `/api/attendance-stats?period=${period}`;
     if (b !== "전체") url += `&branch_name=${encodeURIComponent(b)}`;
+    else url += `&by_branch=Y`;
     const res = await apiFetch(url);
     const json = await res.json();
     if (json.success) setAttendStats(json);
@@ -89,6 +90,12 @@ export default function DashboardPage() {
     const timer = setInterval(loadDashboard, 60000);
     return () => clearInterval(timer);
   }, [branch, startDate, endDate]);
+
+  useEffect(() => {
+    if (user && ["ADMIN", "OWNER"].includes(user.role)) {
+      loadAttendStats(attendPeriod, branch);
+    }
+  }, [branch, user]);
 
   const setRange = (type: "today" | "week" | "month") => {
     if (type === "today") { setStartDate(today); setEndDate(today); }
@@ -323,6 +330,121 @@ export default function DashboardPage() {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* 피크타임 분석 (ADMIN/OWNER) */}
+        {user && ["ADMIN", "OWNER"].includes(user.role) && (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>⏰ 피크타임 분석</div>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>시간대별 입장 현황 (취소 제외)</div>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[["1주", "week"], ["1개월", "month"], ["3개월", "3month"]].map(([label, val]) => (
+                  <button key={val} onClick={() => { setAttendPeriod(val); loadAttendStats(val, branch); }} style={{
+                    padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0",
+                    background: attendPeriod === val ? "#2563eb" : "#f8fafc",
+                    color: attendPeriod === val ? "#fff" : "#374151",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}>{label}</button>
+                ))}
+              </div>
+            </div>
+
+            {!attendStats ? (
+              <div style={{ color: "#94a3b8", fontSize: 13, padding: "20px 0", textAlign: "center" }}>로딩중...</div>
+            ) : branch === "전체" && attendStats.branchHours?.length > 0 ? (
+              /* 전체 선택: 지점별 시간대 비교 */
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 20 }}>
+                  {attendStats.branchHours.map((bh: any) => {
+                    const max = Math.max(...bh.hours.map((h: any) => h.cnt), 1);
+                    const top = [...bh.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                    const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
+                    const color = BRANCH_COLOR[bh.branch_name] || "#6366f1";
+                    return (
+                      <div key={bh.branch_name}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>{bh.branch_name}</div>
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80 }}>
+                          {bh.hours.map((h: any) => {
+                            const hp = Math.round((h.cnt / max) * 100);
+                            const isTop = h.cnt === top.cnt && h.cnt > 0;
+                            return (
+                              <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div title={`${h.hour}시: ${h.cnt}명`} style={{
+                                  width: "100%", height: `${hp}%`, minHeight: h.cnt > 0 ? 3 : 0,
+                                  background: isTop ? "#ef4444" : color + "99",
+                                  borderRadius: "2px 2px 0 0",
+                                }} />
+                                {h.hour % 6 === 0 && <div style={{ fontSize: 8, color: "#94a3b8" }}>{h.hour}</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {top?.cnt > 0 && (
+                          <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 700, marginTop: 4 }}>
+                            🔥 {top.hour}시 ({top.cnt}명)
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 24 }}>
+                {/* 시간대별 */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>시간대별</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
+                    {attendStats.hours.map((h: any) => {
+                      const max = Math.max(...attendStats.hours.map((x: any) => x.cnt), 1);
+                      const heightPct = Math.round((h.cnt / max) * 100);
+                      const isTop = h.cnt === max && max > 0;
+                      return (
+                        <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                          <div title={`${h.hour}시: ${h.cnt}명`} style={{
+                            width: "100%", height: `${heightPct}%`, minHeight: h.cnt > 0 ? 4 : 0,
+                            background: isTop ? "#ef4444" : "#93c5fd",
+                            borderRadius: "3px 3px 0 0", transition: "height 0.4s",
+                          }} />
+                          {h.hour % 3 === 0 && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {(() => {
+                    const top = [...attendStats.hours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                    return top?.cnt > 0 ? (
+                      <div style={{ marginTop: 8, fontSize: 13, color: "#ef4444", fontWeight: 700 }}>
+                        🔥 가장 붐비는 시간: {top.hour}시 ({top.cnt}명)
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+                {/* 요일별 */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 10 }}>요일별</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {attendStats.days.map((d: any) => {
+                      const max = Math.max(...attendStats.days.map((x: any) => x.cnt), 1);
+                      const p = Math.round((d.cnt / max) * 100);
+                      return (
+                        <div key={d.dow} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 20, fontSize: 12, fontWeight: 600, color: d.dow === 0 ? "#ef4444" : d.dow === 6 ? "#3b82f6" : "#374151" }}>{d.name}</div>
+                          <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 4, height: 14, overflow: "hidden" }}>
+                            <div style={{ width: `${p}%`, height: "100%", background: "#2563eb", borderRadius: 4, transition: "width 0.4s" }} />
+                          </div>
+                          <div style={{ width: 28, fontSize: 12, color: "#64748b", textAlign: "right" }}>{d.cnt}명</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
