@@ -276,9 +276,8 @@ export default function AttendanceMonitorPage() {
           오늘 출석 현황
         </div>
         {/* 헤더 */}
-        {/* 헤더 */}
-        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 90px 48px 48px", padding: "8px 16px", fontSize: 11, color: "#334155", borderBottom: "1px solid #1e293b" }}>
-          <span>NO</span><span>이름</span><span>만료일/잔여</span><span style={{ textAlign: "right" }}>입장</span><span style={{ textAlign: "right" }}>퇴장</span>
+        <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 44px 80px 44px 44px", padding: "8px 12px", fontSize: 11, color: "#334155", borderBottom: "1px solid #1e293b" }}>
+          <span>NO</span><span>이름</span><span style={{ textAlign: "center" }}>번호</span><span>만료일/잔여</span><span style={{ textAlign: "right" }}>입장</span><span style={{ textAlign: "right" }}>퇴장</span>
         </div>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {successRows.length === 0 ? (
@@ -287,9 +286,9 @@ export default function AttendanceMonitorPage() {
             successRows.map((r, i) => (
               <div key={r.member_id} style={{
                 display: "grid",
-                gridTemplateColumns: "36px 1fr 90px 48px 48px",
+                gridTemplateColumns: "28px 1fr 44px 80px 44px 44px",
                 alignItems: "center",
-                padding: "9px 16px",
+                padding: "9px 12px",
                 borderBottom: "1px solid #0a0f1e",
                 background: i === 0 ? "#1e293b" : "transparent",
                 fontSize: 13,
@@ -300,6 +299,9 @@ export default function AttendanceMonitorPage() {
                   style={{ fontWeight: 700, color: r.checkout_time ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: r.member_id ? "pointer" : "default" }}
                 >
                   {r.name || "미등록"}
+                </span>
+                <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 13, textAlign: "center", letterSpacing: 1 }}>
+                  {r.phone ? r.phone.slice(-4) : "-"}
                 </span>
                 <span style={{ color: "#475569", fontSize: 12 }}>
                   {r.pass_type === "COUNT"

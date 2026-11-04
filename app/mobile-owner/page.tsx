@@ -6,9 +6,12 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
+  Cell,
 } from "recharts";
 import { apiFetch } from "@/lib/api";
 
@@ -44,6 +47,7 @@ export default function MobileOwnerPage() {
   const [chartRows, setChartRows] = useState<any[] | null>(null);
   const [chartError, setChartError] = useState(false);
   const [reservations, setReservations] = useState<any[]>([]);
+  const [peakStats, setPeakStats] = useState<any[]>([]);
 
   const [preset, setPreset] = useState(0);
   const [startDate, setStartDate] = useState(today);
@@ -130,6 +134,14 @@ export default function MobileOwnerPage() {
       const rRes = await apiFetch("/api/calendar-events");
       const rJson = await rRes.json();
       setReservations((rJson.rows || []).filter((r: any) => r.start_datetime?.slice(0, 10) === today && !["취소", "예약취소"].includes(r.status)));
+    } catch {}
+
+    try {
+      let psUrl = "/api/attendance-stats?period=month";
+      if (branch !== "전체") psUrl += `&branch_name=${encodeURIComponent(branch)}`;
+      const psRes = await apiFetch(psUrl);
+      const psJson = await psRes.json();
+      if (psJson.success) setPeakStats((psJson.hours || []).map((h: any) => ({ hour: h.hour, count: h.cnt })));
     } catch {}
   };
 
@@ -340,6 +352,36 @@ export default function MobileOwnerPage() {
                 <Line type="monotone" dataKey="sales" stroke="#2563eb" strokeWidth={2.5}
                   dot={{ r: 3, fill: "#2563eb" }} activeDot={{ r: 5 }} />
               </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* 피크타임 분석 */}
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>⏰ 피크타임 분석 <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>이번달 시간대별 입장</span></div>
+        <div style={{ ...styles.card, padding: "14px 8px 8px 0" }}>
+          {peakStats.length === 0 ? (
+            <div style={{ padding: "20px 16px", color: "#94a3b8", fontSize: 13 }}>데이터 없음</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={peakStats} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                  tickFormatter={(v) => `${v}시`} interval={2} />
+                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
+                <Tooltip
+                  formatter={(v: any) => [`${v}명`, "입장"]}
+                  labelFormatter={(l) => `${l}시`}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {peakStats.map((entry: any, index: number) => {
+                    const maxCount = Math.max(...peakStats.map((s: any) => s.count));
+                    const isTop = entry.count === maxCount && maxCount > 0;
+                    return <Cell key={index} fill={isTop ? "#ef4444" : "#93c5fd"} />;
+                  })}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           )}
         </div>
