@@ -63,6 +63,8 @@ export async function GET(req: Request) {
     // 시간대별 카운트 (체류 기반)
     const hourCounts = Array(24).fill(0);
     const dowCounts = Array(7).fill(0);
+    // 히트맵: dowHourCounts[dow][hour]
+    const dowHourCounts: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
 
     pairRows.forEach((row: any) => {
       let checkin = row.checkin_t ? new Date(row.checkin_t) : null;
@@ -81,11 +83,13 @@ export async function GET(req: Request) {
       const startH = checkin.getHours();
       const endH = checkout.getHours();
       if (endH >= startH) {
-        for (let h = startH; h <= endH; h++) hourCounts[h]++;
+        for (let h = startH; h <= endH; h++) {
+          hourCounts[h]++;
+          dowHourCounts[dow][h]++;
+        }
       } else {
-        // 자정 넘어가는 케이스
-        for (let h = startH; h < 24; h++) hourCounts[h]++;
-        for (let h = 0; h <= endH; h++) hourCounts[h]++;
+        for (let h = startH; h < 24; h++) { hourCounts[h]++; dowHourCounts[dow][h]++; }
+        for (let h = 0; h <= endH; h++) { hourCounts[h]++; dowHourCounts[dow][h]++; }
       }
     });
 
@@ -99,6 +103,13 @@ export async function GET(req: Request) {
     // 요일 배열
     const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
     const days = dayNames.map((name, i) => ({ dow: i, name, cnt: dowCounts[i] }));
+
+    // 히트맵: 요일×시간대
+    const heatmap = dayNames.map((name, dow) => ({
+      dow,
+      name,
+      hours: Array.from({ length: 24 }, (_, h) => ({ hour: h, cnt: dowHourCounts[dow][h] })),
+    }));
 
     // 지점별 시간대 (전체 조회 시, 체류 기반)
     const by_branch = searchParams.get("by_branch");
@@ -140,7 +151,7 @@ export async function GET(req: Request) {
       }));
     }
 
-    return NextResponse.json({ success: true, hours, days, period, startDate, totalDays, branchHours });
+    return NextResponse.json({ success: true, hours, days, heatmap, period, startDate, totalDays, branchHours });
   } catch (error) {
     return NextResponse.json({ success: false, error });
   }
