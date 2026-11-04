@@ -74,7 +74,7 @@ export default function MobileBranchPage() {
     try {
       const res = await apiFetch(`/api/calendar-events?branch_name=${encodeURIComponent(branch)}`);
       const json = await res.json();
-      setReservations((json.rows || []).filter((r: any) => r.start_datetime?.slice(0, 10) === today));
+      setReservations((json.rows || []).filter((r: any) => r.start_datetime?.slice(0, 10) === today && !["취소", "예약취소"].includes(r.status)));
     } catch {}
 
     try {

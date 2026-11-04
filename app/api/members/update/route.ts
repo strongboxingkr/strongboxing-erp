@@ -123,6 +123,44 @@ export async function POST(req: Request) {
       ]
     );
 
+    // 락커번호 변경 시 lockers 테이블 자동 동기화
+    const finalLockerNo = locker_no ?? oldMember.locker_no;
+    const finalBranch = branch_name || oldMember.branch_name;
+    const finalName = name || oldMember.name;
+    const finalGender = gender ?? oldMember.gender;
+    const finalEndDate = toDate(end_date || oldMember.end_date);
+    const finalStartDate = toDate(start_date || oldMember.start_date);
+
+    if (finalLockerNo) {
+      // 이전 락커 해제
+      if (oldMember.locker_no && oldMember.locker_no !== finalLockerNo) {
+        await pool.query(
+          `UPDATE lockers SET member_id = NULL, member_name = NULL, gender = NULL, start_date = NULL, end_date = NULL
+           WHERE branch_name = ? AND locker_no = ? AND member_id = ?`,
+          [finalBranch, oldMember.locker_no, member_id]
+        );
+      }
+      // 새 락커 배정
+      await pool.query(
+        `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date)
+         VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           member_id = VALUES(member_id),
+           member_name = VALUES(member_name),
+           gender = VALUES(gender),
+           start_date = VALUES(start_date),
+           end_date = VALUES(end_date)`,
+        [finalBranch, finalLockerNo, member_id, finalName, finalGender, finalStartDate, finalEndDate]
+      );
+    } else if (oldMember.locker_no && locker_no === null) {
+      // 락커 삭제된 경우 해제
+      await pool.query(
+        `UPDATE lockers SET member_id = NULL, member_name = NULL, gender = NULL, start_date = NULL, end_date = NULL
+         WHERE branch_name = ? AND locker_no = ? AND member_id = ?`,
+        [finalBranch, oldMember.locker_no, member_id]
+      );
+    }
+
     await pool.query(
       `
       INSERT INTO member_histories (

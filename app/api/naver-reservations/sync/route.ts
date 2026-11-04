@@ -476,12 +476,12 @@ export async function GET() {
 
         if (calendarRows.length > 0) {
           const existingStatus = calendarRows[0].status;
-          const lockedStatuses = ["예약확정", "상담완료", "확인완료", "노쇼"];
-          // 취소 → 재예약 확정인 경우 naver 측 status를 따름
-          const incomingIsActive = !["취소", "예약취소"].includes(status);
-          const keepStatus = lockedStatuses.includes(existingStatus) && !(existingStatus === "취소" && incomingIsActive)
-            ? existingStatus
-            : status;
+          const lockedStatuses = ["상담완료", "확인완료", "노쇼", "취소", "예약취소"];
+          const incomingIsCancellation = ["취소", "예약취소"].includes(status);
+          // 취소는 항상 반영, 취소/완료/노쇼 상태는 확정 메일로 덮어쓰지 않음
+          const keepStatus = incomingIsCancellation
+            ? status
+            : (lockedStatuses.includes(existingStatus) ? existingStatus : status);
 
           await pool.query(
             `
@@ -501,7 +501,7 @@ export async function GET() {
             [
               branch_name,
               eventType,
-              `${titlePrefix} - ${customer_name}`,
+              `${titlePrefix} - ${customer_name} [${reservation_product}]`,
               customer_name,
               phone,
               startDateTime,
@@ -600,7 +600,7 @@ export async function GET() {
         [
           branch_name,
           eventType,
-          `${titlePrefix} - ${customer_name}`,
+          `${titlePrefix} - ${customer_name} [${reservation_product}]`,
           customer_name,
           phone,
           startDateTime,

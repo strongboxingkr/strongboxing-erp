@@ -19,6 +19,8 @@ export default function MemberDetailPage() {
   const [tab, setTab] = useState("INFO");
   const [histories, setHistories] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [editPayment, setEditPayment] = useState<any>(null);
+  const [editPayForm, setEditPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: "", memo: "" });
 
   const [uploading, setUploading] =
     useState(false);
@@ -827,7 +829,7 @@ export default function MemberDetailPage() {
                     key={p.payment_id}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "110px 1fr 110px 100px 70px",
+                      gridTemplateColumns: "110px 1fr 110px 100px 120px",
                       gap: 10,
                       background: isCancelled ? "rgba(239,68,68,0.07)" : "var(--panel2)",
                       borderRadius: 12,
@@ -849,24 +851,42 @@ export default function MemberDetailPage() {
                     <div style={{ fontSize: 13 }}>
                       {p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method}
                     </div>
-                    <div>
+                    <div style={{ display: "flex", gap: 4 }}>
                       {!isCancelled && (
-                        <button
-                          className="btn secondary"
-                          style={{ fontSize: 11, padding: "3px 8px", color: "#ef4444" }}
-                          onClick={async () => {
-                            if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
-                            const res = await apiFetch("/api/payments/cancel", {
-                              method: "POST",
-                              body: JSON.stringify({ payment_id: p.payment_id }),
-                            });
-                            const json = await res.json();
-                            if (json.success) load();
-                            else alert("취소 실패");
-                          }}
-                        >
-                          취소
-                        </button>
+                        <>
+                          <button
+                            className="btn secondary"
+                            style={{ fontSize: 11, padding: "3px 8px" }}
+                            onClick={() => {
+                              setEditPayment(p);
+                              setEditPayForm({
+                                product_name: p.product_name || "",
+                                final_amount: String(p.final_amount || ""),
+                                payment_method: p.payment_method || "CARD",
+                                payment_date: p.payment_date?.slice(0, 10) || "",
+                                memo: p.memo || "",
+                              });
+                            }}
+                          >
+                            수정
+                          </button>
+                          <button
+                            className="btn secondary"
+                            style={{ fontSize: 11, padding: "3px 8px", color: "#ef4444" }}
+                            onClick={async () => {
+                              if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
+                              const res = await apiFetch("/api/payments/cancel", {
+                                method: "POST",
+                                body: JSON.stringify({ payment_id: p.payment_id }),
+                              });
+                              const json = await res.json();
+                              if (json.success) load();
+                              else alert("취소 실패");
+                            }}
+                          >
+                            취소
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1256,6 +1276,37 @@ export default function MemberDetailPage() {
             </div>
           )}
         </>
+      )}
+      {/* 결제 수정 모달 */}
+      {editPayment && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card" style={{ width: 420, maxWidth: "95vw", borderRadius: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0 }}>결제 수정</h2>
+              <button onClick={() => setEditPayment(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              <input className="input" placeholder="상품명" value={editPayForm.product_name} onChange={e => setEditPayForm({ ...editPayForm, product_name: e.target.value })} />
+              <input className="input" type="number" placeholder="결제금액" value={editPayForm.final_amount} onChange={e => setEditPayForm({ ...editPayForm, final_amount: e.target.value })} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {([["CARD","카드"],["CASH","현금"],["TRANSFER","계좌이체"]] as const).map(([m, l]) => (
+                  <button key={m} className={editPayForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setEditPayForm({ ...editPayForm, payment_method: m })}>{l}</button>
+                ))}
+              </div>
+              <input className="input" type="date" value={editPayForm.payment_date} onChange={e => setEditPayForm({ ...editPayForm, payment_date: e.target.value })} />
+              <textarea className="input" placeholder="메모" value={editPayForm.memo} onChange={e => setEditPayForm({ ...editPayForm, memo: e.target.value })} style={{ minHeight: 80 }} />
+              <button className="btn" style={{ fontSize: 16 }} onClick={async () => {
+                const res = await apiFetch("/api/payments", {
+                  method: "PUT",
+                  body: JSON.stringify({ payment_id: editPayment.payment_id, ...editPayForm, final_amount: Number(editPayForm.final_amount) }),
+                });
+                const json = await res.json();
+                if (json.success) { alert("수정 완료!"); setEditPayment(null); load(); }
+                else alert(json.message || "수정 실패");
+              }}>저장</button>
+            </div>
+          </div>
+        </div>
       )}
     </AppShell>
   );

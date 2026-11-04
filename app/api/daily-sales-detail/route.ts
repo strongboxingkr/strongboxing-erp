@@ -20,6 +20,7 @@ export async function GET(req: Request) {
       SELECT
         p.payment_id,
         p.payment_date,
+        p.created_at,
         p.payment_method,
         p.product_name,
         p.amount,

@@ -8,6 +8,8 @@ const today = new Date().toISOString().slice(0, 10);
 
 const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
+const METHOD_LABEL: Record<string, string> = { CASH: "현금", CARD: "카드", TRANSFER: "계좌이체" };
+
 export default function PaymentsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -17,6 +19,8 @@ export default function PaymentsPage() {
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [reviewRefund, setReviewRefund] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: today, memo: "" });
 
   const [branch, setBranch] = useState("전체");
   const [memberSearch, setMemberSearch] = useState("");
@@ -37,6 +41,7 @@ export default function PaymentsPage() {
   }, []);
 
   const isAdminOrOwner = user?.role === "ADMIN" || user?.role === "OWNER";
+  const canEditPayment = ["ADMIN", "OWNER", "DIRECTOR"].includes(user?.role);
 
   const loadBranches = async () => {
     const res = await apiFetch("/api/settings?option_type=BRANCH");
@@ -167,6 +172,33 @@ export default function PaymentsPage() {
       loadPayments();
     } else {
       alert(data.message || "결제 등록 실패");
+    }
+  };
+
+  const openEdit = (r: any) => {
+    setEditTarget(r);
+    setEditForm({
+      product_name: r.product_name || "",
+      final_amount: String(r.amount || r.final_amount || ""),
+      payment_method: r.payment_method || "CARD",
+      payment_date: r.payment_date?.slice(0, 10) || today,
+      memo: r.memo || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget) return;
+    const res = await apiFetch("/api/payments", {
+      method: "PUT",
+      body: JSON.stringify({ payment_id: editTarget.payment_id, ...editForm, final_amount: Number(editForm.final_amount) }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("수정 완료!");
+      setEditTarget(null);
+      loadPayments();
+    } else {
+      alert(data.message || "수정 실패");
     }
   };
 
@@ -607,6 +639,18 @@ export default function PaymentsPage() {
                       {r.memo}
                     </div>
                   )}
+
+                  {canEditPayment && (
+                    <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        className="btn secondary"
+                        style={{ fontSize: 12, padding: "4px 12px" }}
+                        onClick={() => openEdit(r)}
+                      >
+                        수정
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -619,6 +663,35 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+      {/* 결제 수정 모달 */}
+      {editTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card" style={{ width: 440, maxWidth: "95vw", borderRadius: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0 }}>결제 수정 — {editTarget.name}</h2>
+              <button onClick={() => setEditTarget(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <input className="input" placeholder="상품명" value={editForm.product_name} onChange={e => setEditForm({ ...editForm, product_name: e.target.value })} />
+              <input className="input" type="number" placeholder="결제금액" value={editForm.final_amount} onChange={e => setEditForm({ ...editForm, final_amount: e.target.value })} />
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {(["CARD", "CASH", "TRANSFER"] as const).map(m => (
+                  <button key={m} className={editForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setEditForm({ ...editForm, payment_method: m })}>
+                    {METHOD_LABEL[m]}
+                  </button>
+                ))}
+              </div>
+
+              <input className="input" type="date" value={editForm.payment_date} onChange={e => setEditForm({ ...editForm, payment_date: e.target.value })} />
+              <textarea className="input" placeholder="메모" value={editForm.memo} onChange={e => setEditForm({ ...editForm, memo: e.target.value })} style={{ minHeight: 80 }} />
+
+              <button className="btn" style={{ fontSize: 16 }} onClick={saveEdit}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -69,42 +69,33 @@ export async function POST(req: Request) {
     const member = rows[0];
 
     if (check_type === "CHECK_OUT") {
-    if (Number(member.checkout_sms_enabled || 0) === 1 && member.phone) {
-      await sendCheckoutSms(member);
+      // 오늘 입장 기록 없으면 입장으로 처리
+      const todayText = new Date().toISOString().slice(0, 10);
+      const [todayIn]: any = await pool.query(
+        `SELECT attendance_id FROM attendance WHERE member_id = ? AND result = 'SUCCESS' AND DATE(checkin_time) = ? LIMIT 1`,
+        [member.member_id, todayText]
+      );
+
+      if (todayIn.length === 0) {
+        // 입장으로 대신 처리 (아래 CHECK_IN 로직으로 fall-through)
+      } else {
+        if (Number(member.checkout_sms_enabled || 0) === 1 && member.phone) {
+          await sendCheckoutSms(member);
+        }
+
+        await pool.query(
+          `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, result, memo) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [member.member_id, member.branch_name, member.name, member.pass_type, 0, "CHECK_OUT", "퇴실"]
+        );
+
+        return NextResponse.json({
+          success: true,
+          result: "CHECK_OUT",
+          message: "퇴실 완료",
+          member,
+        });
+      }
     }
-
-    await pool.query(
-      `
-      INSERT INTO attendance
-      (
-        member_id,
-        branch_name,
-        member_name,
-        pass_type,
-        used_count,
-        result,
-        memo
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        member.member_id,
-        member.branch_name,
-        member.name,
-        member.pass_type,
-        0,
-        "CHECK_OUT",
-        "퇴실",
-      ]
-    );
-
-    return NextResponse.json({
-      success: true,
-      result: "CHECK_OUT",
-      message: "퇴실 완료",
-      member,
-    });
-  }
 
     const today = new Date();
     const todayText = today.toISOString().slice(0, 10);
@@ -130,13 +121,71 @@ export async function POST(req: Request) {
     }
 
     if (member.status === "REST") {
-      await saveAttendance(member, "REST", memo || "휴회중 회원");
+      // 활성 휴회 기록 조회
+      const [holdRows]: any = await pool.query(
+        `SELECT * FROM member_holds WHERE member_id = ? AND released_at IS NULL ORDER BY hold_id DESC LIMIT 1`,
+        [member.member_id]
+      );
 
-      return NextResponse.json({
-        success: false,
-        result: "REST",
-        message: "휴회중 회원",
-      });
+      const todayD = new Date();
+      todayD.setHours(0, 0, 0, 0);
+
+      if (holdRows.length > 0) {
+        const hold = holdRows[0];
+        const holdStartD = new Date(hold.hold_start);
+        holdStartD.setHours(0, 0, 0, 0);
+        const holdEndD = new Date(hold.hold_end);
+        holdEndD.setHours(0, 0, 0, 0);
+
+        // 휴회 시작일 기준 남은 일수 계산 (hold_start → old end_date)
+        const oldEndD = member.end_date ? new Date(member.end_date) : holdEndD;
+        oldEndD.setHours(0, 0, 0, 0);
+        const remainingDays = Math.ceil((oldEndD.getTime() - holdStartD.getTime()) / 86400000);
+
+        // 휴회 해제 처리
+        await pool.query(
+          `UPDATE member_holds SET released_at = NOW(), released_by = '시스템(자동)' WHERE hold_id = ?`,
+          [hold.hold_id]
+        );
+
+        // new end_date = min(오늘, 휴회종료일) + 잔여일수
+        // 늦게 복귀해도 휴회종료일 이후 초과분은 소멸
+        const releaseD = todayD <= holdEndD ? todayD : holdEndD;
+        const newEndD = new Date(releaseD);
+        newEndD.setDate(newEndD.getDate() + remainingDays);
+        const newEndDate = newEndD.toISOString().slice(0, 10);
+
+        await pool.query(
+          `UPDATE members SET status = 'ACTIVE', end_date = ? WHERE member_id = ?`,
+          [newEndDate, member.member_id]
+        );
+
+        // member 객체 갱신 (이후 로직에서 사용)
+        member.status = "ACTIVE";
+        member.end_date = newEndDate;
+
+        // 이력 기록
+        await pool.query(
+          `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, new_value, created_by)
+           VALUES (?, ?, 'HOLD_RELEASE', ?, ?, ?, '시스템(자동)')`,
+          [
+            member.member_id, member.name,
+            `체크인으로 휴회 자동해제 (잔여 ${remainingDays}일 → ${newEndDate}까지)`,
+            JSON.stringify({ hold_id: hold.hold_id, old_end_date: member.end_date }),
+            JSON.stringify({ new_end_date: newEndDate, remaining_days: remainingDays }),
+          ]
+        );
+
+        // fall-through to normal check-in
+      } else {
+        // 휴회 기록 없이 REST인 경우 그냥 차단
+        await saveAttendance(member, "REST", memo || "휴회중 회원");
+        return NextResponse.json({
+          success: false,
+          result: "REST",
+          message: "휴회중 회원",
+        });
+      }
     }
 
     const endDate = member.end_date ? new Date(member.end_date) : null;

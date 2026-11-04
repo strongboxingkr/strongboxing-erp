@@ -239,7 +239,7 @@ export default function MonthlySalesPage() {
                       <td style={{ ...td, fontWeight: 900, color: "#f59e0b" }}>{fmt(r.final_amount)}</td>
                       {isAdminOrOwner && (
                         <td style={{ ...td, color: "#475569", fontSize: 12, whiteSpace: "nowrap" as const }}>
-                          {r.payment_date ? String(r.payment_date).slice(11, 16) : "-"}
+                          {r.created_at ? String(r.created_at).slice(11, 16) : "-"}
                         </td>
                       )}
                       <td style={{ ...td, color: "var(--muted)", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.memo || ""}</td>

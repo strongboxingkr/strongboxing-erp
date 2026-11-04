@@ -36,6 +36,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 const getStatusColor = (s: string) => STATUS_COLORS[s] || "#94a3b8";
 
+function getProductLabel(title: string) {
+  if (!title) return null;
+  if (title.includes("원데이") || title.includes("1day") || title.includes("원데이클래스")) return { label: "원데이", color: "#8b5cf6" };
+  if (title.includes("방문상담") || title.includes("상담예약") || title.includes("체험예약")) return { label: "방문상담", color: "#f59e0b" };
+  return null;
+}
+
 export default function CalendarPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -164,6 +171,7 @@ export default function CalendarPage() {
                 <th>예약일시</th>
                 <th>이름</th>
                 <th>전화번호</th>
+                <th>상품</th>
                 <th>지점</th>
                 <th>유입경로</th>
                 <th>상태</th>
@@ -171,13 +179,18 @@ export default function CalendarPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.event_id} onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
-                  <td style={{ fontWeight: 900, color: "#3b82f6", whiteSpace: "nowrap" }}>
+              {filtered.map((r) => {
+                const isCancelled = ["취소", "예약취소"].includes(r.status);
+                return (
+                <tr key={r.event_id} onClick={() => setSelected(r)} style={{ cursor: "pointer", opacity: isCancelled ? 0.5 : 1, background: isCancelled ? "rgba(107,114,128,0.06)" : undefined }}>
+                  <td style={{ fontWeight: 900, color: "#3b82f6", whiteSpace: "nowrap", textDecoration: isCancelled ? "line-through" : undefined }}>
                     {r.start_datetime?.slice(0, 16).replace("T", " ")}
                   </td>
-                  <td style={{ fontWeight: 900 }}>{r.customer_name || "-"}</td>
+                  <td style={{ fontWeight: 900, textDecoration: isCancelled ? "line-through" : undefined }}>{r.customer_name || "-"}</td>
                   <td>{r.phone || "-"}</td>
+                  <td>
+                    {(() => { const p = getProductLabel(r.title); return p ? <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 12, fontWeight: 700, background: `${p.color}22`, color: p.color }}>{p.label}</span> : <span style={{ color: "#94a3b8", fontSize: 12 }}>-</span>; })()}
+                  </td>
                   <td>
                     <span style={{ padding: "4px 10px", borderRadius: 8, background: `${getBranchColor(r.branch_name)}22`, color: getBranchColor(r.branch_name), fontWeight: 900, borderLeft: `3px solid ${getBranchColor(r.branch_name)}` }}>
                       {r.branch_name || "-"}
@@ -197,9 +210,10 @@ export default function CalendarPage() {
                     {r.memo || "-"}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ textAlign: "center", color: "#4b5563", padding: 24 }}>예약이 없습니다.</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: "center", color: "#4b5563", padding: 24 }}>예약이 없습니다.</td></tr>
               )}
             </tbody>
           </table>

@@ -37,6 +37,10 @@ export default function DashboardPage() {
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [mobile, setMobile] = useState(false);
+  const [reservStats, setReservStats] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [attendStats, setAttendStats] = useState<any>(null);
+  const [attendPeriod, setAttendPeriod] = useState("month");
 
   useEffect(() => {
     const check = () => setMobile(window.innerWidth < 900);
@@ -59,7 +63,26 @@ export default function DashboardPage() {
     setData(json);
   };
 
-  useEffect(() => { loadBranches(); }, []);
+  const loadAttendStats = async (period: string, b: string) => {
+    let url = `/api/attendance-stats?period=${period}`;
+    if (b !== "전체") url += `&branch_name=${encodeURIComponent(b)}`;
+    const res = await apiFetch(url);
+    const json = await res.json();
+    if (json.success) setAttendStats(json);
+  };
+
+  useEffect(() => {
+    loadBranches();
+    apiFetch("/api/reservation-stats").then(r => r.json()).then(d => { if (d.success) setReservStats(d); });
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      const u = JSON.parse(savedUser);
+      setUser(u);
+      if (["ADMIN", "OWNER"].includes(u.role)) {
+        loadAttendStats("month", "전체");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     loadDashboard();
@@ -248,6 +271,57 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 예약 월별 비교 차트 */}
+        {branch === "전체" && reservStats && (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>지점별 예약 비교</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 20 }}>취소 제외 · 네이버 예약 기준</div>
+
+            <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 16 }}>
+              {reservStats.rows.map((r: any) => {
+                const max = Math.max(r.this_month, r.prev_month, 1);
+                const thisPct = Math.round((r.this_month / max) * 100);
+                const prevPct = Math.round((r.prev_month / max) * 100);
+                const diff = r.this_month - r.prev_month;
+                const BRANCH_COLOR: Record<string, string> = { "철산점": "#ec4899", "목동점": "#f59e0b", "개봉점": "#3b82f6", "신정점": "#22c55e" };
+                const color = BRANCH_COLOR[r.branch_name] || "#6366f1";
+                return (
+                  <div key={r.branch_name}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontWeight: 800, fontSize: 14, color: "#1e293b" }}>{r.branch_name}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: diff > 0 ? "#16a34a" : diff < 0 ? "#dc2626" : "#94a3b8" }}>
+                        {diff > 0 ? `▲${diff}` : diff < 0 ? `▼${Math.abs(diff)}` : "—"}
+                      </span>
+                    </div>
+
+                    {/* 이번달 */}
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginBottom: 3 }}>
+                        <span>{reservStats.this_month}</span>
+                        <span style={{ fontWeight: 700, color: color }}>{r.this_month}건</span>
+                      </div>
+                      <div style={{ background: "#f1f5f9", borderRadius: 4, height: 10, overflow: "hidden" }}>
+                        <div style={{ width: `${thisPct}%`, height: "100%", background: color, borderRadius: 4, transition: "width 0.6s" }} />
+                      </div>
+                    </div>
+
+                    {/* 저번달 */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8", marginBottom: 3 }}>
+                        <span>{reservStats.prev_month}</span>
+                        <span style={{ fontWeight: 600 }}>{r.prev_month}건</span>
+                      </div>
+                      <div style={{ background: "#f1f5f9", borderRadius: 4, height: 10, overflow: "hidden" }}>
+                        <div style={{ width: `${prevPct}%`, height: "100%", background: `${color}55`, borderRadius: 4, transition: "width 0.6s" }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -443,6 +517,83 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* 피크타임 분석 (ADMIN/OWNER 전용) */}
+        {user && ["ADMIN", "OWNER"].includes(user.role) && (
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b" }}>⏱ 피크타임 분석</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[["week","1주"], ["month","1개월"], ["3month","3개월"]].map(([v, l]) => (
+                  <button key={v} onClick={() => { setAttendPeriod(v); loadAttendStats(v, branch); }} style={{
+                    padding: "4px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    border: attendPeriod === v ? "none" : "1px solid #e2e8f0",
+                    background: attendPeriod === v ? "#2563eb" : "#f8fafc",
+                    color: attendPeriod === v ? "#fff" : "#64748b",
+                  }}>{l}</button>
+                ))}
+              </div>
+            </div>
+
+            {attendStats && (() => {
+              const hours: any[] = attendStats.hours || [];
+              const days: any[] = attendStats.days || [];
+              const maxH = Math.max(...hours.map((h: any) => h.cnt), 1);
+              const maxD = Math.max(...days.map((d: any) => d.cnt), 1);
+              const peakHour = hours.reduce((a: any, b: any) => b.cnt > a.cnt ? b : a, hours[0]);
+
+              return (
+                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : "1fr 1fr", gap: 24 }}>
+                  {/* 시간대별 */}
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 12 }}>
+                      시간대별 입장
+                      {peakHour && <span style={{ marginLeft: 8, color: "#2563eb" }}>피크 {peakHour.hour}시 ({peakHour.cnt}명)</span>}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 80 }}>
+                      {hours.filter((_: any, i: number) => i >= 6 && i <= 23).map((h: any) => (
+                        <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                          <div style={{
+                            width: "100%", borderRadius: "3px 3px 0 0",
+                            height: `${Math.round((h.cnt / maxH) * 60)}px`,
+                            background: h.hour === peakHour?.hour ? "#2563eb" : "#93c5fd",
+                            minHeight: h.cnt > 0 ? 3 : 0,
+                            transition: "height 0.3s",
+                          }} />
+                          {(h.hour % 3 === 0) && <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 요일별 */}
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#64748b", marginBottom: 12 }}>
+                      요일별 입장
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {days.map((d: any) => (
+                        <div key={d.dow} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 20, fontSize: 12, fontWeight: 600, color: d.dow === 0 ? "#ef4444" : d.dow === 6 ? "#3b82f6" : "#475569" }}>{d.name}</div>
+                          <div style={{ flex: 1, background: "#f1f5f9", borderRadius: 4, height: 16, overflow: "hidden" }}>
+                            <div style={{
+                              width: `${Math.round((d.cnt / maxD) * 100)}%`,
+                              height: "100%",
+                              background: d.cnt === maxD ? "#2563eb" : "#93c5fd",
+                              borderRadius: 4,
+                              transition: "width 0.3s",
+                            }} />
+                          </div>
+                          <div style={{ width: 36, fontSize: 12, color: "#64748b", textAlign: "right" }}>{d.cnt}명</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* 관리자 기능 */}
         <div style={{

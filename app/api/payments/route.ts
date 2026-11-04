@@ -59,3 +59,24 @@ export async function GET(req: Request) {
     });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const user = getUserFromRequest(req);
+    const body = await req.json();
+    const { payment_id, product_name, final_amount, payment_method, payment_date, memo } = body;
+
+    if (!payment_id) return NextResponse.json({ success: false, message: "payment_id 필요" });
+    const allowed = ["ADMIN", "OWNER", "DIRECTOR"];
+    if (!allowed.includes(user.role)) return NextResponse.json({ success: false, message: "권한 없음" }, { status: 403 });
+
+    await pool.query(
+      `UPDATE payments SET product_name=?, amount=?, final_amount=?, payment_method=?, payment_date=?, memo=? WHERE payment_id=?`,
+      [product_name, final_amount, final_amount, payment_method, payment_date, memo || null, payment_id]
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: "결제 수정 실패", error });
+  }
+}

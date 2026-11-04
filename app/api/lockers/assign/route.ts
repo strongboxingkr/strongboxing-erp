@@ -23,6 +23,14 @@ export async function POST(req: Request) {
       [branch_name, locker_zone || "A", locker_no, member_id || null, member_name || null, gender || null, start_date || null, end_date || null, memo || null, has_luggage ?? 0]
     );
 
+    // 회원 ID가 있으면 members.locker_no 도 업데이트
+    if (member_id) {
+      await pool.query(
+        `UPDATE members SET locker_no = ? WHERE member_id = ?`,
+        [locker_no, member_id]
+      );
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error });

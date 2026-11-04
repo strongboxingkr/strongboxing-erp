@@ -32,14 +32,16 @@ export async function POST(req: Request) {
       [customer_name || "", phone || "", cleanDatetime, event_type || "예약", status || "예약접수", truncMemo, event_id]
     );
 
-    const date = cleanDatetime.slice(0, 10);
-    const time = cleanDatetime.slice(11, 16);
-
-    await pool.query(
-      `UPDATE naver_reservations SET status = ?, memo = ?
-       WHERE phone = ? AND reservation_date = ? AND reservation_time = ?`,
-      [status || "예약접수", truncMemo, phone || "", date, time]
+    // source_id로 naver_reservations 연동 (전화번호 + 상태 + 메모 모두 반영)
+    const [evRow]: any = await pool.query(
+      `SELECT source_id FROM calendar_events WHERE event_id = ?`, [event_id]
     );
+    if (evRow.length > 0 && evRow[0].source_id) {
+      await pool.query(
+        `UPDATE naver_reservations SET status = ?, memo = ?, phone = ? WHERE source_id = ?`,
+        [status || "예약접수", truncMemo, phone || "", evRow[0].source_id]
+      );
+    }
 
     return NextResponse.json({
       success: true,

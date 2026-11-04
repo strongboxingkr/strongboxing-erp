@@ -117,12 +117,11 @@ export default function NaverCalendarPage() {
     }
   }, [branch, user]);
 
+  const isCancelled = (r: any) => r.status === "취소" || r.status === "예약취소" || r.status === "痍⑥냼";
+
   const selectedRows = rows
     .filter(
-      (r) =>
-        r.start_datetime?.slice(0, 10) === selectedDate &&
-        r.status !== "취소" &&
-        r.status !== "痍⑥냼"
+      (r) => r.start_datetime?.slice(0, 10) === selectedDate
     )
     .sort((a, b) =>
       String(a.start_datetime || "9999-99-99 99:99").localeCompare(
@@ -153,18 +152,14 @@ export default function NaverCalendarPage() {
     const target = toDateKey(date);
 
     return rows.filter(
-      (r) =>
-        r.start_datetime?.slice(0, 10) === target &&
-        r.status !== "취소" &&
-        r.status !== "痍⑥냼"
+      (r) => r.start_datetime?.slice(0, 10) === target && !isCancelled(r)
     ).length;
   };
 
   const getRowsByDate = (date: Date) => {
     const target = toDateKey(date);
-
     return rows.filter(
-      (r) => r.start_datetime?.slice(0, 10) === target && r.status !== "취소" && r.status !== "痍⑥냼"
+      (r) => r.start_datetime?.slice(0, 10) === target && !isCancelled(r)
     );
   };
 
@@ -519,11 +514,10 @@ const getTypeInfo = (r: any) => {
                       padding: 18,
                       borderRadius: 22,
                       cursor: "pointer",
-                      background: "var(--panel)",
+                      background: isCancelled(r) ? "var(--panel2)" : "var(--panel)",
                       border: "1px solid var(--line)",
-                      borderLeft: `7px solid ${getStatusColor(
-                        r.status
-                      )}`,
+                      borderLeft: `7px solid ${isCancelled(r) ? "#94a3b8" : getStatusColor(r.status)}`,
+                      opacity: isCancelled(r) ? 0.6 : 1,
                     }}
                   >
                     <div
@@ -555,10 +549,14 @@ const getTypeInfo = (r: any) => {
                             marginTop: 8,
                             fontSize: 22,
                             fontWeight: 900,
+                            textDecoration: isCancelled(r) ? "line-through" : "none",
+                            color: isCancelled(r) ? "var(--muted)" : undefined,
                           }}
                         >
-                          {r.customer_name ||
-                            "-"}
+                          {r.customer_name || "-"}
+                          {isCancelled(r) && (
+                            <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700, color: "#ef4444", background: "#fee2e2", borderRadius: 6, padding: "2px 8px", verticalAlign: "middle" }}>취소</span>
+                          )}
                         </div>
 
                         <div

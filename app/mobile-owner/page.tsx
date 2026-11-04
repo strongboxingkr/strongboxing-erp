@@ -129,7 +129,7 @@ export default function MobileOwnerPage() {
     try {
       const rRes = await apiFetch("/api/calendar-events");
       const rJson = await rRes.json();
-      setReservations((rJson.rows || []).filter((r: any) => r.start_datetime?.slice(0, 10) === today));
+      setReservations((rJson.rows || []).filter((r: any) => r.start_datetime?.slice(0, 10) === today && !["취소", "예약취소"].includes(r.status)));
     } catch {}
   };
 
@@ -300,6 +300,19 @@ export default function MobileOwnerPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* 월별매출 바로가기 */}
+      <div style={styles.section}>
+        <Link href="/mobile-monthly-sales" style={{ textDecoration: "none" }}>
+          <div style={{ ...styles.card, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#1e293b" }}>📊 월별 매출</div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>날짜별 결제 내역 상세 조회</div>
+            </div>
+            <div style={{ fontSize: 20, color: "#94a3b8" }}>→</div>
+          </div>
+        </Link>
       </div>
 
       {/* 최근 7일 매출 차트 */}
