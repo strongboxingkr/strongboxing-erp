@@ -425,149 +425,108 @@ export default function DashboardPage() {
                 })}
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {/* 상단: 시간대별 막대 + 요일별 가로바 */}
-                <div style={{ display: "grid", gridTemplateColumns: mobile ? "1fr" : attendPeriod !== "today" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 20 }}>
-                  {/* 시간대별 총 입장 */}
-                  <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>시간대별 총 입장</div>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 100 }}>
-                      {attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23).map((h: any) => {
-                        const max = Math.max(...attendStats.hours.filter((x: any) => x.hour >= 10 && x.hour <= 23).map((x: any) => x.cnt), 1);
-                        const heightPct = Math.round((h.cnt / max) * 100);
-                        const isTop = h.cnt === max && max > 0;
-                        return (
-                          <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                            {isTop && h.cnt > 0 && <div style={{ fontSize: 9, fontWeight: 700, color: "#ef4444" }}>{h.cnt}</div>}
-                            <div title={`${h.hour}시: ${h.cnt}명`} style={{
-                              width: "100%", height: `${heightPct}%`, minHeight: h.cnt > 0 ? 4 : 0,
-                              background: isTop ? "#ef4444" : "#93c5fd",
-                              borderRadius: "3px 3px 0 0",
-                            }} />
-                            {(h.hour === 10 || h.hour === 13 || h.hour === 16 || h.hour === 19 || h.hour === 22) && (
-                              <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>
-                            )}
-                          </div>
-                        );
-                      })}
+              (() => {
+                const opHours = attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
+                const peakH = [...opHours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                const peakAvgH = attendPeriod !== "today" ? [...opHours].sort((a: any, b: any) => b.avg - a.avg)[0] : null;
+                const peakDay = [...attendStats.days].sort((a: any, b: any) => b.cnt - a.cnt)[0];
+                const maxCnt = Math.max(...opHours.map((h: any) => h.cnt), 1);
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {/* 요약 카드 3개 */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                      <div style={{ background: "#fef2f2", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
+                        <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 600, marginBottom: 6 }}>🔥 전체 피크</div>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: "#ef4444", lineHeight: 1 }}>{peakH?.hour ?? "-"}시</div>
+                        <div style={{ fontSize: 12, color: "#7f1d1d", marginTop: 4 }}>{peakH?.cnt ?? 0}명</div>
+                      </div>
+                      <div style={{ background: "#eff6ff", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
+                        <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 6 }}>📅 최다 요일</div>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: "#2563eb", lineHeight: 1 }}>{peakDay?.name ?? "-"}요일</div>
+                        <div style={{ fontSize: 12, color: "#1e3a8a", marginTop: 4 }}>{peakDay?.cnt ?? 0}명</div>
+                      </div>
+                      <div style={{ background: attendPeriod !== "today" ? "#fffbeb" : "#f8fafc", borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
+                        <div style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, marginBottom: 6 }}>📊 평균 피크</div>
+                        <div style={{ fontSize: 28, fontWeight: 900, color: "#f59e0b", lineHeight: 1 }}>{peakAvgH ? `${peakAvgH.hour}시` : "-"}</div>
+                        <div style={{ fontSize: 12, color: "#78350f", marginTop: 4 }}>{peakAvgH ? `평균 ${peakAvgH.avg}명/일` : "당일만 해당"}</div>
+                      </div>
                     </div>
-                    {(() => {
-                      const opHours = attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
-                      const top = [...opHours].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                      return top?.cnt > 0 ? <div style={{ marginTop: 6, fontSize: 12, color: "#ef4444", fontWeight: 700 }}>🔥 피크 {top.hour}시 ({top.cnt}명)</div> : null;
-                    })()}
-                  </div>
 
-                  {/* 하루 평균 (당일 제외) */}
-                  {attendPeriod !== "today" && (
-                    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>시간대별 하루 평균</div>
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 100 }}>
-                        {attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23).map((h: any) => {
-                          const max = Math.max(...attendStats.hours.filter((x: any) => x.hour >= 10 && x.hour <= 23).map((x: any) => x.avg), 0.1);
-                          const heightPct = Math.round((h.avg / max) * 100);
-                          const isTop = h.avg === max && max > 0;
+                    {/* 큰 막대 차트 */}
+                    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 14 }}>시간대별 입장 인원</div>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 160 }}>
+                        {opHours.map((h: any) => {
+                          const pct = Math.round((h.cnt / maxCnt) * 100);
+                          const isPeak = peakH && h.hour === peakH.hour && h.cnt > 0;
                           return (
-                            <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                              {isTop && h.avg > 0 && <div style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b" }}>{h.avg}</div>}
-                              <div title={`${h.hour}시 평균: ${h.avg}명`} style={{
-                                width: "100%", height: `${heightPct}%`, minHeight: h.avg > 0 ? 4 : 0,
-                                background: isTop ? "#f59e0b" : "#a7f3d0",
-                                borderRadius: "3px 3px 0 0",
-                              }} />
-                              {(h.hour === 10 || h.hour === 13 || h.hour === 16 || h.hour === 19 || h.hour === 22) && (
-                                <div style={{ fontSize: 9, color: "#94a3b8" }}>{h.hour}시</div>
+                            <div key={h.hour} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                              {h.cnt > 0 && (
+                                <div style={{ fontSize: isPeak ? 11 : 9, fontWeight: 700, color: isPeak ? "#ef4444" : "#64748b" }}>{h.cnt}</div>
                               )}
+                              <div style={{
+                                width: "100%", height: `${pct}%`, minHeight: h.cnt > 0 ? 6 : 2,
+                                background: isPeak ? "#ef4444" : "#93c5fd",
+                                borderRadius: "4px 4px 0 0",
+                                transition: "height 0.4s",
+                              }} />
+                              <div style={{ fontSize: 10, color: isPeak ? "#ef4444" : "#94a3b8", fontWeight: isPeak ? 700 : 400 }}>{h.hour}시</div>
                             </div>
                           );
                         })}
                       </div>
-                      {(() => {
-                        const opHours = attendStats.hours.filter((h: any) => h.hour >= 10 && h.hour <= 23);
-                        const top = [...opHours].sort((a: any, b: any) => b.avg - a.avg)[0];
-                        return top?.avg > 0 ? <div style={{ marginTop: 6, fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>📊 평균 피크 {top.hour}시 (평균 {top.avg}명/일)</div> : null;
-                      })()}
                     </div>
-                  )}
 
-                  {/* 요일별 */}
-                  <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>요일별 입장</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                      {attendStats.days.map((d: any) => {
-                        const max = Math.max(...attendStats.days.map((x: any) => x.cnt), 1);
-                        const p = Math.round((d.cnt / max) * 100);
-                        const dowColor = d.dow === 0 ? "#ef4444" : d.dow === 6 ? "#3b82f6" : "#2563eb";
-                        return (
-                          <div key={d.dow} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 20, fontSize: 12, fontWeight: 700, color: dowColor }}>{d.name}</div>
-                            <div style={{ flex: 1, background: "#e2e8f0", borderRadius: 4, height: 16, overflow: "hidden" }}>
-                              <div style={{ width: `${p}%`, height: "100%", background: dowColor, borderRadius: 4, transition: "width 0.4s" }} />
-                            </div>
-                            <div style={{ width: 36, fontSize: 12, fontWeight: 700, color: "#374151", textAlign: "right" }}>{d.cnt}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {(() => {
-                      const top = [...attendStats.days].sort((a: any, b: any) => b.cnt - a.cnt)[0];
-                      return top?.cnt > 0 ? <div style={{ marginTop: 8, fontSize: 12, color: "#2563eb", fontWeight: 700 }}>📅 최다 {top.name}요일 ({top.cnt}명)</div> : null;
-                    })()}
-                  </div>
-                </div>
-
-                {/* 요일×시간대 히트맵 */}
-                {attendStats.heatmap && (
-                  <div style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 12px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 12 }}>요일 × 시간대 히트맵</div>
-                    {(() => {
-                      const opHours = Array.from({ length: 14 }, (_, i) => i + 10); // 10~23
-                      const allCounts = attendStats.heatmap.flatMap((d: any) => opHours.map((h: number) => d.hours[h]?.cnt || 0));
-                      const maxVal = Math.max(...allCounts, 1);
-                      return (
-                        <div style={{ overflowX: "auto" }}>
-                          {/* 시간 헤더 */}
-                          <div style={{ display: "flex", marginLeft: 28, marginBottom: 4 }}>
-                            {opHours.map(h => (
-                              <div key={h} style={{ flex: 1, fontSize: 9, color: "#94a3b8", textAlign: "center", minWidth: 20 }}>{h}</div>
-                            ))}
-                          </div>
-                          {/* 요일 행 */}
+                    {/* 요일별 피크시간 한줄 목록 */}
+                    {attendStats.heatmap && (
+                      <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 14px" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 12 }}>요일별 피크 시간대</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {attendStats.heatmap.map((d: any) => {
+                            const opH = Array.from({ length: 14 }, (_, i) => i + 10);
+                            const dayCounts = opH.map((h: number) => ({ hour: h, cnt: d.hours[h]?.cnt || 0 }));
+                            const dayMax = Math.max(...dayCounts.map((x: any) => x.cnt), 1);
+                            const dayPeak = [...dayCounts].sort((a: any, b: any) => b.cnt - a.cnt)[0];
                             const dowColor = d.dow === 0 ? "#ef4444" : d.dow === 6 ? "#3b82f6" : "#374151";
-                            const peakH = opHours.reduce((best: number, h: number) =>
-                              (d.hours[h]?.cnt || 0) > (d.hours[best]?.cnt || 0) ? h : best, opHours[0]);
+                            const top3 = [...dayCounts].sort((a: any, b: any) => b.cnt - a.cnt).filter((x: any) => x.cnt > 0).slice(0, 3);
                             return (
-                              <div key={d.dow} style={{ display: "flex", alignItems: "center", marginBottom: 3 }}>
-                                <div style={{ width: 24, fontSize: 11, fontWeight: 700, color: dowColor, flexShrink: 0 }}>{d.name}</div>
-                                <div style={{ display: "flex", flex: 1, gap: 2 }}>
-                                  {opHours.map(h => {
-                                    const cnt = d.hours[h]?.cnt || 0;
-                                    const intensity = Math.round((cnt / maxVal) * 100);
-                                    const isPeak = h === peakH && cnt > 0;
+                              <div key={d.dow} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ width: 24, fontSize: 13, fontWeight: 800, color: dowColor, flexShrink: 0 }}>{d.name}</div>
+                                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 2, height: 36 }}>
+                                  {dayCounts.map((h: any) => {
+                                    const hp = Math.round((h.cnt / dayMax) * 100);
+                                    const isPeak = h.hour === dayPeak.hour && h.cnt > 0;
                                     return (
-                                      <div key={h} title={`${d.name}요일 ${h}시: ${cnt}명`} style={{
-                                        flex: 1, height: 22, minWidth: 20, borderRadius: 3,
-                                        background: cnt === 0 ? "#e2e8f0"
-                                          : `rgba(37,99,235,${0.1 + intensity * 0.009})`,
-                                        border: isPeak ? "2px solid #ef4444" : "none",
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                      }}>
-                                        {cnt > 0 && <span style={{ fontSize: 8, fontWeight: 700, color: intensity > 60 ? "#fff" : "#1e3a8a" }}>{cnt}</span>}
-                                      </div>
+                                      <div key={h.hour} title={`${h.hour}시: ${h.cnt}명`} style={{
+                                        flex: 1, height: `${hp}%`, minHeight: h.cnt > 0 ? 3 : 1,
+                                        background: isPeak ? dowColor : `${dowColor}44`,
+                                        borderRadius: "2px 2px 0 0",
+                                      }} />
                                     );
                                   })}
+                                </div>
+                                <div style={{ flexShrink: 0, textAlign: "right" }}>
+                                  {top3.length > 0 ? (
+                                    <div style={{ fontSize: 12, color: "#374151" }}>
+                                      {top3.map((x: any, i: number) => (
+                                        <span key={x.hour} style={{ marginLeft: i > 0 ? 6 : 0, color: i === 0 ? dowColor : "#94a3b8", fontWeight: i === 0 ? 700 : 400 }}>
+                                          {x.hour}시{i === 0 ? `(${x.cnt}명)` : ""}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span style={{ fontSize: 11, color: "#cbd5e1" }}>데이터 없음</span>
+                                  )}
                                 </div>
                               </div>
                             );
                           })}
-                          <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 8 }}>빨간 테두리 = 해당 요일 최다 시간대</div>
                         </div>
-                      );
-                    })()}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()
             )}
           </div>
         )}
