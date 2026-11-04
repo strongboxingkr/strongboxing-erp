@@ -820,7 +820,7 @@ ${
                     className="input"
                     type="number"
                     placeholder="결제금액 (원)"
-                    style={{ flex: "1 1 140px" }}
+                    style={{ flex: "1 1 140px", maxWidth: 200 }}
                     value={(form as any).payment_amount || ""}
                     onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
                   />
