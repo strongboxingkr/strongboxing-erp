@@ -695,6 +695,7 @@ ${
               display: "grid",
               gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
               gap: 14,
+              alignItems: "start",
             }}
           >
             {isAdminOrOwner ? (
@@ -813,26 +814,33 @@ ${
             {!isEdit && (
               <>
                 <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>💳 결제 정보 (선택)</div>
-                <input
-                  className="input"
-                  type="number"
-                  placeholder="결제금액 (원)"
-                  value={(form as any).payment_amount || ""}
-                  onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
-                />
-                <div style={{ display: "flex", gap: 8 }}>
-                  {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
-                    <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ flex: 1, fontSize: 12 }}
-                      onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
-                  ))}
+                {/* 결제금액 + 수단 + 결제일 한 줄 */}
+                <div style={{ gridColumn: "1 / 5", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    className="input"
+                    type="number"
+                    placeholder="결제금액 (원)"
+                    style={{ flex: "1 1 140px" }}
+                    value={(form as any).payment_amount || ""}
+                    onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
+                  />
+                  <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
+                    {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
+                      <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ fontSize: 12, padding: "0 14px" }}
+                        onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
+                    ))}
+                  </div>
+                  <div style={{ flex: "0 0 auto" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
+                    <input
+                      className="input"
+                      type="date"
+                      style={{ width: 148 }}
+                      value={(form as any).payment_date_new || today}
+                      onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
+                    />
+                  </div>
                 </div>
-                <input
-                  className="input"
-                  type="date"
-                  title="결제일"
-                  value={(form as any).payment_date_new || today}
-                  onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
-                />
               </>
             )}
           </div>
