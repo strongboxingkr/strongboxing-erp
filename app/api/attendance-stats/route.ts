@@ -16,24 +16,18 @@ export async function GET(req: Request) {
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
     let startDate: string;
-    let endDate: string = todayStr;
-    let totalDays = 1;
 
     if (period === "today") {
       startDate = todayStr;
-      totalDays = 1;
     } else if (period === "week") {
       const d = new Date(now); d.setDate(d.getDate() - 7);
       startDate = d.toISOString().slice(0, 10);
-      totalDays = 7;
     } else if (period === "3month") {
       const d = new Date(now); d.setMonth(d.getMonth() - 3);
       startDate = d.toISOString().slice(0, 10);
-      totalDays = 90;
     } else {
-      const d = new Date(now); d.setMonth(d.getMonth() - 1);
-      startDate = d.toISOString().slice(0, 10);
-      totalDays = 30;
+      // 당월: 이번 달 1일부터 오늘까지
+      startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
     }
 
     const params: any[] = [startDate];
@@ -61,6 +55,10 @@ export async function GET(req: Request) {
     );
 
     // 시간대별 카운트 (체류 기반)
+    // 실제 데이터가 있는 날짜 수로 평균 계산
+    const distinctDays = new Set(pairRows.map((r: any) => String(r.visit_date))).size;
+    const totalDays = period === "today" ? 1 : Math.max(distinctDays, 1);
+
     const hourCounts = Array(24).fill(0);
     const dowCounts = Array(7).fill(0);
     // 히트맵: dowHourCounts[dow][hour]

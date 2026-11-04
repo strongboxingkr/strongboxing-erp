@@ -343,13 +343,13 @@ export default function DashboardPage() {
                   시간대 · 요일 · 평균 입장 현황
                   {attendStats && attendPeriod !== "today" && (
                     <span style={{ marginLeft: 6, color: "#2563eb" }}>
-                      · 하루 평균 = 기간 총 입장 ÷ {attendStats.totalDays}일
+                      · 하루 평균 = 총 입장 ÷ 실출석일 {attendStats.totalDays}일
                     </span>
                   )}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {[["당일", "today"], ["1주", "week"], ["1개월", "month"], ["3개월", "3month"]].map(([label, val]) => (
+                {[["당일", "today"], ["1주", "week"], ["당월", "month"], ["3개월", "3month"]].map(([label, val]) => (
                   <button key={val} onClick={() => { setAttendPeriod(val); loadAttendStats(val, branch); }} style={{
                     padding: "5px 12px", borderRadius: 7, border: "1px solid #e2e8f0",
                     background: attendPeriod === val ? "#2563eb" : "#f8fafc",
