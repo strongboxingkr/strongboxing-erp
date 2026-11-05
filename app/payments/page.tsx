@@ -21,6 +21,8 @@ export default function PaymentsPage() {
   const [user, setUser] = useState<any>(null);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: today, memo: "" });
+  const [guestModal, setGuestModal] = useState(false);
+  const [guestForm, setGuestForm] = useState({ branch_name: "", product_name: "", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" });
 
   const [branch, setBranch] = useState("전체");
   const [memberSearch, setMemberSearch] = useState("");
@@ -243,6 +245,9 @@ export default function PaymentsPage() {
 
           <button className="btn secondary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={loadPayments}>
             새로고침
+          </button>
+          <button className="btn" style={{ padding: "6px 16px", fontSize: 13, background: "#f59e0b" }} onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }}>
+            비회원 결제
           </button>
         </div>
       </div>
@@ -663,6 +668,53 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+      {/* 비회원 결제 모달 */}
+      {guestModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card" style={{ width: 420, maxWidth: "95vw", borderRadius: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0 }}>비회원 결제</h2>
+              <button onClick={() => setGuestModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              {isAdminOrOwner && (
+                <select className="input" value={guestForm.branch_name} onChange={e => setGuestForm({ ...guestForm, branch_name: e.target.value })}>
+                  <option value="">지점 선택</option>
+                  {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
+                </select>
+              )}
+              <select className="input" value={guestForm.product_name} onChange={e => {
+                const p = products.find((p: any) => p.option_name === e.target.value);
+                setGuestForm({ ...guestForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : guestForm.final_amount });
+              }}>
+                <option value="">상품 선택</option>
+                {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+              </select>
+              <input className="input" type="number" placeholder="결제금액" value={guestForm.final_amount} onChange={e => setGuestForm({ ...guestForm, final_amount: e.target.value })} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {(["CARD", "CASH", "TRANSFER"] as const).map(m => (
+                  <button key={m} className={guestForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setGuestForm({ ...guestForm, payment_method: m })}>{METHOD_LABEL[m]}</button>
+                ))}
+              </div>
+              <input className="input" type="date" value={guestForm.payment_date} onChange={e => setGuestForm({ ...guestForm, payment_date: e.target.value })} />
+              <textarea className="input" placeholder="메모 (선택)" value={guestForm.memo} onChange={e => setGuestForm({ ...guestForm, memo: e.target.value })} style={{ minHeight: 60 }} />
+              <button className="btn" style={{ fontSize: 16 }} onClick={async () => {
+                const branchToUse = isAdminOrOwner ? guestForm.branch_name : user?.branch_name;
+                if (!branchToUse) return alert("지점을 선택해주세요.");
+                if (!guestForm.product_name) return alert("상품을 선택해주세요.");
+                if (!guestForm.final_amount) return alert("금액을 입력해주세요.");
+                const res = await apiFetch("/api/payments/add-guest", {
+                  method: "POST",
+                  body: JSON.stringify({ ...guestForm, branch_name: branchToUse, final_amount: Number(guestForm.final_amount) }),
+                });
+                const json = await res.json();
+                if (json.success) { alert("비회원 결제 완료!"); setGuestModal(false); loadPayments(); }
+                else alert(json.message || "결제 실패");
+              }}>결제 등록</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 결제 수정 모달 */}
       {editTarget && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
