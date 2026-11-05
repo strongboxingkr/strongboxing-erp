@@ -57,7 +57,7 @@ export default function DirectorDashboardPage() {
         if (!m.end_date) return false;
         const end = new Date(m.end_date); end.setHours(0,0,0,0);
         return end >= todayDate && end <= threeDays;
-      });
+      }).sort((a: any, b: any) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime());
       setExpiring(expRows.slice(0, 10));
 
     } catch (e) {
