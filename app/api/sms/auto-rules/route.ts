@@ -5,7 +5,14 @@ import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 export async function GET(req: Request) {
   try {
     const [rules]: any = await pool.query(
-      `SELECT * FROM sms_auto_rules ORDER BY rule_id ASC`
+      `SELECT *,
+        CASE
+          WHEN rule_type LIKE 'EXPIRING_%' AND rule_type != 'EXPIRING_TODAY' THEN 1
+          WHEN rule_type = 'EXPIRING_TODAY' THEN 2
+          WHEN rule_type = 'LOW_COUNT' THEN 3
+          ELSE 4
+        END AS sort_order
+       FROM sms_auto_rules ORDER BY sort_order ASC, rule_id ASC`
     );
     return NextResponse.json({ success: true, rows: rules });
   } catch (error) {
