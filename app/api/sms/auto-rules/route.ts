@@ -22,7 +22,6 @@ export async function GET(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const user = getUserFromRequest(req);
     const body = await req.json();
     const { rule_id, message, use_yn, days, count } = body;
 
