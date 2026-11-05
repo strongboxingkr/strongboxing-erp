@@ -17,7 +17,7 @@ export async function GET() {
       if (rule.rule_type === "EXPIRING_3DAYS" || rule.rule_type === "EXPIRING_2DAYS") {
         const days = rule.days ?? (rule.rule_type === "EXPIRING_3DAYS" ? 3 : 2);
         const [rows]: any = await pool.query(`
-          SELECT branch_name, name, phone
+          SELECT branch_name, name, phone, end_date, remaining_count
           FROM members
           WHERE status = 'ACTIVE'
           AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL ? DAY)
@@ -27,7 +27,7 @@ export async function GET() {
 
       if (rule.rule_type === "EXPIRING_TODAY") {
         const [rows]: any = await pool.query(`
-          SELECT branch_name, name, phone
+          SELECT branch_name, name, phone, end_date, remaining_count
           FROM members
           WHERE status != 'REST'
           AND DATE(end_date) = CURDATE()
@@ -38,7 +38,7 @@ export async function GET() {
       if (rule.rule_type === "LOW_COUNT") {
         const count = rule.count_threshold ?? 3;
         const [rows]: any = await pool.query(`
-          SELECT branch_name, name, phone
+          SELECT branch_name, name, phone, end_date, remaining_count
           FROM members
           WHERE status = 'ACTIVE'
           AND pass_type = 'COUNT'
@@ -92,7 +92,11 @@ export async function GET() {
             rule.rule_type,
             t.name,
             t.phone,
-            rule.message.replace(/{name}/g, t.name || "").replace(/{branch}/g, t.branch_name || ""),
+            rule.message
+            .replace(/{name}/g, t.name || "")
+            .replace(/{branch}/g, t.branch_name || "")
+            .replace(/{end_date}/g, t.end_date ? String(t.end_date).slice(0, 10) : "")
+            .replace(/{remaining_count}/g, t.remaining_count != null ? String(t.remaining_count) : ""),
           ]
         );
 

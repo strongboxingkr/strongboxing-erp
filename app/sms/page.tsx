@@ -321,7 +321,7 @@ export default function SmsPage() {
             </span>
           </div>
           <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: 12, padding: "14px 18px", fontSize: 13, color: "#92400e", lineHeight: 1.6 }}>
-            💡 자동 문자는 매일 오전 9시에 발송됩니다. 이미 오늘 발송된 번호는 중복 발송되지 않습니다. 문자 내용의 <b>{"{name}"}</b>은 회원 이름으로 자동 치환됩니다.
+            💡 자동 문자는 매일 오전 9시에 발송됩니다. 이미 오늘 발송된 번호는 중복 발송되지 않습니다. 문자 내용의 <b>{"{name}"}</b> 회원 이름, <b>{"{end_date}"}</b> 만료일, <b>{"{remaining_count}"}</b> 잔여 횟수로 자동 치환됩니다.
           </div>
 
           <div className="card">
