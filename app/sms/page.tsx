@@ -291,17 +291,20 @@ export default function SmsPage() {
   <AppShell title="문자 관리">
     <style>{isMobileStyle}</style>
       {/* 탭 */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+      <div style={{ display: "flex", borderBottom: "2px solid #E5E7EB", marginBottom: 24, gap: 0 }}>
         {[{ key: "auto", label: "자동발송 설정" }, { key: "send", label: "문자 발송" }].map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
             style={{
-              padding: "10px 22px", borderRadius: 10, cursor: "pointer",
-              fontWeight: 700, fontSize: 14,
-              border: tab === t.key ? "2px solid var(--primary)" : "2px solid var(--border)",
-              background: tab === t.key ? "var(--primary)" : "var(--card)",
-              color: tab === t.key ? "#fff" : "var(--muted)",
+              padding: "10px 22px", cursor: "pointer",
+              fontWeight: tab === t.key ? 700 : 500,
+              fontSize: 14,
+              border: "none",
+              borderBottom: tab === t.key ? "2px solid #2563eb" : "2px solid transparent",
+              marginBottom: -2,
+              background: "transparent",
+              color: tab === t.key ? "#2563eb" : "#9CA3AF",
               transition: "all .15s",
             }}
           >{t.label}</button>
@@ -333,18 +336,18 @@ export default function SmsPage() {
               const curCount = editCounts[rule.rule_id] ?? rule.count_threshold ?? 3;
               const isActive = rule.use_yn === "Y";
               return (
-              <div key={rule.rule_id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 20, marginBottom: 20 }}>
+              <div key={rule.rule_id} style={{ borderBottom: "1px solid #F3F4F6", padding: "16px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: "var(--fg)" }}>{ruleTypeLabel[rule.rule_type] || "자동 발송"}</div>
-                    <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 5, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>{ruleTypeLabel[rule.rule_type] || "자동 발송"}</div>
+                    <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                       {isExpiring ? (
                         <>
                           <span>회원권 종료</span>
                           <select
                             value={curDays}
                             onChange={e => setEditDays({ ...editDays, [rule.rule_id]: Number(e.target.value) })}
-                            style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}
+                            style={{ fontSize: 13, padding: "2px 8px", borderRadius: 6, border: "1px solid #93C5FD", background: "#EFF6FF", color: "#1D4ED8", cursor: "pointer", fontWeight: 600 }}
                           >
                             {[1,2,3,5,7].map(d => <option key={d} value={d}>{d}일</option>)}
                           </select>
@@ -356,7 +359,7 @@ export default function SmsPage() {
                           <select
                             value={curCount}
                             onChange={e => setEditCounts({ ...editCounts, [rule.rule_id]: Number(e.target.value) })}
-                            style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}
+                            style={{ fontSize: 13, padding: "2px 8px", borderRadius: 6, border: "1px solid #93C5FD", background: "#EFF6FF", color: "#1D4ED8", cursor: "pointer", fontWeight: 600 }}
                           >
                             {[1,2,3,4,5].map(c => <option key={c} value={c}>{c}회</option>)}
                           </select>
@@ -370,14 +373,16 @@ export default function SmsPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                     <button
                       onClick={() => setOpenMsgId(openMsgId === rule.rule_id ? null : rule.rule_id)}
-                      style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 14px", cursor: "pointer", whiteSpace: "nowrap" }}
+                      style={{ fontSize: 13, fontWeight: 500, color: "#374151", background: "#fff", border: "1px solid #E5E7EB", borderRadius: 8, padding: "6px 14px", cursor: "pointer", whiteSpace: "nowrap" }}
                     >문자 내용 {openMsgId === rule.rule_id ? "▴" : "▾"}</button>
                     <span style={{
                       display: "inline-flex", alignItems: "center", gap: 5,
-                      fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-                      color: isActive ? "#16a34a" : "var(--muted)",
+                      fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                      padding: "3px 10px", borderRadius: 999,
+                      background: isActive ? "#F0FDF4" : "#F3F4F6",
+                      color: isActive ? "#16a34a" : "#9CA3AF",
                     }}>
-                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor", display: "inline-block", flexShrink: 0 }} />
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor", display: "inline-block", flexShrink: 0 }} />
                       {isActive ? "활성" : "비활성"}
                     </span>
                     <label style={{ position: "relative", display: "inline-block", width: 48, height: 26, flexShrink: 0 }}>
@@ -385,7 +390,7 @@ export default function SmsPage() {
                         style={{ opacity: 0, width: 0, height: 0 }} />
                       <span onClick={() => toggleRule(rule, isActive ? "N" : "Y")} style={{
                         position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
-                        background: isActive ? "#22c55e" : "#d1d5db", transition: "background .2s"
+                        background: isActive ? "#22c55e" : "#D1D5DB", transition: "background .2s"
                       }}>
                         <span style={{
                           position: "absolute", width: 20, height: 20, top: 3, borderRadius: "50%",
@@ -397,17 +402,16 @@ export default function SmsPage() {
                   </div>
                 </div>
                 {openMsgId === rule.rule_id && (
-                  <div style={{ marginTop: 14, background: "var(--panel2)", borderRadius: 10, padding: "14px 16px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", marginBottom: 10 }}>발송 문자 내용</div>
+                  <div style={{ marginTop: 12, background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 10, padding: "14px 16px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", marginBottom: 10 }}>발송 문자 내용</div>
                     <textarea
                       value={editMessages[rule.rule_id] || ""}
                       onChange={e => setEditMessages({ ...editMessages, [rule.rule_id]: e.target.value })}
-                      className="input"
-                      style={{ width: "100%", minHeight: 110, resize: "vertical", fontSize: 13, lineHeight: 1.7 }}
+                      style={{ width: "100%", minHeight: 110, resize: "vertical", fontSize: 13, lineHeight: 1.7, padding: "10px 12px", border: "1px solid #E5E7EB", borderRadius: 8, background: "#fff", color: "#111827", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
                     />
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 13, fontWeight: 600, padding: "8px 20px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}>닫기</button>
-                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 13, fontWeight: 700, padding: "8px 20px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer" }}>저장</button>
+                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 13, fontWeight: 600, padding: "8px 20px", borderRadius: 8, border: "1px solid #E5E7EB", background: "#F3F4F6", color: "#374151", cursor: "pointer" }}>닫기</button>
+                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 13, fontWeight: 700, padding: "8px 20px", borderRadius: 8, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer" }}>저장</button>
                     </div>
                   </div>
                 )}
