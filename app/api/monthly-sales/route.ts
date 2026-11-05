@@ -19,6 +19,7 @@ export async function GET(req: Request) {
       `
       SELECT
         DATE_FORMAT(p.payment_date, '%Y-%m-%d') AS sale_date,
+        MIN(DAY(p.payment_date)) AS sale_day,
         MIN(DAYOFWEEK(p.payment_date)) AS dow,
         IFNULL(SUM(CASE WHEN p.payment_method = 'CASH' THEN p.final_amount ELSE 0 END), 0) AS cash_amount,
         IFNULL(SUM(CASE WHEN p.payment_method = 'CARD' THEN p.final_amount ELSE 0 END), 0) AS card_amount,

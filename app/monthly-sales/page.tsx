@@ -145,14 +145,14 @@ export default function MonthlySalesPage() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>해당 월에 결제 내역이 없습니다.</td></tr>
                 ) : rows.map(r => {
-                  const d = new Date(r.sale_date);
-                  const day = d.getDate();
-                  const dow = d.getDay();
-                  const isSelected = selectedDate === r.sale_date?.slice(0, 10);
+                  const day = Number(r.sale_day);
+                  const dow = Number(r.dow) - 1; // MySQL: 1=일,2=월... → 0=일,1=월...
+                  const dateStr = r.sale_date;
+                  const isSelected = selectedDate === dateStr;
                   return (
                     <tr
-                      key={r.sale_date}
-                      onClick={() => loadDetail(r.sale_date?.slice(0, 10))}
+                      key={dateStr}
+                      onClick={() => loadDetail(dateStr)}
                       style={{
                         cursor: "pointer",
                         background: isSelected ? "rgba(59,130,246,0.12)" : undefined,
@@ -162,7 +162,7 @@ export default function MonthlySalesPage() {
                       onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = ""; }}
                     >
                       <td style={{ ...td, fontWeight: 700, color: isSelected ? "#3b82f6" : undefined }}>{day}일</td>
-                      <td style={{ ...td, color: dow === 0 ? "#ef4444" : dow === 6 ? "#3b82f6" : undefined }}>{DAYS[dow]}</td>
+                      <td style={{ ...td, color: dow === 0 ? "#ef4444" : dow === 6 ? "#3b82f6" : undefined }}>{DAYS[dow] ?? ""}</td>
                       <td style={td}>{Number(r.cash_amount) > 0 ? fmt(r.cash_amount) : "-"}</td>
                       <td style={td}>{Number(r.card_amount) > 0 ? fmt(r.card_amount) : "-"}</td>
                       <td style={td}>{Number(r.transfer_amount) > 0 ? fmt(r.transfer_amount) : "-"}</td>

@@ -121,16 +121,16 @@ export default function MobileMonthlySalesPage() {
         ) : rows.length === 0 ? (
           <div style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>결제 내역 없음</div>
         ) : rows.map(r => {
-          const d = new Date(r.sale_date);
-          const day = d.getDate();
-          const dow = d.getDay();
-          const isSelected = selectedDate === r.sale_date?.slice(0, 10);
+          const day = Number(r.sale_day);
+          const dow = Number(r.dow) - 1;
+          const dateStr = r.sale_date;
+          const isSelected = selectedDate === dateStr;
 
           return (
-            <div key={r.sale_date}>
+            <div key={dateStr}>
               {/* 날짜 행 */}
               <div
-                onClick={() => loadDetail(r.sale_date?.slice(0, 10))}
+                onClick={() => loadDetail(dateStr)}
                 style={{
                   background: isSelected ? "#eff6ff" : "#fff",
                   borderRadius: isSelected ? "12px 12px 0 0" : 12,
