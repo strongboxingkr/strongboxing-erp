@@ -280,7 +280,7 @@ export default function MembersPage() {
     const countMatch = productName.match(/(\d+)\s*회/);
     const countFromName = countMatch ? parseInt(countMatch[1]) : 0;
     const finalCount = countValue || countFromName;
-    const countMonths = passType === "COUNT" ? Math.ceil(finalCount / 12) || 1 : 0;
+    const countMonths = passType === "COUNT" ? (monthMatch ? months : Math.ceil(finalCount / 12) || 1) : 0;
 
     setForm({
       ...form,
