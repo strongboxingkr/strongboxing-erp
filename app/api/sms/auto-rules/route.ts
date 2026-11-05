@@ -27,19 +27,24 @@ export async function PUT(req: Request) {
 
     if (!rule_id) return NextResponse.json({ success: false, message: "rule_id 필요" });
 
-    // 모든 역할 전체 수정 가능
-    const fields: string[] = [];
-    const values: any[] = [];
+    // message / use_yn 업데이트 (항상 존재하는 컬럼)
+    const baseFields: string[] = [];
+    const baseValues: any[] = [];
+    if (message !== undefined) { baseFields.push("message = ?"); baseValues.push(message); }
+    if (use_yn !== undefined) { baseFields.push("use_yn = ?"); baseValues.push(use_yn); }
 
-    if (message !== undefined) { fields.push("message = ?"); values.push(message); }
-    if (use_yn !== undefined) { fields.push("use_yn = ?"); values.push(use_yn); }
-    if (days !== undefined) { fields.push("days = ?"); values.push(days); }
-    if (count !== undefined) { fields.push("count_threshold = ?"); values.push(count); }
+    if (baseFields.length > 0) {
+      baseValues.push(rule_id);
+      await pool.query(`UPDATE sms_auto_rules SET ${baseFields.join(", ")} WHERE rule_id = ?`, baseValues);
+    }
 
-    if (fields.length === 0) return NextResponse.json({ success: false, message: "수정할 항목 없음" });
-
-    values.push(rule_id);
-    await pool.query(`UPDATE sms_auto_rules SET ${fields.join(", ")} WHERE rule_id = ?`, values);
+    // days / count_threshold 업데이트 (컬럼 없으면 무시)
+    if (days !== undefined) {
+      try { await pool.query(`UPDATE sms_auto_rules SET days = ? WHERE rule_id = ?`, [days, rule_id]); } catch {}
+    }
+    if (count !== undefined) {
+      try { await pool.query(`UPDATE sms_auto_rules SET count_threshold = ? WHERE rule_id = ?`, [count, rule_id]); } catch {}
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

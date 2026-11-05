@@ -14,13 +14,14 @@ export async function GET() {
     for (const rule of rules) {
       let targets: any[] = [];
 
-      if (rule.rule_type === "EXPIRING_3DAYS") {
+      if (rule.rule_type === "EXPIRING_3DAYS" || rule.rule_type === "EXPIRING_2DAYS") {
+        const days = rule.days ?? (rule.rule_type === "EXPIRING_3DAYS" ? 3 : 2);
         const [rows]: any = await pool.query(`
           SELECT branch_name, name, phone
           FROM members
           WHERE status = 'ACTIVE'
-          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL 3 DAY)
-        `);
+          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL ? DAY)
+        `, [days]);
         targets = rows;
       }
 
@@ -34,24 +35,15 @@ export async function GET() {
         targets = rows;
       }
 
-      if (rule.rule_type === "EXPIRING_2DAYS") {
-        const [rows]: any = await pool.query(`
-          SELECT branch_name, name, phone
-          FROM members
-          WHERE status != 'REST'
-          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL 2 DAY)
-        `);
-        targets = rows;
-      }
-
       if (rule.rule_type === "LOW_COUNT") {
+        const count = rule.count_threshold ?? 3;
         const [rows]: any = await pool.query(`
           SELECT branch_name, name, phone
           FROM members
           WHERE status = 'ACTIVE'
           AND pass_type = 'COUNT'
-          AND remaining_count <= 3
-        `);
+          AND remaining_count <= ?
+        `, [count]);
         targets = rows;
       }
 

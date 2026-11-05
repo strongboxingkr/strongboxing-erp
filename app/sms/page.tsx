@@ -425,27 +425,38 @@ export default function SmsPage() {
               <span style={{ fontSize: 17, fontWeight: 700, color: "#111827" }}>오늘 자동 발송 현황</span>
               <span style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 400, marginLeft: 8 }}>{todayStr}</span>
             </div>
-            {todayLogsByBranch.filter(b => !isAdminOrOwnerUser ? b.branch === user?.branch_name : true).map((b, i, arr) => (
-              <div key={b.branch} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < arr.length - 1 ? "1px solid #F3F4F6" : "none" }}>
-                <div>
+            {todayLogsByBranch.filter(b => !isAdminOrOwnerUser ? b.branch === user?.branch_name : true).map((b, i, arr) => {
+              const activeRuleTypes = new Set(autoRules.filter(r => r.use_yn === "Y").map((r: any) => r.rule_type));
+              const activeLogs = b.logs.filter((l: any) => activeRuleTypes.has(l.target_type));
+              const ruleGroups: Record<string, number> = {};
+              activeLogs.forEach((l: any) => {
+                const label = ruleTypeLabel[l.target_type] || l.target_type;
+                ruleGroups[label] = (ruleGroups[label] || 0) + 1;
+              });
+              const groupEntries = Object.entries(ruleGroups);
+              return (
+              <div key={b.branch} style={{ padding: "14px 0", borderBottom: i < arr.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>{b.branch}</div>
-                  <div style={{ fontSize: 13, color: "#9CA3AF", marginTop: 3 }}>
-                    {b.logs.length > 0 ? [...new Set(b.logs.map((l: any) => ruleTypeLabel[l.target_type] || l.target_type))].join(", ") : "해당 없음"}
+                  <div style={{ fontWeight: 700, fontSize: 15, color: activeLogs.length > 0 ? "#2563eb" : "#9CA3AF" }}>
+                    {activeLogs.length > 0 ? `총 ${activeLogs.length}명` : "0명"}
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: b.logs.length > 0 ? "#2563eb" : "#9CA3AF" }}>
-                    {b.logs.length > 0 ? `${b.logs.length}명 발송` : "0명"}
+                {groupEntries.length > 0 ? (
+                  <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                    {groupEntries.map(([label, count]) => (
+                      <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                        <span style={{ color: "#6B7280" }}>· {label}</span>
+                        <span style={{ color: "#2563eb", fontWeight: 600 }}>{count}명</span>
+                      </div>
+                    ))}
                   </div>
-                  <div style={{ fontSize: 13, color: "#9CA3AF", marginTop: 3 }}>
-                    {b.logs.length > 0 ? b.logs[0]?.created_at?.slice(11, 16) : "해당 없음"}
-                  </div>
-                </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: "#9CA3AF", marginTop: 4 }}>{b.logs.length > 0 ? "활성 규칙 발송 없음" : "해당 없음"}</div>
+                )}
               </div>
-            ))}
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #F3F4F6", fontSize: 12, color: "#9CA3AF", textAlign: "center" }}>
-              관장은 자기 지점 발송 현황만 조회 가능 · 토글·타이밍 변경은 저장 버튼 클릭 필요
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
