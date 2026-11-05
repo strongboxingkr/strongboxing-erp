@@ -895,6 +895,19 @@ export default function MemberDetailPage() {
                           >
                             취소
                           </button>
+                          <button
+                            className="btn"
+                            style={{ fontSize: 11, padding: "3px 8px", background: "#ef4444" }}
+                            onClick={async () => {
+                              if (!confirm(`${p.product_name} 결제를 완전 삭제할까요?\n삭제 후 복구 불가합니다.`)) return;
+                              const res = await apiFetch(`/api/payments/delete?payment_id=${p.payment_id}`, { method: "DELETE" });
+                              const json = await res.json();
+                              if (json.success) load();
+                              else alert(json.message || "삭제 실패");
+                            }}
+                          >
+                            삭제
+                          </button>
                         </>
                       )}
                     </div>

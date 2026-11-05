@@ -63,6 +63,7 @@ const estimateCost = (count: number, message: string) => {
 
 export default function SmsPage() {
   const [user, setUser] = useState<any>(null);
+  const [tab, setTab] = useState<"send" | "auto">("send");
   const [branchName, setBranchName] = useState("");
   const [targetType, setTargetType] = useState("BRANCH_MEMBERS");
   const [targets, setTargets] = useState<any[]>([]);
@@ -71,6 +72,11 @@ export default function SmsPage() {
   const [testPhone, setTestPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [targetSearch, setTargetSearch] = useState("");
+
+  const [autoRules, setAutoRules] = useState<any[]>([]);
+  const [openMsgId, setOpenMsgId] = useState<number | null>(null);
+  const [editMessages, setEditMessages] = useState<Record<number, string>>({});
+  const [todayLogs, setTodayLogs] = useState<any[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -81,6 +87,67 @@ export default function SmsPage() {
       setBranchName(isAdminOrOwner ? "철산점" : u.branch_name || "철산점");
     }
   }, []);
+
+  const loadAutoRules = async () => {
+    const res = await apiFetch("/api/sms/auto-rules");
+    const data = await res.json();
+    if (data.success) {
+      setAutoRules(data.rows || []);
+      const msgs: Record<number, string> = {};
+      (data.rows || []).forEach((r: any) => { msgs[r.rule_id] = r.message || ""; });
+      setEditMessages(msgs);
+    }
+  };
+
+  const loadTodayLogs = async () => {
+    const res = await apiFetch("/api/sms/logs");
+    const data = await res.json();
+    if (data.success) {
+      const today = new Date().toISOString().slice(0, 10);
+      const filtered = (data.rows || []).filter((r: any) =>
+        r.provider === "AUTO" && r.created_at?.slice(0, 10) === today
+      );
+      setTodayLogs(filtered);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === "auto") {
+      loadAutoRules();
+      loadTodayLogs();
+    }
+  }, [tab]);
+
+  const saveAutoRule = async (rule: any) => {
+    const res = await apiFetch("/api/sms/auto-rules", {
+      method: "PUT",
+      body: JSON.stringify({
+        rule_id: rule.rule_id,
+        message: editMessages[rule.rule_id],
+        use_yn: rule.use_yn,
+        days: rule.days,
+        count: rule.count_threshold,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setOpenMsgId(null);
+      alert("저장되었습니다.");
+      loadAutoRules();
+    } else {
+      alert(data.message || "저장 실패");
+    }
+  };
+
+  const toggleRule = async (rule: any, use_yn: string) => {
+    await apiFetch("/api/sms/auto-rules", {
+      method: "PUT",
+      body: JSON.stringify({ rule_id: rule.rule_id, use_yn }),
+    });
+    loadAutoRules();
+  };
+
+  const isAdminOrOwnerUser = user?.role === "ADMIN" || user?.role === "OWNER";
 
   const filteredTargets = targets.filter((t) => {
   const q = targetSearch.trim();
@@ -190,17 +257,138 @@ export default function SmsPage() {
     }
   };
 
+  const ruleTypeLabel: Record<string, string> = {
+    EXPIRING_2DAYS: "만료 2일 전 안내",
+    EXPIRING_3DAYS: "만료 3일 전 안내",
+    EXPIRING_TODAY: "당일 만료 안내",
+    LOW_COUNT: "횟수 부족 안내",
+    CRM_TODAY: "상담 재연락 알림",
+  };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayLogsByBranch = ["철산점", "목동점", "개봉점", "신정점"].map(b => ({
+    branch: b,
+    logs: todayLogs.filter(l => l.branch_name === b),
+  }));
+
   return (
   <AppShell title="문자 관리">
     <style>{isMobileStyle}</style>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
-          문자 관리
-        </h1>
-        <p style={{ color: "#aaa", marginTop: 8 }}>
-          대상 확인 → 테스트 발송 → 최종 단체발송 순서로 진행하세요.
-        </p>
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>문자 관리</h1>
       </div>
+
+      {/* 탭 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {[{ key: "send", label: "문자 발송" }, { key: "auto", label: "자동발송 설정" }].map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key as any)}
+            style={{
+              padding: "8px 20px", borderRadius: 999, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 14,
+              background: tab === t.key ? "var(--primary)" : "var(--panel2)",
+              color: tab === t.key ? "#fff" : "var(--muted)",
+            }}
+          >{t.label}</button>
+        ))}
+      </div>
+
+      {/* 자동발송 설정 탭 */}
+      {tab === "auto" && (
+        <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: 12, padding: "12px 16px", fontSize: 13, color: "#92400e" }}>
+            💡 자동 문자는 매일 오전 9시에 발송됩니다. <b>{"{name}"}</b>은 회원 이름으로 자동 치환됩니다. 이미 오늘 발송된 번호는 중복 발송되지 않습니다.
+          </div>
+
+          <div className="card">
+            <h2 style={{ marginTop: 0, marginBottom: 16 }}>발송 규칙</h2>
+            {autoRules.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14 }}>불러오는 중...</div>}
+            {autoRules.map(rule => (
+              <div key={rule.rule_id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 14, marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{ruleTypeLabel[rule.rule_type] || rule.rule_type}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{rule.rule_type}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <button
+                      onClick={() => setOpenMsgId(openMsgId === rule.rule_id ? null : rule.rule_id)}
+                      style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}
+                    >문자 내용 {openMsgId === rule.rule_id ? "▴" : "▾"}</button>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 4,
+                      fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999,
+                      background: rule.use_yn === "Y" ? "#f0fdf4" : "var(--panel2)",
+                      color: rule.use_yn === "Y" ? "#16a34a" : "var(--muted)",
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+                      {rule.use_yn === "Y" ? "활성" : "비활성"}
+                    </span>
+                    {isAdminOrOwnerUser && (
+                      <label style={{ position: "relative", display: "inline-block", width: 44, height: 24, flexShrink: 0 }}>
+                        <input type="checkbox" checked={rule.use_yn === "Y"} onChange={e => toggleRule(rule, e.target.checked ? "Y" : "N")}
+                          style={{ opacity: 0, width: 0, height: 0 }} />
+                        <span onClick={() => toggleRule(rule, rule.use_yn === "Y" ? "N" : "Y")} style={{
+                          position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
+                          background: rule.use_yn === "Y" ? "#22c55e" : "var(--border)", transition: "background .2s"
+                        }}>
+                          <span style={{
+                            position: "absolute", width: 18, height: 18, top: 3, borderRadius: "50%",
+                            background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "transform .2s",
+                            transform: rule.use_yn === "Y" ? "translateX(23px)" : "translateX(3px)"
+                          }} />
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                </div>
+                {openMsgId === rule.rule_id && (
+                  <div style={{ marginTop: 12, background: "var(--panel2)", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>발송 문자 내용</div>
+                    <textarea
+                      value={editMessages[rule.rule_id] || ""}
+                      onChange={e => setEditMessages({ ...editMessages, [rule.rule_id]: e.target.value })}
+                      className="input"
+                      style={{ width: "100%", minHeight: 100, resize: "vertical", fontSize: 13, lineHeight: 1.6 }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "none", background: "var(--border)", color: "var(--fg)", cursor: "pointer" }}>닫기</button>
+                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer" }}>저장</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="card">
+            <h2 style={{ marginTop: 0, marginBottom: 16 }}>
+              오늘 자동 발송 현황 <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>{todayStr}</span>
+            </h2>
+            {todayLogs.length === 0 ? (
+              <div style={{ color: "var(--muted)", fontSize: 14 }}>오늘 자동 발송 내역이 없습니다.</div>
+            ) : (
+              todayLogsByBranch.filter(b => !isAdminOrOwnerUser ? b.branch === user?.branch_name : true).map(b => (
+                <div key={b.branch} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>{b.branch}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                      {b.logs.length > 0 ? [...new Set(b.logs.map((l: any) => ruleTypeLabel[l.target_type] || l.target_type))].join(", ") : "해당 없음"}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 700, color: b.logs.length > 0 ? "var(--primary)" : "var(--muted)" }}>{b.logs.length}명 발송</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{b.logs[0]?.created_at?.slice(11, 16) || "-"}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "send" && (
 
       <div
         className="sms-layout"
@@ -561,6 +749,7 @@ export default function SmsPage() {
           </p>
         </div>
       </div>
+      )}
        </AppShell>
   );
 }

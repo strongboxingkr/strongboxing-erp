@@ -380,13 +380,26 @@ export default function PaymentsPage() {
                   )}
 
                   {canEditPayment && (
-                    <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                    <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 8 }}>
                       <button
                         className="btn secondary"
                         style={{ fontSize: 12, padding: "4px 12px" }}
                         onClick={() => openEdit(r)}
                       >
                         수정
+                      </button>
+                      <button
+                        className="btn"
+                        style={{ fontSize: 12, padding: "4px 12px", background: "#ef4444" }}
+                        onClick={async () => {
+                          if (!confirm(`${r.name || "비회원"} - ${r.product_name} (${money(r.amount)}) 결제를 삭제하시겠습니까?`)) return;
+                          const res = await apiFetch(`/api/payments/delete?payment_id=${r.payment_id}`, { method: "DELETE" });
+                          const json = await res.json();
+                          if (json.success) { alert("삭제 완료"); loadPayments(); }
+                          else alert(json.message || "삭제 실패");
+                        }}
+                      >
+                        삭제
                       </button>
                     </div>
                   )}
