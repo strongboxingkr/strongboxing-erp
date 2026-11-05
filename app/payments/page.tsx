@@ -211,29 +211,13 @@ export default function PaymentsPage() {
 
   return (
     <AppShell title="결제관리">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 20,
-          flexWrap: "wrap",
-          marginBottom: 20,
-        }}
-      >
-        <div>
-          <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
-            결제관리
-          </h1>
-          <p style={{ color: "#888", marginTop: 8 }}>
-            회원권 + 추가상품 결제 등록
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+        <p style={{ margin: 0, fontSize: 14, color: "#6B7280" }}>회원권 + 추가상품 결제 등록</p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {isAdminOrOwner && (
             <select
               className="input"
-              style={{ width: 160, padding: "6px 10px", fontSize: 13 }}
+              style={{ width: 150, height: 38, padding: "0 10px", fontSize: 13 }}
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
             >
@@ -243,154 +227,56 @@ export default function PaymentsPage() {
               ))}
             </select>
           )}
-
-          <button className="btn secondary" style={{ padding: "6px 14px", fontSize: 13 }} onClick={loadPayments}>
-            새로고침
-          </button>
-          <button className="btn" style={{ padding: "6px 16px", fontSize: 13, background: "#f59e0b" }} onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }}>
-            비회원 결제
-          </button>
-          <button className="btn" style={{ padding: "6px 16px", fontSize: 13, background: "#ff4d6d" }} onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }}>
-            리뷰환급
-          </button>
+          <button onClick={loadPayments} style={{ height: 38, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
+          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 600, background: "var(--primary)", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
+          <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
         </div>
       </div>
 
       <div>
         <div>
-          <div
-            className="card"
-            style={{
-              borderRadius: 24,
-              marginBottom: 18,
-              background:
-                "linear-gradient(135deg, #eff6ff, #dbeafe)",
-              border: "1px solid #bfdbfe",
-            }}
-          >
-            <div style={{ color: "#2563eb", fontSize: 13, fontWeight: 600 }}>오늘 매출</div>
-            <div style={{ marginTop: 10, fontSize: 42, fontWeight: 900, color: "#1e3a8a" }}>
+          {/* 오늘 매출 */}
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 11, padding: "18px 22px", marginBottom: 14, minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ color: "#6B7280", fontSize: 14 }}>오늘 매출</div>
+            <div style={{ marginTop: 8, fontSize: 32, fontWeight: 600, color: "#111827" }}>
               {money(todaySales)}
             </div>
           </div>
 
-          <div className="card" style={{ borderRadius: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 14,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>최근 결제</h2>
-
-              <button
-                className="btn secondary"
-                onClick={() => {
-                  window.location.href = "/api/export/payments";
-                }}
-              >
-                CSV
-              </button>
+          {/* 최근 결제 */}
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 11, padding: "18px 20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>최근 결제</span>
+              <button onClick={() => { window.location.href = "/api/export/payments"; }} style={{ height: 34, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>CSV</button>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gap: 12,
-                maxHeight: 760,
-                overflow: "auto",
-              }}
-            >
+            <div style={{ display: "grid", gap: 10, maxHeight: 760, overflow: "auto" }}>
               {rows.map((r) => (
-                <div
-                  key={r.payment_id}
-                  style={{
-                    background: "var(--panel2)",
-                    borderRadius: 18,
-                    padding: 16,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                    }}
-                  >
+                <div key={r.payment_id} style={{ background: "#F7F8FA", border: "1px solid #E5E7EB", borderRadius: 10, padding: "14px 16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                     <div>
-                      <div style={{ fontSize: 20, fontWeight: 900 }}>
-                        {r.name}
-                      </div>
-                      <div style={{ color: "#888", marginTop: 6, fontSize: 13 }}>
-                        {r.branch_name}
-                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>{r.name || "비회원"}</div>
+                      <div style={{ color: "#6B7280", marginTop: 4, fontSize: 13 }}>{r.branch_name}</div>
                     </div>
-
                     <div style={{ textAlign: "right" }}>
-                      <div
-                        style={{
-                          color: "#2ee59d",
-                          fontWeight: 900,
-                          fontSize: 22,
-                        }}
-                      >
-                        {money(r.amount)}
-                      </div>
-                      <div style={{ color: "#888", marginTop: 6, fontSize: 13 }}>
-                        {r.payment_date?.slice(0, 10)}
-                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 600, color: "#111827" }}>{money(r.amount)}</div>
+                      <div style={{ color: "#6B7280", marginTop: 4, fontSize: 13 }}>{r.payment_date?.slice(0, 10)}</div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <div
-                      style={{
-                        background: "var(--panel2)",
-                        borderRadius: 999,
-                        padding: "6px 10px",
-                        fontSize: 13,
-                        color: "#aaa",
-                      }}
-                    >
-                      {r.product_name}
-                    </div>
-
-                    <div
-                      style={{
-                        background: "var(--panel2)",
-                        borderRadius: 999,
-                        padding: "6px 10px",
-                        fontSize: 13,
-                        color: "#aaa",
-                      }}
-                    >
-                      {r.payment_method === "CARD"
-                        ? "카드"
-                        : r.payment_method === "CASH"
-                        ? "현금"
-                        : "계좌이체"}
-                    </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, padding: "3px 10px", fontSize: 13, color: "#6B7280" }}>{r.product_name}</span>
+                    <span style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, padding: "3px 10px", fontSize: 13, color: "#6B7280" }}>
+                      {r.payment_method === "CARD" ? "카드" : r.payment_method === "CASH" ? "현금" : "계좌이체"}
+                    </span>
                   </div>
 
-                  {r.memo && (
-                    <div style={{ marginTop: 12, color: "#777", fontSize: 13, whiteSpace: "pre-wrap" }}>
-                      {r.memo}
-                    </div>
-                  )}
+                  {r.memo && <div style={{ marginTop: 8, color: "#6B7280", fontSize: 13, whiteSpace: "pre-wrap" }}>{r.memo}</div>}
 
                   {canEditPayment && (
-                    <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                    <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                      <button onClick={() => openEdit(r)} style={{ height: 30, padding: "0 12px", fontSize: 12, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, color: "#374151", cursor: "pointer" }}>수정</button>
                       <button
-                        className="btn secondary"
-                        style={{ fontSize: 12, padding: "4px 12px" }}
-                        onClick={() => openEdit(r)}
-                      >
-                        수정
-                      </button>
-                      <button
-                        className="btn"
-                        style={{ fontSize: 12, padding: "4px 12px", background: "#ef4444" }}
                         onClick={async () => {
                           if (!confirm(`${r.name || "비회원"} - ${r.product_name} (${money(r.amount)}) 결제를 삭제하시겠습니까?`)) return;
                           const res = await apiFetch(`/api/payments/delete?payment_id=${r.payment_id}`, { method: "DELETE" });
@@ -398,19 +284,14 @@ export default function PaymentsPage() {
                           if (json.success) { alert("삭제 완료"); loadPayments(); }
                           else alert(json.message || "삭제 실패");
                         }}
-                      >
-                        삭제
-                      </button>
+                        style={{ height: 30, padding: "0 12px", fontSize: 12, fontWeight: 500, background: "none", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}
+                      >삭제</button>
                     </div>
                   )}
                 </div>
               ))}
 
-              {rows.length === 0 && (
-                <div style={{ color: "#888", textAlign: "center" }}>
-                  결제 내역이 없습니다.
-                </div>
-              )}
+              {rows.length === 0 && <div style={{ color: "#6B7280", textAlign: "center", padding: 20 }}>결제 내역이 없습니다.</div>}
             </div>
           </div>
         </div>
