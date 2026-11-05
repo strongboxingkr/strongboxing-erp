@@ -17,7 +17,9 @@ export default function PaymentsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [extraProducts, setExtraProducts] = useState<any[]>([]);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-  const [reviewRefund, setReviewRefund] = useState(false);
+  const [reviewModal, setReviewModal] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" });
+  const [reviewMemberSearch, setReviewMemberSearch] = useState("");
   const [user, setUser] = useState<any>(null);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: today, memo: "" });
@@ -115,7 +117,7 @@ export default function PaymentsPage() {
     .reduce((sum, p) => sum + Number(p.option_value || 0), 0);
 
   const finalAmount =
-    Number(form.amount || 0) + extraAmount - (reviewRefund ? 20000 : 0);
+    Number(form.amount || 0) + extraAmount;
 
   const toggleExtra = (name: string) => {
     setSelectedExtras((prev) =>
@@ -137,7 +139,6 @@ export default function PaymentsPage() {
     const autoMemo = [
       form.memo,
       selectedExtras.length > 0 ? `추가상품: ${selectedExtras.join(", ")}` : "",
-      reviewRefund ? "리뷰환급 예정" : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -248,6 +249,9 @@ export default function PaymentsPage() {
           </button>
           <button className="btn" style={{ padding: "6px 16px", fontSize: 13, background: "#f59e0b" }} onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }}>
             비회원 결제
+          </button>
+          <button className="btn" style={{ padding: "6px 16px", fontSize: 13, background: "#ff4d6d" }} onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }}>
+            리뷰환급
           </button>
         </div>
       </div>
@@ -423,34 +427,6 @@ export default function PaymentsPage() {
                   );
                 })}
 
-                <label
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: reviewRefund
-                      ? "rgba(255,77,109,0.12)"
-                      : "var(--panel2)",
-                    border: reviewRefund
-                      ? "1px solid #ff4d6d"
-                      : "1px solid #1f2937",
-                    borderRadius: 14,
-                    padding: 12,
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 900 }}>리뷰 환급 예정</div>
-                    <div style={{ color: "#888", marginTop: 4, fontSize: 13 }}>
-                      -20,000원
-                    </div>
-                  </div>
-
-                  <input
-                    type="checkbox"
-                    checked={reviewRefund}
-                    onChange={(e) => setReviewRefund(e.target.checked)}
-                  />
-                </label>
               </div>
 
               <div
@@ -668,6 +644,56 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+      {/* 리뷰환급 모달 */}
+      {reviewModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card" style={{ width: 420, maxWidth: "95vw", borderRadius: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0 }}>리뷰환급 <span style={{ fontSize: 15, color: "#ff4d6d", fontWeight: 700 }}>-20,000원</span></h2>
+              <button onClick={() => setReviewModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              <input className="input" placeholder="회원 이름 또는 전화번호 검색" value={reviewMemberSearch} onChange={e => setReviewMemberSearch(e.target.value)} />
+              {reviewMemberSearch.length >= 1 && (
+                <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 10 }}>
+                  {members.filter(m => m.name?.includes(reviewMemberSearch) || m.phone?.includes(reviewMemberSearch)).slice(0, 10).map(m => (
+                    <div key={m.member_id} onClick={() => { setReviewForm({ ...reviewForm, member_id: String(m.member_id), member_name: m.name }); setReviewMemberSearch(m.name); }} style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid var(--border)", background: reviewForm.member_id === String(m.member_id) ? "rgba(255,77,109,0.1)" : undefined }}>
+                      <span style={{ fontWeight: 700 }}>{m.name}</span>
+                      <span style={{ color: "var(--muted)", fontSize: 13, marginLeft: 8 }}>{m.phone}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {reviewForm.member_name && <div style={{ padding: "8px 12px", background: "rgba(255,77,109,0.1)", borderRadius: 8, fontWeight: 700, color: "#ff4d6d" }}>선택됨: {reviewForm.member_name}</div>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {(["CARD", "CASH", "TRANSFER"] as const).map(m => (
+                  <button key={m} className={reviewForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setReviewForm({ ...reviewForm, payment_method: m })}>{METHOD_LABEL[m]}</button>
+                ))}
+              </div>
+              <input className="input" type="date" value={reviewForm.payment_date} onChange={e => setReviewForm({ ...reviewForm, payment_date: e.target.value })} />
+              <textarea className="input" placeholder="메모 (선택)" value={reviewForm.memo} onChange={e => setReviewForm({ ...reviewForm, memo: e.target.value })} style={{ minHeight: 60 }} />
+              <button className="btn" style={{ fontSize: 16, background: "#ff4d6d" }} onClick={async () => {
+                if (!reviewForm.member_id) return alert("회원을 선택해주세요.");
+                const selectedM = members.find(m => String(m.member_id) === reviewForm.member_id);
+                const res = await apiFetch("/api/payments/add-guest", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    branch_name: selectedM?.branch_name || "",
+                    product_name: "리뷰환급",
+                    final_amount: -20000,
+                    payment_method: reviewForm.payment_method,
+                    payment_date: reviewForm.payment_date,
+                    memo: reviewForm.memo || `리뷰환급 - ${reviewForm.member_name}`,
+                  }),
+                });
+                const json = await res.json();
+                if (json.success) { alert("리뷰환급 등록 완료!"); setReviewModal(false); loadPayments(); }
+                else alert(json.message || "등록 실패");
+              }}>환급 등록</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 비회원 결제 모달 */}
       {guestModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
