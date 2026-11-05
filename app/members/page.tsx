@@ -307,13 +307,14 @@ export default function MembersPage() {
 
     if (data.success) {
       const newMemberId = data.member_id;
-      // 신규등록 시 결제금액 입력했으면 결제도 함께 등록
+      // 결제금액 입력했으면 결제도 함께 등록 (신규/수정 모두)
       const payAmt = Number((targetForm as any).payment_amount || 0);
-      if (!isEdit && newMemberId && payAmt > 0) {
+      const payMemberId = isEdit ? targetForm.member_id : newMemberId;
+      if (payMemberId && payAmt > 0) {
         await apiFetch("/api/payments/add", {
           method: "POST",
           body: JSON.stringify({
-            member_id: newMemberId,
+            member_id: payMemberId,
             branch_name: targetForm.branch_name,
             payment_date: (targetForm as any).payment_date_new || today,
             start_date: targetForm.start_date,
@@ -813,38 +814,36 @@ ${
               style={{ gridColumn: "1 / 5", minHeight: 82 }}
             />
 
-            {!isEdit && (
-              <>
-                <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>💳 결제 정보 (선택)</div>
-                {/* 결제금액 + 수단 + 결제일 한 줄 */}
-                <div style={{ gridColumn: "1 / 5", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <>
+              <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>💳 결제 정보 (선택)</div>
+              {/* 결제금액 + 수단 + 결제일 한 줄 */}
+              <div style={{ gridColumn: "1 / 5", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="결제금액 (원)"
+                  style={{ flex: "1 1 140px", maxWidth: 200 }}
+                  value={(form as any).payment_amount || ""}
+                  onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
+                />
+                <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
+                  {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
+                    <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ fontSize: 12, padding: "0 14px" }}
+                      onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
+                  ))}
+                </div>
+                <div style={{ flex: "0 0 auto" }}>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
                   <input
                     className="input"
-                    type="number"
-                    placeholder="결제금액 (원)"
-                    style={{ flex: "1 1 140px", maxWidth: 200 }}
-                    value={(form as any).payment_amount || ""}
-                    onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
+                    type="date"
+                    style={{ width: 148 }}
+                    value={(form as any).payment_date_new || today}
+                    onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
                   />
-                  <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
-                    {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
-                      <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ fontSize: 12, padding: "0 14px" }}
-                        onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
-                    ))}
-                  </div>
-                  <div style={{ flex: "0 0 auto" }}>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
-                    <input
-                      className="input"
-                      type="date"
-                      style={{ width: 148 }}
-                      value={(form as any).payment_date_new || today}
-                      onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
-                    />
-                  </div>
                 </div>
-              </>
-            )}
+              </div>
+            </>
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
