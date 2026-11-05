@@ -20,11 +20,8 @@ export async function GET(req: Request) {
       FROM members
       WHERE status = 'ACTIVE'
       AND (
-        end_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        OR (
-          pass_type = 'COUNT'
-          AND remaining_count <= 3
-        )
+        (pass_type = 'DATE' AND DATE(end_date) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY))
+        OR (pass_type = 'COUNT' AND remaining_count <= 3)
       )
     `;
 

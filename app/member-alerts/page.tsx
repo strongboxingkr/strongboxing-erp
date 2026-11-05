@@ -29,7 +29,7 @@ export default function MemberAlertsPage() {
     <AppShell title="회원 알림">
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>만료 예정 / 횟수 부족 회원</h2>
-        <p style={{ color: "#aaa" }}>만료 7일 이내 또는 횟수 3회 이하 회원</p>
+        <p style={{ color: "#aaa" }}>만료 3일 이내 또는 횟수 3회 이하 회원</p>
       </div>
 
       <div className="table-wrap">
