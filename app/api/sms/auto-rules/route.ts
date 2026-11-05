@@ -21,17 +21,7 @@ export async function PUT(req: Request) {
 
     if (!rule_id) return NextResponse.json({ success: false, message: "rule_id 필요" });
 
-    // 관장은 message만 수정 가능
-    if (!isAdminOrOwner(user.role)) {
-      if (!message) return NextResponse.json({ success: false, message: "권한이 없습니다" });
-      await pool.query(
-        `UPDATE sms_auto_rules SET message = ? WHERE rule_id = ?`,
-        [message, rule_id]
-      );
-      return NextResponse.json({ success: true });
-    }
-
-    // 관리자/대표는 전체 수정 가능
+    // 모든 역할 전체 수정 가능
     const fields: string[] = [];
     const values: any[] = [];
 

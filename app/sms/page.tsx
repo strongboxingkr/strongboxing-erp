@@ -311,8 +311,14 @@ export default function SmsPage() {
       {/* 자동발송 설정 탭 */}
       {tab === "auto" && (
         <div style={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: 12, padding: "12px 16px", fontSize: 13, color: "#92400e" }}>
-            💡 자동 문자는 매일 오전 9시에 발송됩니다. <b>{"{name}"}</b>은 회원 이름으로 자동 치환됩니다. 이미 오늘 발송된 번호는 중복 발송되지 않습니다.
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 2 }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: "var(--fg)" }}>자동 문자 설정</span>
+            <span style={{ fontSize: 13, color: "var(--primary)", fontWeight: 600 }}>
+              {isAdminOrOwnerUser ? "관리자 · 전체지점" : `관장 · ${user?.branch_name || ""}`}
+            </span>
+          </div>
+          <div style={{ background: "#fffbeb", border: "1px solid #f59e0b", borderRadius: 12, padding: "14px 18px", fontSize: 13, color: "#92400e", lineHeight: 1.6 }}>
+            💡 자동 문자는 매일 오전 9시에 발송됩니다. 이미 오늘 발송된 번호는 중복 발송되지 않습니다. 문자 내용의 <b>{"{name}"}</b>은 회원 이름으로 자동 치환됩니다.
           </div>
 
           <div className="card">
@@ -332,7 +338,7 @@ export default function SmsPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: "var(--fg)" }}>{ruleTypeLabel[rule.rule_type] || "자동 발송"}</div>
                     <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 5, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                      {isExpiring && isAdminOrOwnerUser ? (
+                      {isExpiring ? (
                         <>
                           <span>회원권 종료</span>
                           <select
@@ -344,7 +350,7 @@ export default function SmsPage() {
                           </select>
                           <span>전 자동 문자 발송</span>
                         </>
-                      ) : isLowCount && isAdminOrOwnerUser ? (
+                      ) : isLowCount ? (
                         <>
                           <span>잔여 횟수</span>
                           <select
@@ -374,26 +380,20 @@ export default function SmsPage() {
                       <span style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor", display: "inline-block", flexShrink: 0 }} />
                       {isActive ? "활성" : "비활성"}
                     </span>
-                    {isAdminOrOwnerUser ? (
-                      <label style={{ position: "relative", display: "inline-block", width: 48, height: 26, flexShrink: 0 }}>
-                        <input type="checkbox" checked={isActive} onChange={e => toggleRule(rule, e.target.checked ? "Y" : "N")}
-                          style={{ opacity: 0, width: 0, height: 0 }} />
-                        <span onClick={() => toggleRule(rule, isActive ? "N" : "Y")} style={{
-                          position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
-                          background: isActive ? "#22c55e" : "#d1d5db", transition: "background .2s"
-                        }}>
-                          <span style={{
-                            position: "absolute", width: 20, height: 20, top: 3, borderRadius: "50%",
-                            background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "transform .2s",
-                            transform: isActive ? "translateX(25px)" : "translateX(3px)"
-                          }} />
-                        </span>
-                      </label>
-                    ) : (
-                      <span style={{ width: 48, height: 26, borderRadius: 999, background: isActive ? "#22c55e" : "#d1d5db", display: "inline-block", position: "relative", flexShrink: 0 }}>
-                        <span style={{ position: "absolute", width: 20, height: 20, top: 3, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transform: isActive ? "translateX(25px)" : "translateX(3px)", transition: "transform .2s" }} />
+                    <label style={{ position: "relative", display: "inline-block", width: 48, height: 26, flexShrink: 0 }}>
+                      <input type="checkbox" checked={isActive} onChange={e => toggleRule(rule, e.target.checked ? "Y" : "N")}
+                        style={{ opacity: 0, width: 0, height: 0 }} />
+                      <span onClick={() => toggleRule(rule, isActive ? "N" : "Y")} style={{
+                        position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
+                        background: isActive ? "#22c55e" : "#d1d5db", transition: "background .2s"
+                      }}>
+                        <span style={{
+                          position: "absolute", width: 20, height: 20, top: 3, borderRadius: "50%",
+                          background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "transform .2s",
+                          transform: isActive ? "translateX(25px)" : "translateX(3px)"
+                        }} />
                       </span>
-                    )}
+                    </label>
                   </div>
                 </div>
                 {openMsgId === rule.rule_id && (
