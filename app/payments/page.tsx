@@ -350,7 +350,7 @@ export default function PaymentsPage() {
                 value={form.product_name}
                 onChange={(e) => {
                   const p = products.find((p: any) => p.option_name === e.target.value);
-                  setForm({ ...form, product_name: e.target.value, amount: p?.price ? String(p.price) : form.amount });
+                  setForm({ ...form, product_name: e.target.value, amount: p?.amount ? String(p.amount) : form.amount });
                 }}
               >
                 <option value="">상품 선택</option>

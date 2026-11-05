@@ -1297,7 +1297,7 @@ export default function MemberDetailPage() {
             <div style={{ display: "grid", gap: 12 }}>
               <select className="input" value={addPayForm.product_name} onChange={e => {
                 const p = products.find((p: any) => p.option_name === e.target.value);
-                setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.price ? String(p.price) : addPayForm.final_amount });
+                setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : addPayForm.final_amount });
               }}>
                 <option value="">상품 선택</option>
                 {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
