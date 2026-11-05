@@ -212,7 +212,10 @@ export default function PaymentsPage() {
   return (
     <AppShell title="결제관리">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <p style={{ margin: 0, fontSize: 14, color: "#6B7280" }}>회원권 + 추가상품 결제 등록</p>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>결제관리</div>
+          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>회원권 + 추가상품 결제 등록</div>
+        </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {isAdminOrOwner && (
             <select
@@ -227,8 +230,8 @@ export default function PaymentsPage() {
               ))}
             </select>
           )}
-          <button onClick={loadPayments} style={{ height: 38, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
-          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 600, background: "var(--primary)", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
+          <button onClick={loadPayments} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
+          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
           <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
         </div>
       </div>
