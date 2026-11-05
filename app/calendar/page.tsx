@@ -74,7 +74,7 @@ export default function CalendarPage() {
   }, []);
 
   const load = async () => {
-    let url = `/api/calendar-events?start_date=${startDate}&end_date=${endDate}`;
+    let url = `/api/calendar-events?start_date=${startDate}&end_date=${endDate}&include_cancelled=true`;
     if (branch !== "전체") url += `&branch_name=${encodeURIComponent(branch)}`;
     const res = await apiFetch(url);
     const json = await res.json();
