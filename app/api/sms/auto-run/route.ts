@@ -14,12 +14,12 @@ export async function GET() {
     for (const rule of rules) {
       let targets: any[] = [];
 
-      if (rule.rule_type === "EXPIRING_7DAYS") {
+      if (rule.rule_type === "EXPIRING_3DAYS") {
         const [rows]: any = await pool.query(`
           SELECT branch_name, name, phone
           FROM members
           WHERE status = 'ACTIVE'
-          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL 3 DAY)
         `);
         targets = rows;
       }

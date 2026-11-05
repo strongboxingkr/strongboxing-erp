@@ -79,6 +79,10 @@ export default function MembersPage() {
   const [showSmsPreview, setShowSmsPreview] = useState(false);
   const [smsMessage, setSmsMessage] = useState("");
 
+  const [showBulkExtend, setShowBulkExtend] = useState(false);
+  const [bulkExtendDays, setBulkExtendDays] = useState("1");
+  const [bulkExtendBranch, setBulkExtendBranch] = useState("");
+
   const [extendForm, setExtendForm] = useState({
     months: 1,
     count: 1,
@@ -674,6 +678,18 @@ ${
               }}
             />
 
+            <button
+              className="btn"
+              style={{ background: "#f97316", color: "#fff" }}
+              onClick={() => {
+                setBulkExtendBranch(isAdminOrOwner ? "" : (user?.branch_name || ""));
+                setBulkExtendDays("1");
+                setShowBulkExtend(true);
+              }}
+            >
+              일괄 연장
+            </button>
+
             <button className="btn" onClick={openAdd}>
               회원등록
             </button>
@@ -1049,6 +1065,90 @@ ${
             >
               취소
             </button>
+          </div>
+        </div>
+      )}
+
+      {showBulkExtend && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div className="card" style={{ width: 360, borderRadius: 20, padding: 28 }}>
+            <h2 style={{ marginTop: 0, fontSize: 18 }}>유효회원 기간 일괄 연장</h2>
+            <p style={{ color: "#666", fontSize: 13, marginTop: -8 }}>
+              기간권(DATE)이고 현재 유효한 회원의 만료일을 일괄 연장합니다.
+            </p>
+
+            {isAdminOrOwner && (
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 13, fontWeight: 600 }}>지점 선택</label>
+                <select
+                  className="input"
+                  style={{ width: "100%", marginTop: 6 }}
+                  value={bulkExtendBranch}
+                  onChange={e => setBulkExtendBranch(e.target.value)}
+                >
+                  <option value="">지점을 선택하세요</option>
+                  <option value="철산점">철산점</option>
+                  <option value="목동점">목동점</option>
+                  <option value="신정점">신정점</option>
+                  <option value="개봉점">개봉점</option>
+                </select>
+              </div>
+            )}
+
+            {!isAdminOrOwner && (
+              <div style={{ marginBottom: 14, fontSize: 13, color: "#555" }}>
+                지점: <strong>{user?.branch_name}</strong>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 13, fontWeight: 600 }}>연장 일수</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  style={{ width: 100 }}
+                  value={bulkExtendDays}
+                  onChange={e => setBulkExtendDays(e.target.value)}
+                />
+                <span style={{ fontSize: 13 }}>일</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                className="btn"
+                style={{ flex: 1, background: "#f97316", color: "#fff" }}
+                onClick={async () => {
+                  const targetBranch = isAdminOrOwner ? bulkExtendBranch : user?.branch_name;
+                  if (!targetBranch) { alert("지점을 선택해주세요"); return; }
+                  const days = parseInt(bulkExtendDays);
+                  if (!days || days <= 0) { alert("연장 일수를 입력해주세요"); return; }
+                  if (!confirm(`${targetBranch} 유효회원 만료일을 ${days}일 연장하시겠습니까?`)) return;
+                  const res = await apiFetch("/api/members/bulk-extend", {
+                    method: "POST",
+                    body: JSON.stringify({ branch_name: targetBranch, days }),
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    alert(data.message);
+                    setShowBulkExtend(false);
+                    loadMembers(user);
+                  } else {
+                    alert(data.message || "연장 실패");
+                  }
+                }}
+              >
+                연장하기
+              </button>
+              <button className="btn" style={{ flex: 1 }} onClick={() => setShowBulkExtend(false)}>
+                취소
+              </button>
+            </div>
           </div>
         </div>
       )}

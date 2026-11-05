@@ -50,13 +50,13 @@ export default function DirectorDashboardPage() {
       (allAttJson.branches || []).forEach((r: any) => { branchMap[r.branch_name] = Number(r.count || 0); });
       setAllBranches(branchList.map((b) => ({ branch_name: b, count: branchMap[b] })));
 
-      // 만료 임박 (오늘~7일 이내)
+      // 만료 임박 (오늘~3일 이내)
       const todayDate = new Date(); todayDate.setHours(0,0,0,0);
-      const sevenDays = new Date(todayDate); sevenDays.setDate(sevenDays.getDate() + 7);
+      const threeDays = new Date(todayDate); threeDays.setDate(threeDays.getDate() + 3);
       const expRows = (expJson.rows || []).filter((m: any) => {
         if (!m.end_date) return false;
         const end = new Date(m.end_date); end.setHours(0,0,0,0);
-        return end >= todayDate && end <= sevenDays;
+        return end >= todayDate && end <= threeDays;
       });
       setExpiring(expRows.slice(0, 10));
 
@@ -145,7 +145,7 @@ export default function DirectorDashboardPage() {
       {/* 만료 임박 회원 */}
       <div className="card">
         <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 14 }}>
-          만료 임박 회원 <span style={{ color: "#ef4444", fontSize: 13 }}>7일 이내</span>
+          만료 임박 회원 <span style={{ color: "#ef4444", fontSize: 13 }}>3일 이내</span>
         </div>
         {loading ? (
           <div style={{ color: "var(--muted)", fontSize: 13 }}>로딩 중...</div>

@@ -38,14 +38,21 @@ export async function GET(req: Request) {
     const params: any[] = [];
 
     if (target_type === "BRANCH_MEMBERS") {
-      sql += ` AND branch_name = ? `;
+      sql += `
+        AND branch_name = ?
+        AND (
+          (pass_type = 'DATE' AND DATE(end_date) >= CURDATE())
+          OR (pass_type = 'COUNT' AND remaining_count > 0)
+        )
+      `;
       params.push(branch_name);
     }
 
-    if (target_type === "EXPIRING_7DAYS") {
+    if (target_type === "EXPIRING_3DAYS") {
       sql += `
         AND branch_name = ?
-        AND DATE(end_date) <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+        AND pass_type = 'DATE'
+        AND DATE(end_date) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY)
       `;
       params.push(branch_name);
     }

@@ -36,7 +36,7 @@ const branches = ["철산점", "목동점", "개봉점", "신정점"];
 
 const targetTypes = [
   { value: "BRANCH_MEMBERS", label: "지점 전체 회원" },
-  { value: "EXPIRING_7DAYS", label: "만료 7일 이내 회원" },
+  { value: "EXPIRING_3DAYS", label: "만료 3일 이내 회원" },
   { value: "LOW_COUNT", label: "횟수 3회 이하 회원" },
 ];
 
