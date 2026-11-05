@@ -74,6 +74,7 @@ export default function SmsPage() {
   const [targetSearch, setTargetSearch] = useState("");
 
   const [autoRules, setAutoRules] = useState<any[]>([]);
+  const [editDays, setEditDays] = useState<Record<number, number>>({});
   const [openMsgId, setOpenMsgId] = useState<number | null>(null);
   const [editMessages, setEditMessages] = useState<Record<number, string>>({});
   const [todayLogs, setTodayLogs] = useState<any[]>([]);
@@ -94,8 +95,10 @@ export default function SmsPage() {
     if (data.success) {
       setAutoRules(data.rows || []);
       const msgs: Record<number, string> = {};
-      (data.rows || []).forEach((r: any) => { msgs[r.rule_id] = r.message || ""; });
+      const days: Record<number, number> = {};
+      (data.rows || []).forEach((r: any) => { msgs[r.rule_id] = r.message || ""; days[r.rule_id] = r.days ?? 2; });
       setEditMessages(msgs);
+      setEditDays(days);
     }
   };
 
@@ -125,7 +128,7 @@ export default function SmsPage() {
         rule_id: rule.rule_id,
         message: editMessages[rule.rule_id],
         use_yn: rule.use_yn,
-        days: rule.days,
+        days: editDays[rule.rule_id] ?? rule.days,
         count: rule.count_threshold,
       }),
     });
@@ -258,11 +261,21 @@ export default function SmsPage() {
   };
 
   const ruleTypeLabel: Record<string, string> = {
-    EXPIRING_2DAYS: "만료 2일 전 안내",
-    EXPIRING_3DAYS: "만료 3일 전 안내",
+    EXPIRING_2DAYS: "만료 예정 안내",
+    EXPIRING_3DAYS: "만료 예정 안내",
+    EXPIRING_7DAYS: "만료 예정 안내",
     EXPIRING_TODAY: "당일 만료 안내",
     LOW_COUNT: "횟수 부족 안내",
     CRM_TODAY: "상담 재연락 알림",
+  };
+
+  const ruleTypeDesc: Record<string, string> = {
+    EXPIRING_2DAYS: "회원권 종료 2일 전 자동 문자 발송",
+    EXPIRING_3DAYS: "회원권 종료 3일 전 자동 문자 발송",
+    EXPIRING_7DAYS: "회원권 종료 7일 전 자동 문자 발송",
+    EXPIRING_TODAY: "오늘 회원권이 만료되는 회원에게 발송",
+    LOW_COUNT: "잔여 횟수 3회 이하 회원에게 발송",
+    CRM_TODAY: "오늘 재연락 예정인 상담 고객에게 발송",
   };
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -302,27 +315,40 @@ export default function SmsPage() {
           <div className="card">
             <h2 style={{ marginTop: 0, marginBottom: 16 }}>발송 규칙</h2>
             {autoRules.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14 }}>불러오는 중...</div>}
-            {autoRules.map(rule => (
-              <div key={rule.rule_id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 14, marginBottom: 14 }}>
+            {autoRules.map(rule => {
+              const isExpiring = rule.rule_type.startsWith("EXPIRING_") && !rule.rule_type.includes("TODAY");
+              const curDays = editDays[rule.rule_id] ?? rule.days ?? 2;
+              const descText = isExpiring
+                ? `회원권 종료 ${curDays}일 전 자동 문자 발송`
+                : (ruleTypeDesc[rule.rule_type] || "자동 문자 발송");
+              return (
+              <div key={rule.rule_id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 16, marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{ruleTypeLabel[rule.rule_type] || rule.rule_type}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{rule.rule_type}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{ruleTypeLabel[rule.rule_type] || "자동 발송"}</div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      {isExpiring && isAdminOrOwnerUser ? (
+                        <>
+                          <span>회원권 종료</span>
+                          <select
+                            value={curDays}
+                            onChange={e => setEditDays({ ...editDays, [rule.rule_id]: Number(e.target.value) })}
+                            style={{ fontSize: 12, padding: "1px 4px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}
+                          >
+                            {[1,2,3,5,7].map(d => <option key={d} value={d}>{d}일 전</option>)}
+                          </select>
+                          <span>자동 문자 발송</span>
+                        </>
+                      ) : (
+                        <span>{descText}</span>
+                      )}
+                    </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <button
                       onClick={() => setOpenMsgId(openMsgId === rule.rule_id ? null : rule.rule_id)}
-                      style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}
+                      style={{ fontSize: 12, fontWeight: 600, color: "var(--primary)", background: "none", border: "1px solid var(--primary)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}
                     >문자 내용 {openMsgId === rule.rule_id ? "▴" : "▾"}</button>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 4,
-                      fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999,
-                      background: rule.use_yn === "Y" ? "#f0fdf4" : "var(--panel2)",
-                      color: rule.use_yn === "Y" ? "#16a34a" : "var(--muted)",
-                    }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
-                      {rule.use_yn === "Y" ? "활성" : "비활성"}
-                    </span>
                     {isAdminOrOwnerUser && (
                       <label style={{ position: "relative", display: "inline-block", width: 44, height: 24, flexShrink: 0 }}>
                         <input type="checkbox" checked={rule.use_yn === "Y"} onChange={e => toggleRule(rule, e.target.checked ? "Y" : "N")}
@@ -339,25 +365,37 @@ export default function SmsPage() {
                         </span>
                       </label>
                     )}
+                    {!isAdminOrOwnerUser && (
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+                        background: rule.use_yn === "Y" ? "#f0fdf4" : "var(--panel2)",
+                        color: rule.use_yn === "Y" ? "#16a34a" : "var(--muted)",
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+                        {rule.use_yn === "Y" ? "활성" : "비활성"}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {openMsgId === rule.rule_id && (
-                  <div style={{ marginTop: 12, background: "var(--panel2)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>발송 문자 내용</div>
+                  <div style={{ marginTop: 12, background: "var(--panel2)", borderRadius: 10, padding: "14px 16px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 8 }}>발송 문자 내용</div>
                     <textarea
                       value={editMessages[rule.rule_id] || ""}
                       onChange={e => setEditMessages({ ...editMessages, [rule.rule_id]: e.target.value })}
                       className="input"
                       style={{ width: "100%", minHeight: 100, resize: "vertical", fontSize: 13, lineHeight: 1.6 }}
                     />
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "none", background: "var(--border)", color: "var(--fg)", cursor: "pointer" }}>닫기</button>
-                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer" }}>저장</button>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 13, fontWeight: 600, padding: "7px 18px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}>닫기</button>
+                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 13, fontWeight: 700, padding: "7px 18px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer" }}>저장</button>
                     </div>
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="card">

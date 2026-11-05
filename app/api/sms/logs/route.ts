@@ -6,6 +6,7 @@ export async function GET() {
     const [rows]: any = await pool.query(`
       SELECT *
       FROM sms_logs
+      WHERE DATE(created_at) = CURDATE()
       ORDER BY sms_id DESC
       LIMIT 200
     `);
