@@ -63,7 +63,7 @@ const estimateCost = (count: number, message: string) => {
 
 export default function SmsPage() {
   const [user, setUser] = useState<any>(null);
-  const [tab, setTab] = useState<"send" | "auto">("send");
+  const [tab, setTab] = useState<"send" | "auto">("auto");
   const [branchName, setBranchName] = useState("");
   const [targetType, setTargetType] = useState("BRANCH_MEMBERS");
   const [targets, setTargets] = useState<any[]>([]);
@@ -289,7 +289,7 @@ export default function SmsPage() {
     <style>{isMobileStyle}</style>
       {/* 탭 */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
-        {[{ key: "send", label: "문자 발송" }, { key: "auto", label: "자동발송 설정" }].map(t => (
+        {[{ key: "auto", label: "자동발송 설정" }, { key: "send", label: "문자 발송" }].map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
