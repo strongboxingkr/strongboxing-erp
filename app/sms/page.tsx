@@ -75,6 +75,7 @@ export default function SmsPage() {
 
   const [autoRules, setAutoRules] = useState<any[]>([]);
   const [editDays, setEditDays] = useState<Record<number, number>>({});
+  const [editCounts, setEditCounts] = useState<Record<number, number>>({});
   const [openMsgId, setOpenMsgId] = useState<number | null>(null);
   const [editMessages, setEditMessages] = useState<Record<number, string>>({});
   const [todayLogs, setTodayLogs] = useState<any[]>([]);
@@ -96,9 +97,11 @@ export default function SmsPage() {
       setAutoRules(data.rows || []);
       const msgs: Record<number, string> = {};
       const days: Record<number, number> = {};
-      (data.rows || []).forEach((r: any) => { msgs[r.rule_id] = r.message || ""; days[r.rule_id] = r.days ?? 2; });
+      const counts: Record<number, number> = {};
+      (data.rows || []).forEach((r: any) => { msgs[r.rule_id] = r.message || ""; days[r.rule_id] = r.days ?? 2; counts[r.rule_id] = r.count_threshold ?? 3; });
       setEditMessages(msgs);
       setEditDays(days);
+      setEditCounts(counts);
     }
   };
 
@@ -129,7 +132,7 @@ export default function SmsPage() {
         message: editMessages[rule.rule_id],
         use_yn: rule.use_yn,
         days: editDays[rule.rule_id] ?? rule.days,
-        count: rule.count_threshold,
+        count: editCounts[rule.rule_id] ?? rule.count_threshold,
       }),
     });
     const data = await res.json();
@@ -315,81 +318,96 @@ export default function SmsPage() {
           <div className="card">
             <h2 style={{ marginTop: 0, marginBottom: 16 }}>발송 규칙</h2>
             {autoRules.length === 0 && <div style={{ color: "var(--muted)", fontSize: 14 }}>불러오는 중...</div>}
-            {autoRules.map(rule => {
+            {autoRules
+              .filter(rule => rule.rule_type !== "EXPIRING_7DAYS")
+              .map(rule => {
               const isExpiring = rule.rule_type.startsWith("EXPIRING_") && !rule.rule_type.includes("TODAY");
+              const isLowCount = rule.rule_type === "LOW_COUNT";
               const curDays = editDays[rule.rule_id] ?? rule.days ?? 2;
-              const descText = isExpiring
-                ? `회원권 종료 ${curDays}일 전 자동 문자 발송`
-                : (ruleTypeDesc[rule.rule_type] || "자동 문자 발송");
+              const curCount = editCounts[rule.rule_id] ?? rule.count_threshold ?? 3;
+              const isActive = rule.use_yn === "Y";
               return (
-              <div key={rule.rule_id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 16, marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{ruleTypeLabel[rule.rule_type] || "자동 발송"}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div key={rule.rule_id} style={{ borderBottom: "1px solid var(--border)", paddingBottom: 20, marginBottom: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "var(--fg)" }}>{ruleTypeLabel[rule.rule_type] || "자동 발송"}</div>
+                    <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 5, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                       {isExpiring && isAdminOrOwnerUser ? (
                         <>
                           <span>회원권 종료</span>
                           <select
                             value={curDays}
                             onChange={e => setEditDays({ ...editDays, [rule.rule_id]: Number(e.target.value) })}
-                            style={{ fontSize: 12, padding: "1px 4px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}
+                            style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}
                           >
-                            {[1,2,3,5,7].map(d => <option key={d} value={d}>{d}일 전</option>)}
+                            {[1,2,3,5,7].map(d => <option key={d} value={d}>{d}일</option>)}
                           </select>
-                          <span>자동 문자 발송</span>
+                          <span>전 자동 문자 발송</span>
+                        </>
+                      ) : isLowCount && isAdminOrOwnerUser ? (
+                        <>
+                          <span>잔여 횟수</span>
+                          <select
+                            value={curCount}
+                            onChange={e => setEditCounts({ ...editCounts, [rule.rule_id]: Number(e.target.value) })}
+                            style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}
+                          >
+                            {[1,2,3,4,5].map(c => <option key={c} value={c}>{c}회</option>)}
+                          </select>
+                          <span>이하 회원에게 발송</span>
                         </>
                       ) : (
-                        <span>{descText}</span>
+                        <span>{ruleTypeDesc[rule.rule_type] || "자동 문자 발송"}</span>
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                     <button
                       onClick={() => setOpenMsgId(openMsgId === rule.rule_id ? null : rule.rule_id)}
-                      style={{ fontSize: 12, fontWeight: 600, color: "var(--primary)", background: "none", border: "1px solid var(--primary)", borderRadius: 8, padding: "4px 12px", cursor: "pointer" }}
+                      style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 14px", cursor: "pointer", whiteSpace: "nowrap" }}
                     >문자 내용 {openMsgId === rule.rule_id ? "▴" : "▾"}</button>
-                    {isAdminOrOwnerUser && (
-                      <label style={{ position: "relative", display: "inline-block", width: 44, height: 24, flexShrink: 0 }}>
-                        <input type="checkbox" checked={rule.use_yn === "Y"} onChange={e => toggleRule(rule, e.target.checked ? "Y" : "N")}
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+                      color: isActive ? "#16a34a" : "var(--muted)",
+                    }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "currentColor", display: "inline-block", flexShrink: 0 }} />
+                      {isActive ? "활성" : "비활성"}
+                    </span>
+                    {isAdminOrOwnerUser ? (
+                      <label style={{ position: "relative", display: "inline-block", width: 48, height: 26, flexShrink: 0 }}>
+                        <input type="checkbox" checked={isActive} onChange={e => toggleRule(rule, e.target.checked ? "Y" : "N")}
                           style={{ opacity: 0, width: 0, height: 0 }} />
-                        <span onClick={() => toggleRule(rule, rule.use_yn === "Y" ? "N" : "Y")} style={{
+                        <span onClick={() => toggleRule(rule, isActive ? "N" : "Y")} style={{
                           position: "absolute", inset: 0, borderRadius: 999, cursor: "pointer",
-                          background: rule.use_yn === "Y" ? "#22c55e" : "var(--border)", transition: "background .2s"
+                          background: isActive ? "#22c55e" : "#d1d5db", transition: "background .2s"
                         }}>
                           <span style={{
-                            position: "absolute", width: 18, height: 18, top: 3, borderRadius: "50%",
-                            background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "transform .2s",
-                            transform: rule.use_yn === "Y" ? "translateX(23px)" : "translateX(3px)"
+                            position: "absolute", width: 20, height: 20, top: 3, borderRadius: "50%",
+                            background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "transform .2s",
+                            transform: isActive ? "translateX(25px)" : "translateX(3px)"
                           }} />
                         </span>
                       </label>
-                    )}
-                    {!isAdminOrOwnerUser && (
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 4,
-                        fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
-                        background: rule.use_yn === "Y" ? "#f0fdf4" : "var(--panel2)",
-                        color: rule.use_yn === "Y" ? "#16a34a" : "var(--muted)",
-                      }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
-                        {rule.use_yn === "Y" ? "활성" : "비활성"}
+                    ) : (
+                      <span style={{ width: 48, height: 26, borderRadius: 999, background: isActive ? "#22c55e" : "#d1d5db", display: "inline-block", position: "relative", flexShrink: 0 }}>
+                        <span style={{ position: "absolute", width: 20, height: 20, top: 3, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transform: isActive ? "translateX(25px)" : "translateX(3px)", transition: "transform .2s" }} />
                       </span>
                     )}
                   </div>
                 </div>
                 {openMsgId === rule.rule_id && (
-                  <div style={{ marginTop: 12, background: "var(--panel2)", borderRadius: 10, padding: "14px 16px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 8 }}>발송 문자 내용</div>
+                  <div style={{ marginTop: 14, background: "var(--panel2)", borderRadius: 10, padding: "14px 16px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", marginBottom: 10 }}>발송 문자 내용</div>
                     <textarea
                       value={editMessages[rule.rule_id] || ""}
                       onChange={e => setEditMessages({ ...editMessages, [rule.rule_id]: e.target.value })}
                       className="input"
-                      style={{ width: "100%", minHeight: 100, resize: "vertical", fontSize: 13, lineHeight: 1.6 }}
+                      style={{ width: "100%", minHeight: 110, resize: "vertical", fontSize: 13, lineHeight: 1.7 }}
                     />
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
-                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 13, fontWeight: 600, padding: "7px 18px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}>닫기</button>
-                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 13, fontWeight: 700, padding: "7px 18px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer" }}>저장</button>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+                      <button onClick={() => setOpenMsgId(null)} style={{ fontSize: 13, fontWeight: 600, padding: "8px 20px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--fg)", cursor: "pointer" }}>닫기</button>
+                      <button onClick={() => saveAutoRule(rule)} style={{ fontSize: 13, fontWeight: 700, padding: "8px 20px", borderRadius: 8, border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer" }}>저장</button>
                     </div>
                   </div>
                 )}
