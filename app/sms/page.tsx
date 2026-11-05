@@ -274,22 +274,18 @@ export default function SmsPage() {
   return (
   <AppShell title="문자 관리">
     <style>{isMobileStyle}</style>
-      <div style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>문자 관리</h1>
-      </div>
-
       {/* 탭 */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "2px solid var(--border)" }}>
-        {[{ key: "send", label: "문자 발송" }, { key: "auto", label: "⚙️ 자동발송 설정" }].map(t => (
+      <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+        {[{ key: "send", label: "문자 발송" }, { key: "auto", label: "자동발송 설정" }].map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
             style={{
-              padding: "12px 24px", border: "none", cursor: "pointer",
-              fontWeight: 700, fontSize: 15, background: "none",
-              color: tab === t.key ? "var(--primary)" : "var(--muted)",
-              borderBottom: tab === t.key ? "3px solid var(--primary)" : "3px solid transparent",
-              marginBottom: -2,
+              padding: "10px 22px", borderRadius: 10, cursor: "pointer",
+              fontWeight: 700, fontSize: 14,
+              border: tab === t.key ? "2px solid var(--primary)" : "2px solid var(--border)",
+              background: tab === t.key ? "var(--primary)" : "var(--card)",
+              color: tab === t.key ? "#fff" : "var(--muted)",
               transition: "all .15s",
             }}
           >{t.label}</button>
