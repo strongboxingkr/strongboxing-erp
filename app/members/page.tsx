@@ -210,8 +210,17 @@ export default function MembersPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const openEdit = (m: any) => {
+  const openEdit = async (m: any) => {
     setIsEdit(true);
+
+    // 최근 결제 불러오기
+    let latestPayment: any = null;
+    try {
+      const pRes = await apiFetch(`/api/payments/latest?member_id=${m.member_id}`);
+      const pData = await pRes.json();
+      if (pData.success && pData.payment) latestPayment = pData.payment;
+    } catch {}
+
     setForm({
       member_id: m.member_id,
       branch_name: m.branch_name || "",
@@ -237,7 +246,12 @@ export default function MembersPage() {
       checkout_sms_enabled: m.checkout_sms_enabled || 0,
       has_uniform: m.has_uniform || 0,
       has_locker: m.has_locker || 0,
-    });
+      // 최근 결제 채우기
+      payment_amount: latestPayment ? String(latestPayment.final_amount) : "",
+      payment_method_new: latestPayment?.payment_method || "CARD",
+      payment_date_new: latestPayment?.payment_date?.slice(0, 10) || today,
+      latest_payment_id: latestPayment?.payment_id || null,
+    } as any);
 
     setReregForm({
       product_name: m.product_name || "",
@@ -307,24 +321,39 @@ export default function MembersPage() {
 
     if (data.success) {
       const newMemberId = data.member_id;
-      // 결제금액 입력했으면 결제도 함께 등록 (신규/수정 모두)
+      // 결제금액 처리
       const payAmt = Number((targetForm as any).payment_amount || 0);
       const payMemberId = isEdit ? targetForm.member_id : newMemberId;
+      const latestPaymentId = (targetForm as any).latest_payment_id;
       if (payMemberId && payAmt > 0) {
-        await apiFetch("/api/payments/add", {
-          method: "POST",
-          body: JSON.stringify({
-            member_id: payMemberId,
-            branch_name: targetForm.branch_name,
-            payment_date: (targetForm as any).payment_date_new || today,
-            start_date: targetForm.start_date,
-            payment_method: (targetForm as any).payment_method_new || "CARD",
-            product_name: targetForm.product_name,
-            amount: payAmt,
-            final_amount: payAmt,
-            memo: "",
-          }),
-        });
+        if (isEdit && latestPaymentId) {
+          // 기존 결제 수정
+          await apiFetch(`/api/payments/${latestPaymentId}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              payment_date: (targetForm as any).payment_date_new || today,
+              payment_method: (targetForm as any).payment_method_new || "CARD",
+              amount: payAmt,
+              final_amount: payAmt,
+            }),
+          });
+        } else {
+          // 신규 결제 등록
+          await apiFetch("/api/payments/add", {
+            method: "POST",
+            body: JSON.stringify({
+              member_id: payMemberId,
+              branch_name: targetForm.branch_name,
+              payment_date: (targetForm as any).payment_date_new || today,
+              start_date: targetForm.start_date,
+              payment_method: (targetForm as any).payment_method_new || "CARD",
+              product_name: targetForm.product_name,
+              amount: payAmt,
+              final_amount: payAmt,
+              memo: "",
+            }),
+          });
+        }
       }
       alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
       setShowForm(false);
