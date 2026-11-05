@@ -446,7 +446,7 @@ export default function SmsPage() {
                   <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
                     {groupEntries.map(([label, count]) => (
                       <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                        <span style={{ color: "#6B7280" }}>· {label}</span>
+                        <span style={{ color: "#6B7280" }}>{label}</span>
                         <span style={{ color: "#2563eb", fontWeight: 600 }}>{count}명</span>
                       </div>
                     ))}
