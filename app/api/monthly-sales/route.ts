@@ -31,7 +31,7 @@ export async function GET(req: Request) {
         AND MONTH(p.payment_date) = ?
         AND p.final_amount > 0
         ${branchWhere}
-      GROUP BY DATE(p.payment_date)
+      GROUP BY sale_date
       ORDER BY sale_date DESC
       `,
       [year, month, ...params]
