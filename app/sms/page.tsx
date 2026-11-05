@@ -91,14 +91,33 @@ export default function SmsPage() {
   }, []);
 
   const loadAutoRules = async () => {
+    const saved = localStorage.getItem("user");
+    const u = saved ? JSON.parse(saved) : null;
+    const myBranch = u?.branch_name || null;
+    const isAdmin = u?.role === "ADMIN" || u?.role === "OWNER";
+
     const res = await apiFetch("/api/sms/auto-rules");
     const data = await res.json();
     if (data.success) {
-      setAutoRules(data.rows || []);
+      const globalRules = data.rows || [];
+      const branchRules: any[] = data.branchRules || [];
+
+      // 관장이면 자기 지점 오버라이드 메시지로 대체
+      const mergedRules = globalRules.map((r: any) => {
+        if (!isAdmin && myBranch) {
+          const override = branchRules.find(
+            (b: any) => b.rule_type === r.rule_type && b.branch_name === myBranch
+          );
+          if (override) return { ...r, message: override.message, use_yn: override.use_yn, days: override.days, count_threshold: override.count_threshold, _hasOverride: true };
+        }
+        return r;
+      });
+
+      setAutoRules(mergedRules);
       const msgs: Record<number, string> = {};
       const days: Record<number, number> = {};
       const counts: Record<number, number> = {};
-      (data.rows || []).forEach((r: any) => { msgs[r.rule_id] = r.message || ""; days[r.rule_id] = r.days ?? 2; counts[r.rule_id] = r.count_threshold ?? 3; });
+      mergedRules.forEach((r: any) => { msgs[r.rule_id] = r.message || ""; days[r.rule_id] = r.days ?? 2; counts[r.rule_id] = r.count_threshold ?? 3; });
       setEditMessages(msgs);
       setEditDays(days);
       setEditCounts(counts);

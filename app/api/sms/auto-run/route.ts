@@ -3,10 +3,13 @@ import pool from "@/lib/db";
 
 export async function GET() {
   try {
+    // 글로벌 규칙 (branch_name IS NULL, use_yn = Y)
     const [rules]: any = await pool.query(`
-      SELECT *
-      FROM sms_auto_rules
-      WHERE use_yn = 'Y'
+      SELECT * FROM sms_auto_rules WHERE use_yn = 'Y' AND branch_name IS NULL
+    `);
+    // 지점별 오버라이드
+    const [branchRules]: any = await pool.query(`
+      SELECT * FROM sms_auto_rules WHERE branch_name IS NOT NULL
     `);
 
     let createdCount = 0;
@@ -92,11 +95,18 @@ export async function GET() {
             rule.rule_type,
             t.name,
             t.phone,
-            rule.message
-            .replace(/{name}/g, t.name || "")
-            .replace(/{branch}/g, t.branch_name || "")
-            .replace(/{end_date}/g, t.end_date ? String(t.end_date).slice(0, 10) : "")
-            .replace(/{remaining_count}/g, t.remaining_count != null ? String(t.remaining_count) : ""),
+            // 지점별 오버라이드 메시지 우선 사용
+          (() => {
+            const override = branchRules.find(
+              (b: any) => b.rule_type === rule.rule_type && b.branch_name === t.branch_name
+            );
+            const msg = (override?.message || rule.message || "");
+            return msg
+              .replace(/{name}/g, t.name || "")
+              .replace(/{branch}/g, t.branch_name || "")
+              .replace(/{end_date}/g, t.end_date ? String(t.end_date).slice(0, 10) : "")
+              .replace(/{remaining_count}/g, t.remaining_count != null ? String(t.remaining_count) : "");
+          })(),
           ]
         );
 
