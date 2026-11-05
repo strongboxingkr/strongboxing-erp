@@ -420,28 +420,32 @@ export default function SmsPage() {
             })}
           </div>
 
-          <div className="card">
-            <h2 style={{ marginTop: 0, marginBottom: 16 }}>
-              오늘 자동 발송 현황 <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500 }}>{todayStr}</span>
-            </h2>
-            {todayLogs.length === 0 ? (
-              <div style={{ color: "var(--muted)", fontSize: 14 }}>오늘 자동 발송 내역이 없습니다.</div>
-            ) : (
-              todayLogsByBranch.filter(b => !isAdminOrOwnerUser ? b.branch === user?.branch_name : true).map(b => (
-                <div key={b.branch} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{b.branch}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                      {b.logs.length > 0 ? [...new Set(b.logs.map((l: any) => ruleTypeLabel[l.target_type] || l.target_type))].join(", ") : "해당 없음"}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 700, color: b.logs.length > 0 ? "var(--primary)" : "var(--muted)" }}>{b.logs.length}명 발송</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>{b.logs[0]?.created_at?.slice(11, 16) || "-"}</div>
+          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, padding: "20px 24px" }}>
+            <div style={{ marginBottom: 18 }}>
+              <span style={{ fontSize: 17, fontWeight: 700, color: "#111827" }}>오늘 자동 발송 현황</span>
+              <span style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 400, marginLeft: 8 }}>{todayStr}</span>
+            </div>
+            {todayLogsByBranch.filter(b => !isAdminOrOwnerUser ? b.branch === user?.branch_name : true).map((b, i, arr) => (
+              <div key={b.branch} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: i < arr.length - 1 ? "1px solid #F3F4F6" : "none" }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>{b.branch}</div>
+                  <div style={{ fontSize: 13, color: "#9CA3AF", marginTop: 3 }}>
+                    {b.logs.length > 0 ? [...new Set(b.logs.map((l: any) => ruleTypeLabel[l.target_type] || l.target_type))].join(", ") : "해당 없음"}
                   </div>
                 </div>
-              ))
-            )}
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: b.logs.length > 0 ? "#2563eb" : "#9CA3AF" }}>
+                    {b.logs.length > 0 ? `${b.logs.length}명 발송` : "0명"}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#9CA3AF", marginTop: 3 }}>
+                    {b.logs.length > 0 ? b.logs[0]?.created_at?.slice(11, 16) : "해당 없음"}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #F3F4F6", fontSize: 12, color: "#9CA3AF", textAlign: "center" }}>
+              관장은 자기 지점 발송 현황만 조회 가능 · 토글·타이밍 변경은 저장 버튼 클릭 필요
+            </div>
           </div>
         </div>
       )}
