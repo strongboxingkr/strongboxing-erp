@@ -109,7 +109,7 @@ export default function SmsPage() {
     const res = await apiFetch("/api/sms/logs");
     const data = await res.json();
     if (data.success) {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const filtered = (data.rows || []).filter((r: any) =>
         r.provider === "AUTO" && r.created_at?.slice(0, 10) === today
       );
@@ -281,7 +281,7 @@ export default function SmsPage() {
     CRM_TODAY: "오늘 재연락 예정인 상담 고객에게 발송",
   };
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const todayLogsByBranch = ["철산점", "목동점", "개봉점", "신정점"].map(b => ({
     branch: b,
     logs: todayLogs.filter(l => l.branch_name === b),
