@@ -279,16 +279,18 @@ export default function SmsPage() {
       </div>
 
       {/* 탭 */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {[{ key: "send", label: "문자 발송" }, { key: "auto", label: "자동발송 설정" }].map(t => (
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "2px solid var(--border)" }}>
+        {[{ key: "send", label: "문자 발송" }, { key: "auto", label: "⚙️ 자동발송 설정" }].map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
             style={{
-              padding: "8px 20px", borderRadius: 999, border: "none", cursor: "pointer",
-              fontWeight: 700, fontSize: 14,
-              background: tab === t.key ? "var(--primary)" : "var(--panel2)",
-              color: tab === t.key ? "#fff" : "var(--muted)",
+              padding: "12px 24px", border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: 15, background: "none",
+              color: tab === t.key ? "var(--primary)" : "var(--muted)",
+              borderBottom: tab === t.key ? "3px solid var(--primary)" : "3px solid transparent",
+              marginBottom: -2,
+              transition: "all .15s",
             }}
           >{t.label}</button>
         ))}
