@@ -22,6 +22,9 @@ export default function MemberDetailPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [editPayment, setEditPayment] = useState<any>(null);
   const [editPayForm, setEditPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: "", memo: "" });
+  const [addPayModal, setAddPayModal] = useState(false);
+  const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" });
+  const [products, setProducts] = useState<any[]>([]);
 
   const [uploading, setUploading] =
     useState(false);
@@ -89,6 +92,10 @@ export default function MemberDetailPage() {
     const json = await res.json();
     setPayments(json.rows || []);
   };
+
+  useEffect(() => {
+    apiFetch("/api/settings?option_type=PRODUCT").then(r => r.json()).then(d => setProducts(d.rows || []));
+  }, []);
 
   const uploadFile = async (
     e: any
@@ -793,9 +800,10 @@ export default function MemberDetailPage() {
                 marginBottom: 18,
               }}
             >
-              <h2 style={{ marginTop: 0 }}>
-                결제내역
-              </h2>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ margin: 0 }}>결제내역</h2>
+                <button className="btn" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" }); setAddPayModal(true); }}>+ 결제 추가</button>
+              </div>
 
               <div
                 style={{
@@ -1277,6 +1285,55 @@ export default function MemberDetailPage() {
             </div>
           )}
         </>
+      )}
+      {/* 결제 추가 모달 */}
+      {addPayModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card" style={{ width: 420, maxWidth: "95vw", borderRadius: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ margin: 0 }}>결제 추가</h2>
+              <button onClick={() => setAddPayModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gap: 12 }}>
+              <select className="input" value={addPayForm.product_name} onChange={e => {
+                const p = products.find((p: any) => p.option_name === e.target.value);
+                setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.price ? String(p.price) : addPayForm.final_amount });
+              }}>
+                <option value="">상품 선택</option>
+                {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+              </select>
+              <input className="input" type="number" placeholder="결제금액" value={addPayForm.final_amount} onChange={e => setAddPayForm({ ...addPayForm, final_amount: e.target.value })} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {([["CARD","카드"],["CASH","현금"],["TRANSFER","계좌이체"]] as const).map(([m, l]) => (
+                  <button key={m} className={addPayForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setAddPayForm({ ...addPayForm, payment_method: m })}>{l}</button>
+                ))}
+              </div>
+              <input className="input" type="date" value={addPayForm.payment_date} onChange={e => setAddPayForm({ ...addPayForm, payment_date: e.target.value })} />
+              <textarea className="input" placeholder="메모" value={addPayForm.memo} onChange={e => setAddPayForm({ ...addPayForm, memo: e.target.value })} style={{ minHeight: 60 }} />
+              <button className="btn" style={{ fontSize: 16 }} onClick={async () => {
+                if (!addPayForm.product_name) return alert("상품을 선택해주세요.");
+                if (!addPayForm.final_amount) return alert("결제금액을 입력해주세요.");
+                const res = await apiFetch("/api/payments/add", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    member_id: data?.member?.member_id,
+                    branch_name: data?.member?.branch_name,
+                    product_name: addPayForm.product_name,
+                    amount: Number(addPayForm.final_amount),
+                    final_amount: Number(addPayForm.final_amount),
+                    discount_amount: 0,
+                    payment_method: addPayForm.payment_method,
+                    payment_date: addPayForm.payment_date,
+                    memo: addPayForm.memo,
+                  }),
+                });
+                const json = await res.json();
+                if (json.success) { alert("결제 추가 완료!"); setAddPayModal(false); loadPayments(String(data?.member?.member_id)); }
+                else alert(json.message || "추가 실패");
+              }}>저장</button>
+            </div>
+          </div>
+        </div>
       )}
       {/* 결제 수정 모달 */}
       {editPayment && (
