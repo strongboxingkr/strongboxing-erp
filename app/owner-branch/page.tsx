@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
@@ -40,7 +40,7 @@ function setLastBranch(b: string) {
   try { localStorage.setItem(LAST_BRANCH_KEY, b); } catch {}
 }
 
-export default function OwnerBranchPage() {
+function OwnerBranchPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -388,3 +388,11 @@ const S: Record<string, React.CSSProperties> = {
     paddingBottom: "env(safe-area-inset-bottom, 8px)", zIndex: 999,
   },
 };
+
+export default function OwnerBranchPage() {
+  return (
+    <Suspense>
+      <OwnerBranchPageInner />
+    </Suspense>
+  );
+}
