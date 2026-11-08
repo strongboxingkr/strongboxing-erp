@@ -7,6 +7,167 @@ import { apiFetch } from "@/lib/api";
 const money = (v: any) =>
   `${Number(v || 0).toLocaleString()}원`;
 
+// ── 출석 달력 컴포넌트 ──────────────────────────────────
+function AttendanceCalendar({
+  checkins, memberId, passType, onDeleted,
+}: {
+  checkins: any[];
+  memberId: any;
+  passType: string;
+  onDeleted: () => void;
+}) {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth()); // 0-based
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  // 날짜별 출석 맵
+  const byDate: Record<string, any[]> = {};
+  checkins.forEach((c) => {
+    const d = new Date(c.checkin_time).toLocaleDateString("sv-SE"); // YYYY-MM-DD
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(c);
+  });
+
+  const prevMonth = () => {
+    if (month === 0) { setYear(y => y - 1); setMonth(11); }
+    else setMonth(m => m - 1);
+    setSelectedDate(null);
+  };
+  const nextMonth = () => {
+    if (month === 11) { setYear(y => y + 1); setMonth(0); }
+    else setMonth(m => m + 1);
+    setSelectedDate(null);
+  };
+
+  // 달력 생성
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const monthTotal = Object.entries(byDate).filter(([d]) =>
+    d.startsWith(`${year}-${pad(month + 1)}`)
+  ).reduce((s, [, arr]) => s + arr.length, 0);
+
+  const selectedCheckins = selectedDate ? (byDate[selectedDate] || []) : [];
+
+  return (
+    <div className="card" style={{ borderRadius: 24, marginBottom: 18 }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <h2 style={{ margin: 0, fontSize: 16 }}>출석 기록</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#888" }}>이번 달 {monthTotal}회</span>
+          <button onClick={prevMonth} style={btnStyle}>◀</button>
+          <span style={{ fontSize: 14, fontWeight: 700, minWidth: 80, textAlign: "center" }}>
+            {year}.{pad(month + 1)}
+          </span>
+          <button onClick={nextMonth} style={btnStyle}>▶</button>
+        </div>
+      </div>
+
+      {/* 요일 헤더 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
+        {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
+          <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 700,
+            color: i === 0 ? "#ef4444" : i === 6 ? "#2563eb" : "#888", padding: "2px 0" }}>
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* 날짜 셀 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />;
+          const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
+          const records = byDate[dateStr] || [];
+          const hasAttendance = records.length > 0;
+          const isSelected = selectedDate === dateStr;
+          const dow = i % 7;
+          return (
+            <div
+              key={i}
+              onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+              style={{
+                borderRadius: 8, padding: "6px 2px", textAlign: "center", cursor: hasAttendance ? "pointer" : "default",
+                background: isSelected ? "#2563eb" : hasAttendance ? "#dbeafe" : "transparent",
+                border: isSelected ? "2px solid #1d4ed8" : "2px solid transparent",
+                transition: "background 0.1s",
+              }}
+            >
+              <div style={{
+                fontSize: 13, fontWeight: hasAttendance ? 800 : 400,
+                color: isSelected ? "#fff" : dow === 0 ? "#ef4444" : dow === 6 ? "#2563eb" : hasAttendance ? "#1d4ed8" : "#374151",
+              }}>{day}</div>
+              {hasAttendance && (
+                <div style={{ fontSize: 10, color: isSelected ? "#bfdbfe" : "#2563eb", fontWeight: 700 }}>
+                  {records.length}회
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 선택된 날짜 상세 */}
+      {selectedDate && (
+        <div style={{ marginTop: 14, borderTop: "1px solid var(--border, #e5e7eb)", paddingTop: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#374151" }}>
+            {selectedDate} 출석 ({selectedCheckins.length}건)
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {selectedCheckins.map((c) => (
+              <div key={c.attendance_id} style={{
+                background: "var(--panel2, #f8fafc)", borderRadius: 10, padding: "10px 14px",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+              }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>
+                    {new Date(c.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+                    {c.result === "CHECK_OUT" ? "운동 종료" : c.result === "SUCCESS" ? "출석 완료" : c.result}
+                  </div>
+                </div>
+                <button
+                  className="btn secondary"
+                  style={{ fontSize: 12, padding: "4px 10px", color: "#ef4444" }}
+                  onClick={async () => {
+                    if (!confirm("이 출석 기록을 삭제할까요?")) return;
+                    const res = await apiFetch("/api/attendance/delete", {
+                      method: "POST",
+                      body: JSON.stringify({ attendance_id: c.attendance_id, member_id: memberId, pass_type: passType }),
+                    });
+                    const json = await res.json();
+                    if (json.success) onDeleted();
+                    else alert("삭제 실패");
+                  }}
+                >삭제</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {checkins.length === 0 && (
+        <div style={{ color: "#888", marginTop: 12 }}>출석 기록이 없습니다.</div>
+      )}
+    </div>
+  );
+}
+
+const btnStyle: React.CSSProperties = {
+  background: "none", border: "1px solid #e2e8f0", borderRadius: 6,
+  padding: "2px 8px", cursor: "pointer", fontSize: 13, color: "#374151",
+};
+// ──────────────────────────────────────────────────────
+
 export default function MemberDetailPage() {
   const [memberId, setMemberId] = useState("");
   const [inputId, setInputId] = useState("");
@@ -619,83 +780,12 @@ export default function MemberDetailPage() {
           )}
 
           {tab === "ATT" && (
-            <div
-              className="card"
-              style={{
-                borderRadius: 24,
-                marginBottom: 18,
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                }}
-              >
-                최근 출석 기록
-              </h2>
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                {checkins.map((c) => (
-                  <div
-                    key={c.attendance_id}
-                    style={{
-                      background: "var(--panel2)",
-                      borderRadius: 16,
-                      padding: 14,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 900 }}>
-                        {new Date(c.checkin_time).toLocaleString("ko-KR")}
-                      </div>
-                      <div style={{ marginTop: 4, color: "#888", fontSize: 13 }}>
-                        {c.result === "CHECK_OUT" ? "운동 종료" : c.result === "SUCCESS" ? "출석 완료" : c.result}
-                      </div>
-                    </div>
-                    <button
-                      className="btn secondary"
-                      style={{ fontSize: 12, padding: "4px 10px", color: "#ef4444" }}
-                      onClick={async () => {
-                        if (!confirm("이 출석 기록을 삭제할까요?")) return;
-                        const res = await apiFetch("/api/attendance/delete", {
-                          method: "POST",
-                          body: JSON.stringify({
-                            attendance_id: c.attendance_id,
-                            member_id: data?.member?.member_id,
-                            pass_type: data?.member?.pass_type,
-                          }),
-                        });
-                        const json = await res.json();
-                        if (json.success) load();
-                        else alert("삭제 실패");
-                      }}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                ))}
-
-                {checkins.length ===
-                  0 && (
-                  <div
-                    style={{
-                      color: "#888",
-                    }}
-                  >
-                    출석 기록이
-                    없습니다.
-                  </div>
-                )}
-              </div>
-            </div>
+            <AttendanceCalendar
+              checkins={checkins}
+              memberId={data?.member?.member_id}
+              passType={data?.member?.pass_type}
+              onDeleted={load}
+            />
           )}
 
           {tab === "PAY" && (
