@@ -214,6 +214,7 @@ export default function LockersPage() {
                   <th>끝번호</th>
                   <th>총 수량</th>
                   <th>열 수</th>
+                  <th>번호 방향</th>
                   <th>순서</th>
                   <th></th>
                 </tr>
@@ -237,6 +238,19 @@ export default function LockersPage() {
                           loadZones();
                         }}
                       />
+                    </td>
+                    <td>
+                      <select
+                        value={z.row_first ? "row" : "col"}
+                        style={{ padding: "2px 6px", border: "1px solid var(--line)", borderRadius: 4, fontSize: 13, background: "var(--bg)", color: "var(--fg)" }}
+                        onChange={async (e) => {
+                          await apiFetch("/api/locker-zones", { method: "PATCH", body: JSON.stringify({ zone_id: z.zone_id, row_first: e.target.value === "row" }) });
+                          loadZones();
+                        }}
+                      >
+                        <option value="row">가로 →</option>
+                        <option value="col">세로 ↓</option>
+                      </select>
                     </td>
                     <td>{z.sort_order}</td>
                     <td>
