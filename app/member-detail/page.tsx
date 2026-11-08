@@ -469,6 +469,8 @@ export default function MemberDetailPage() {
                   <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
                   <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
                   <Info label="가입일" value={data.member.join_date?.slice(0, 10) || "-"} />
+                  <Info label="운동 시작일" value={data.member.start_date?.slice(0, 10) || "-"} />
+                  <Info label="운동 종료일" value={data.member.end_date?.slice(0, 10) || "-"} />
                 </div>
               </div>
 
@@ -1198,11 +1200,18 @@ export default function MemberDetailPage() {
                 <Info
                   label="가입일"
                   value={
-                    data.member.join_date?.slice(
-                      0,
-                      10
-                    ) || "-"
+                    data.member.join_date?.slice(0, 10) || "-"
                   }
+                />
+
+                <Info
+                  label="운동 시작일"
+                  value={data.member.start_date?.slice(0, 10) || "-"}
+                />
+
+                <Info
+                  label="운동 종료일"
+                  value={data.member.end_date?.slice(0, 10) || "-"}
                 />
 
                 <Info
