@@ -281,8 +281,12 @@ export default function MembersPage() {
     const monthMatch = productName.match(/(\d+)\s*개월/);
     const months = monthMatch ? parseInt(monthMatch[1]) : 1;
     const countValue = Number(product?.count_value || 0);
+    // "주N회" 패턴: 주간 횟수 × 개월 × 4주로 총 횟수 계산
+    const weeklyMatch = productName.match(/주\s*(\d+)\s*회/);
     const countMatch = productName.match(/(\d+)\s*회/);
-    const countFromName = countMatch ? parseInt(countMatch[1]) : 0;
+    const countFromName = weeklyMatch
+      ? parseInt(weeklyMatch[1]) * months * 4
+      : countMatch ? parseInt(countMatch[1]) : 0;
     const finalCount = countValue || countFromName;
     const countMonths = passType === "COUNT" ? (monthMatch ? months : Math.ceil(finalCount / 12) || 1) : 0;
 
