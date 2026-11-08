@@ -30,8 +30,7 @@ const menuGroups = [
     items: [
       ["예약 등록", "/calendar"],
       ["예약 캘린더", "/naver-calendar"],
-      ["네이버 예약", "/naver-reservations"],
-      ["홈페이지 예약 관리", "/homepage-reservations"],
+      ["예약 목록", "/naver-reservations"],
       ["상담 CRM", "/crm"],
       ["재연락 상담", "/crm-alerts"],
     ],

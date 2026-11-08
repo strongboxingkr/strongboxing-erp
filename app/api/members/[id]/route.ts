@@ -67,6 +67,17 @@ export async function PUT(
     );
     }
 
+    // 락커 중복 배정 방지: 같은 지점·같은 번호에 다른 사람이 배정돼 있으면 거부
+    if (locker_no) {
+      const [dupRows]: any = await pool.query(
+        `SELECT member_id FROM lockers WHERE branch_name = ? AND locker_no = ? AND member_id IS NOT NULL AND member_id != ?`,
+        [branch_name || oldMember.branch_name, locker_no, memberId]
+      );
+      if (dupRows.length > 0) {
+        return NextResponse.json({ success: false, message: `락카 ${locker_no}번은 이미 다른 회원에게 배정돼 있습니다.` });
+      }
+    }
+
     await pool.query(
       `
       UPDATE members
@@ -103,7 +114,7 @@ export async function PUT(
         end_date || null,
         status,
         memo,
-        locker_no,
+        locker_no || null,
         member_no,
         gender,
         birth_date || null,
@@ -111,6 +122,30 @@ export async function PUT(
         memberId,
       ]
     );
+
+    // 이전 락커 해제 (번호가 바뀐 경우)
+    if (oldMember.locker_no && oldMember.locker_no !== locker_no) {
+      await pool.query(
+        `UPDATE lockers SET member_id=NULL, member_name=NULL, start_date=NULL, end_date=NULL
+         WHERE branch_name=? AND locker_no=? AND member_id=?`,
+        [oldMember.branch_name, oldMember.locker_no, memberId]
+      );
+    }
+
+    // 새 락커 lockers 테이블 동기화
+    if (locker_no) {
+      await pool.query(
+        `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date)
+         VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           member_id = VALUES(member_id),
+           member_name = VALUES(member_name),
+           gender = VALUES(gender),
+           start_date = VALUES(start_date),
+           end_date = VALUES(end_date)`,
+        [branch_name || oldMember.branch_name, locker_no, memberId, name, gender || null, start_date || null, end_date || null]
+      );
+    }
 
     await pool.query(
       `

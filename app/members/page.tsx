@@ -14,9 +14,6 @@ function addMonths(dateString: string, months: number) {
 const today = new Date().toISOString().slice(0, 10);
 const pageSize = 15;
 
-const memberGridColumns =
-  "50px 140px 90px 130px 190px 70px 70px 90px 90px 260px";
-
 const miniBtnStyle = {
   padding: "5px 9px",
   fontSize: 12,
@@ -114,6 +111,11 @@ export default function MembersPage() {
   };
 
   const isAdminOrOwner = user?.role === "ADMIN" || user?.role === "OWNER";
+  // DIRECTOR는 자기 지점만 보므로 지점 컬럼 숨김
+  const showBranchCol = isAdminOrOwner;
+  const memberGridColumns = showBranchCol
+    ? "50px 140px 90px 130px 190px 70px 70px 90px 90px 260px"
+    : "50px 140px 130px 190px 70px 70px 90px 90px 260px";
 
   const loadBranches = async () => {
     const res = await apiFetch("/api/settings?option_type=BRANCH");
@@ -1242,7 +1244,7 @@ ${
         >
           <div>No</div>
           <div>회원명</div>
-          <div>지점</div>
+          {showBranchCol && <div>지점</div>}
           <div>프로그램</div>
           <div>이용기간</div>
           <div>잔여</div>
@@ -1276,9 +1278,11 @@ ${
 
               <div style={{ fontWeight: 900 }}>{m.name}</div>
 
-              <div style={{ color: "#60a5fa", fontWeight: 700 }}>
-                {m.branch_name}
-              </div>
+              {showBranchCol && (
+                <div style={{ color: "#60a5fa", fontWeight: 700 }}>
+                  {m.branch_name}
+                </div>
+              )}
 
               <div>{m.product_name || "-"}</div>
 

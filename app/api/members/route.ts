@@ -118,6 +118,17 @@ export async function POST(req: Request) {
     const checkinCode = phoneLast4;
     const finalStaffName = staff_name || "관리자";
 
+    // 락커 중복 배정 방지
+    if (locker_no) {
+      const [dupRows]: any = await pool.query(
+        `SELECT member_id FROM lockers WHERE branch_name = ? AND locker_no = ? AND member_id IS NOT NULL`,
+        [finalBranchName, locker_no]
+      );
+      if (dupRows.length > 0) {
+        return NextResponse.json({ success: false, message: `락카 ${locker_no}번은 이미 다른 회원에게 배정돼 있습니다.` });
+      }
+    }
+
     const [result]: any = await pool.query(
       `
       INSERT INTO members (
