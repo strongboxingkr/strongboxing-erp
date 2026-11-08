@@ -14,7 +14,8 @@ const money = (v: any) => Number(v || 0).toLocaleString();
 
 const getWeekStart = () => {
   const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  d.setDate(d.getDate() - d.getDay());
+  // 월요일 시작: 일요일(0)은 -6, 월(1)은 0, ..., 토(6)는 -5
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return fmt(d);
 };
 const getMonthStart = () => {

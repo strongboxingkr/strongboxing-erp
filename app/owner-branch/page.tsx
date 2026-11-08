@@ -15,17 +15,17 @@ const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 
 const getWeekStart = () => {
   const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  d.setDate(d.getDate() - d.getDay());
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return fmt(d);
 };
 const getLastWeekStart = () => {
   const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  d.setDate(d.getDate() - d.getDay() - 7);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7);
   return fmt(d);
 };
 const getLastWeekEnd = () => {
   const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  d.setDate(d.getDate() - d.getDay() - 1);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 1);
   return fmt(d);
 };
 const getMonthStart = () => {
