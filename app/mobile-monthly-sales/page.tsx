@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -13,10 +14,11 @@ const METHOD_COLOR: Record<string, { bg: string; color: string }> = {
 
 const now = new Date();
 
-export default function MobileMonthlySalesPage() {
+function MobileMonthlySalesPageInner() {
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [branch, setBranch] = useState("전체");
+  const [branch, setBranch] = useState(searchParams.get("branch") || "전체");
   const [year, setYear] = useState(String(now.getFullYear()));
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [rows, setRows] = useState<any[]>([]);
@@ -203,5 +205,13 @@ export default function MobileMonthlySalesPage() {
         })}
       </div>
     </div>
+  );
+}
+
+export default function MobileMonthlySalesPage() {
+  return (
+    <Suspense>
+      <MobileMonthlySalesPageInner />
+    </Suspense>
   );
 }

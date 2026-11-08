@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
 import { apiFetch } from "@/lib/api";
 
-const branches = ["전체", "철산점", "목동점", "개봉점", "신정점"];
+const BRANCH_ORDER = ["철산점", "목동점", "개봉점", "신정점"];
+const branches = ["전체", ...BRANCH_ORDER];
 
-/** KST 기준 오늘 날짜 */
 const kstToday = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const fmt = (d: Date) => new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
+const money = (v: any) => Number(v || 0).toLocaleString();
 
 const getWeekStart = () => {
   const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -30,6 +30,13 @@ const PRESETS = [
   { label: "이번달", start: getMonthStart, end: () => today },
 ];
 
+const periodLabel = (preset: number, start: string, end: string, branch: string) => {
+  const branchTxt = branch === "전체" ? "전체 지점" : branch;
+  if (preset === 0) return `오늘 매출 · ${branchTxt}`;
+  if (preset === 1) return `이번주 매출 · ${branchTxt}`;
+  return `이번달 매출 · ${branchTxt}`;
+};
+
 const periodRangeLabel = (preset: number, start: string, end: string) => {
   if (preset === 0) return today;
   return `${start} ~ ${end}`;
@@ -48,7 +55,6 @@ export default function MobileOwnerPage() {
   const [endDate, setEndDate] = useState(today);
   const [branch, setBranch] = useState("전체");
 
-  // 필터 변경 경쟁 방지용 ref
   const reqId = useRef(0);
 
   const applyPreset = (idx: number) => {
@@ -101,12 +107,15 @@ export default function MobileOwnerPage() {
     return () => clearInterval(timer);
   }, [load]);
 
-  const branchSales = data?.branch_sales || [];
+  const rawBranchSales = data?.branch_sales || [];
+  // 고정 순서 유지 (매출 순 정렬 대신 BRANCH_ORDER 사용)
+  const branchSales = BRANCH_ORDER.map((name) =>
+    rawBranchSales.find((b: any) => b.branch_name === name) || { branch_name: name, sales: 0, prev_sales: 0, sales_growth: null, new_members: 0, rereg_count: 0, active_members: 0 }
+  );
   const totalSales = Number(data?.sales || 0);
   const compLabel = data?.comparison_label || "전기간 대비";
 
-  // 비교 기간 전체 매출 (branch_sales의 prev_sales 합산)
-  const prevTotalSales = branchSales.reduce((sum: number, b: any) => sum + Number(b.prev_sales || 0), 0);
+  const prevTotalSales = rawBranchSales.reduce((sum: number, b: any) => sum + Number(b.prev_sales || 0), 0);
   const totalGrowth = prevTotalSales > 0
     ? Math.round(((totalSales - prevTotalSales) / prevTotalSales) * 100)
     : null;
@@ -114,25 +123,28 @@ export default function MobileOwnerPage() {
   const hasChartData = chartRows !== null && !chartError && chartRows.some((r) => r.sales > 0);
   const maxSales = hasChartData ? Math.max(...chartRows!.map((r) => Number(r.sales || 0))) : 1;
 
-  // 확인 필요 항목: 지점별로 집계
   const checkItems = [
     {
       label: "만료 7일 이내",
       total: branch === "전체"
-        ? branchSales.reduce((s: number, b: any) => s + Number(b.expiring_soon || 0), 0)
+        ? rawBranchSales.reduce((s: number, b: any) => s + Number(b.expiring_soon || 0), 0)
         : Number(data?.alert_members || 0),
-      perBranch: branch === "전체" ? branchSales.map((b: any) => ({ name: b.branch_name, count: Number(b.expiring_soon || 0) })) : [],
+      perBranch: branch === "전체" ? BRANCH_ORDER.map((name) => {
+        const b = rawBranchSales.find((r: any) => r.branch_name === name);
+        return { name, count: Number(b?.expiring_soon || 0) };
+      }) : [],
       href: "/member-expiring",
       urgent: false,
-      basis: "현재 기준",
     },
     {
       label: "재연락 기한 초과",
       total: Number(data?.crm_alerts || 0),
-      perBranch: branch === "전체" ? branchSales.map((b: any) => ({ name: b.branch_name, count: Number(b.crm_alerts || 0) })) : [],
+      perBranch: branch === "전체" ? BRANCH_ORDER.map((name) => {
+        const b = rawBranchSales.find((r: any) => r.branch_name === name);
+        return { name, count: Number(b?.crm_alerts || 0) };
+      }) : [],
       href: "/crm-alerts",
       urgent: true,
-      basis: "현재 기준",
     },
     {
       label: "오늘 만료",
@@ -140,12 +152,12 @@ export default function MobileOwnerPage() {
       perBranch: [],
       href: "/member-expiring",
       urgent: false,
-      basis: "오늘 기준",
     },
   ];
 
-  // 차트는 항상 최근 7일 고정 (preset과 무관)
-  const presetChartTitle = "최근 7일 매출";
+  const monthlySalesHref = branch === "전체"
+    ? "/mobile-monthly-sales"
+    : `/mobile-monthly-sales?branch=${encodeURIComponent(branch)}`;
 
   return (
     <div style={S.page}>
@@ -157,14 +169,15 @@ export default function MobileOwnerPage() {
         <span style={S.badge}>대표</span>
       </div>
 
-      {/* ① 기간·지점 필터 */}
+      {/* 필터 */}
       <div style={S.filterBar}>
         <div style={{ display: "flex", gap: 5 }}>
           {PRESETS.map((p, i) => (
             <button key={p.label} onClick={() => applyPreset(i)} style={{
               ...S.presetBtn,
               background: preset === i ? "#2563eb" : "#f1f5f9",
-              color: preset === i ? "#fff" : "#374151",
+              color: preset === i ? "#fff" : "#475569",
+              borderColor: preset === i ? "#2563eb" : "#e2e8f0",
             }}>{p.label}</button>
           ))}
         </div>
@@ -172,12 +185,13 @@ export default function MobileOwnerPage() {
           {branches.map((b) => <option key={b}>{b}</option>)}
         </select>
       </div>
-      <div style={{ padding: "4px 14px", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
+      <div style={{ padding: "3px 16px 4px", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
         <span style={{ fontSize: 11, color: "#94a3b8" }}>{periodRangeLabel(preset, startDate, endDate)}</span>
       </div>
 
-      {/* ② 핵심 실적 요약 */}
-      <div style={{ padding: "10px 12px 0" }}>
+      <div style={S.body}>
+
+        {/* ② 핵심 실적 요약 */}
         <div style={S.card}>
           {dataError ? (
             <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -188,210 +202,210 @@ export default function MobileOwnerPage() {
             <div style={{ padding: "14px 16px", fontSize: 13, color: "#94a3b8" }}>로딩 중...</div>
           ) : (
             <>
-              {/* 매출 + 증감 */}
-              <div style={{ padding: "12px 16px 0" }}>
-                <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>
-                  선택 기간 매출 · {branch}
+              <div style={{ padding: "12px 16px 10px" }}>
+                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>
+                  {periodLabel(preset, startDate, endDate, branch)}
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: "#1e3a8a", letterSpacing: -0.5 }}>
-                    {money(totalSales)}
-                  </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", letterSpacing: -0.5, fontVariantNumeric: "tabular-nums" }}>
+                    {money(totalSales)}<span style={{ fontSize: 14, fontWeight: 500, color: "#64748b", marginLeft: 2 }}>원</span>
+                  </span>
                   {totalGrowth !== null ? (
-                    <div style={{ fontSize: 12, fontWeight: 700, color: totalGrowth >= 0 ? "#16a34a" : "#dc2626" }}>
-                      {totalGrowth >= 0 ? "▲" : "▼"}{Math.abs(totalGrowth)}% <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>{compLabel}</span>
-                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: totalGrowth >= 0 ? "#16a34a" : "#dc2626" }}>
+                      {totalGrowth >= 0 ? "▲" : "▼"}{Math.abs(totalGrowth)}%
+                      <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginLeft: 3 }}>{compLabel}</span>
+                    </span>
                   ) : (
-                    <div style={{ fontSize: 11, color: "#94a3b8" }}>비교 기준 없음</div>
+                    <span style={{ fontSize: 11, color: "#cbd5e1" }}>비교 없음</span>
                   )}
                 </div>
               </div>
-              {/* 신규·재등록 */}
-              <div style={{ padding: "8px 16px", display: "flex", gap: 0, borderTop: "1px solid #f1f5f9", marginTop: 8 }}>
-                <div style={S.smallMetric}>
-                  <div style={S.metricLbl}>신규 <span style={S.basisLbl}>선택기간</span></div>
-                  <div style={S.metricVal}>{data.new_members ?? 0}명</div>
-                </div>
-                <div style={{ ...S.smallMetric, borderLeft: "1px solid #f1f5f9" }}>
-                  <div style={S.metricLbl}>재등록 <span style={S.basisLbl}>선택기간</span></div>
-                  <div style={S.metricVal}>
-                    {branchSales.reduce((s: number, b: any) => s + Number(b.rereg_count || 0), 0)}명
+              <div style={{ borderTop: "1px solid #f1f5f9", display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+                {[
+                  { lbl: "신규", val: data.new_members ?? 0, sub: "선택기간" },
+                  { lbl: "재등록", val: rawBranchSales.reduce((s: number, b: any) => s + Number(b.rereg_count || 0), 0), sub: "선택기간" },
+                  { lbl: "유효회원", val: data.active_members ?? 0, sub: "현재" },
+                  { lbl: "오늘출석", val: data.checkins ?? 0, sub: "오늘" },
+                ].map((m, i) => (
+                  <div key={m.lbl} style={{ ...S.smallMetric, borderLeft: i > 0 ? "1px solid #f1f5f9" : undefined }}>
+                    <div style={S.metricLbl}>{m.lbl} <span style={S.basisLbl}>{m.sub}</span></div>
+                    <div style={S.metricVal}>{m.val}<span style={S.unitLbl}>명</span></div>
                   </div>
-                </div>
-                <div style={{ ...S.smallMetric, borderLeft: "1px solid #f1f5f9" }}>
-                  <div style={S.metricLbl}>유효회원 <span style={S.basisLbl}>현재</span></div>
-                  <div style={S.metricVal}>{data.active_members ?? 0}명</div>
-                </div>
-                <div style={{ ...S.smallMetric, borderLeft: "1px solid #f1f5f9" }}>
-                  <div style={S.metricLbl}>오늘 출석 <span style={S.basisLbl}>오늘</span></div>
-                  <div style={S.metricVal}>{data.checkins ?? 0}명</div>
-                </div>
+                ))}
               </div>
             </>
           )}
         </div>
-      </div>
 
-      {/* ③ 지점별 실적 */}
-      {branch === "전체" && (
-        <div style={{ padding: "10px 12px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-            <div style={S.sectionTitle}>지점별 실적</div>
-            <div style={{ fontSize: 10, color: "#94a3b8" }}>{compLabel}</div>
-          </div>
-          <div style={S.card}>
-            {branchSales.length === 0 && !data ? (
-              <div style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8" }}>로딩 중...</div>
-            ) : branchSales.map((b: any, i: number) => {
-              const growth = b.sales_growth;
-              const hasGrowth = growth !== null && growth !== undefined;
-              return (
-                <div key={b.branch_name}>
-                  {i > 0 && <div style={S.divider} />}
-                  <Link
-                    href={`/owner-branch?branch=${encodeURIComponent(b.branch_name)}&preset=${preset}&start=${startDate}&end=${endDate}`}
-                    style={{ textDecoration: "none", display: "block" }}
-                  >
-                    <div style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: "0 0 auto" }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{b.branch_name}</div>
-                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                          신규 {b.new_members || 0} · 재등록 {b.rereg_count || 0} · 유효 {b.active_members || 0}명
+        {/* ③ 지점별 실적 */}
+        {branch === "전체" && (
+          <div>
+            <div style={S.sectionHeader}>
+              <span style={S.sectionTitle}>지점별 실적</span>
+              <span style={{ fontSize: 11, color: "#94a3b8" }}>{compLabel}</span>
+            </div>
+            <div style={S.card}>
+              {!data ? (
+                <div style={{ padding: "12px 16px", fontSize: 13, color: "#94a3b8" }}>로딩 중...</div>
+              ) : branchSales.map((b: any, i: number) => {
+                const growth = b.sales_growth;
+                const hasGrowth = growth !== null && growth !== undefined;
+                return (
+                  <div key={b.branch_name}>
+                    {i > 0 && <div style={S.divider} />}
+                    <Link
+                      href={`/owner-branch?branch=${encodeURIComponent(b.branch_name)}&preset=${preset}&start=${startDate}&end=${endDate}`}
+                      style={{ textDecoration: "none", display: "block" }}
+                    >
+                      <div style={{ padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                        <div style={{ flex: "0 0 auto" }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{b.branch_name}</div>
+                          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                            신규 {b.new_members || 0} · 재등록 {b.rereg_count || 0} · 유효 {b.active_members || 0}명
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flex: "0 0 auto" }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                            {money(b.sales || 0)}<span style={{ fontSize: 12, fontWeight: 400, color: "#64748b" }}>원</span>
+                          </div>
+                          {hasGrowth ? (
+                            <div style={{ fontSize: 11, color: growth >= 0 ? "#16a34a" : "#dc2626", marginTop: 1, fontWeight: 600 }}>
+                              {growth >= 0 ? "▲" : "▼"}{Math.abs(growth)}%
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 1 }}>—</div>
+                          )}
                         </div>
                       </div>
-                      <div style={{ textAlign: "right", flex: "0 0 auto" }}>
-                        <div style={{ fontSize: 15, fontWeight: 900, color: "#2563eb", whiteSpace: "nowrap" }}>
-                          {money(b.sales || 0)}
-                        </div>
-                        {hasGrowth ? (
-                          <div style={{ fontSize: 11, color: growth >= 0 ? "#16a34a" : "#dc2626", marginTop: 1, fontWeight: 600 }}>
-                            {growth >= 0 ? "▲" : "▼"}{Math.abs(growth)}%
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 1 }}>—</div>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ④ 확인 필요한 항목 */}
+        <div>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionTitle}>확인 필요한 항목</span>
+            <span style={{ fontSize: 11, color: "#94a3b8" }}>현재 기준</span>
+          </div>
+          <div style={S.card}>
+            {checkItems.map((item, i) => {
+              const isLoaded = data !== null && !dataError;
+              const displayVal = dataError ? "?" : !isLoaded ? "—" : item.total;
+              const isUrgent = item.urgent && isLoaded && item.total > 0;
+              return (
+                <div key={item.label}>
+                  {i > 0 && <div style={S.divider} />}
+                  <div style={{ padding: "10px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{item.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: isUrgent ? "#dc2626" : "#1e293b", fontVariantNumeric: "tabular-nums" }}>
+                          {displayVal}{isLoaded && !dataError ? <span style={{ fontSize: 12, fontWeight: 400, color: "#64748b" }}>명</span> : ""}
+                        </span>
+                        {isLoaded && !dataError && item.total > 0 && (
+                          <Link href={item.href} style={S.outlineBtn}>보기</Link>
                         )}
                       </div>
                     </div>
-                  </Link>
+                    {item.perBranch.length > 0 && isLoaded && !dataError && item.total > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", marginTop: 5 }}>
+                        {item.perBranch.filter((b) => b.count > 0).map((b) => (
+                          <span key={b.name} style={{ fontSize: 12, color: "#64748b" }}>
+                            {b.name} <b style={{ color: "#374151" }}>{b.count}</b>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
-      )}
 
-      {/* ④ 확인 필요한 항목 */}
-      <div style={{ padding: "10px 12px 0" }}>
-        <div style={S.sectionTitle}>확인 필요한 항목
-          <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginLeft: 6 }}>현재 기준</span>
-        </div>
-        <div style={S.card}>
-          {checkItems.map((item, i) => {
-            const isLoaded = data !== null && !dataError;
-            const displayVal = dataError ? "?" : !isLoaded ? "—" : item.total;
-            const isUrgent = item.urgent && isLoaded && item.total > 0;
-            return (
-              <div key={item.label}>
-                {i > 0 && <div style={S.divider} />}
-                <div style={{ padding: "10px 14px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{item.label}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 16, fontWeight: 900, color: isUrgent ? "#dc2626" : "#1e293b" }}>
-                        {displayVal}{isLoaded && !dataError ? "명" : ""}
-                      </span>
-                      {isLoaded && !dataError && item.total > 0 && (
-                        <Link href={item.href} style={S.viewBtn}>보기</Link>
-                      )}
-                    </div>
-                  </div>
-                  {/* 지점별 미니 행 */}
-                  {item.perBranch.length > 0 && isLoaded && !dataError && item.total > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", marginTop: 5 }}>
-                      {item.perBranch.filter((b) => b.count > 0).map((b) => (
-                        <span key={b.name} style={{ fontSize: 11, color: "#64748b" }}>
-                          {b.name} <b style={{ color: "#1e293b" }}>{b.count}</b>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ⑤ 매출 추이 */}
-      <div style={{ padding: "10px 12px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <div style={S.sectionTitle}>{presetChartTitle}</div>
-          {chartError && (
-            <button onClick={load} style={S.retryBtn}>재시도</button>
-          )}
-        </div>
-        <div style={{ ...S.card, padding: chartRows === null || chartError ? undefined : "10px 4px 6px 0" }}>
-          {chartError ? (
-            <div style={{ padding: "12px 16px", fontSize: 12, color: "#94a3b8" }}>
-              차트를 불러올 수 없습니다.
+        {/* ⑤ 월별 매출 바로가기 */}
+        <Link href={monthlySalesHref} style={{ textDecoration: "none", display: "block" }}>
+          <div style={{ ...S.card, padding: "13px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>월별 매출</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>날짜별 결제 내역 상세 조회</div>
             </div>
-          ) : chartRows === null ? (
-            <div style={{ padding: "12px 16px", fontSize: 12, color: "#94a3b8" }}>로딩 중...</div>
-          ) : !hasChartData ? (
-            <div style={{ padding: "12px 16px", fontSize: 12, color: "#94a3b8" }}>기간 내 매출 데이터가 없습니다.</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={chartRows} margin={{ top: 4, right: 14, left: 0, bottom: 0 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                <YAxis
-                  domain={[0, maxSales]}
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickFormatter={(v) => v === 0 ? "0" : `${Math.round(v / 10000)}만`}
-                  axisLine={false} tickLine={false} width={34}
-                />
-                <Tooltip
-                  formatter={(v: any) => [`${Number(v).toLocaleString()}원`, "매출"]}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
-                />
-                <Line type="monotone" dataKey="sales" stroke="#2563eb" strokeWidth={2}
-                  dot={{ r: 3, fill: "#2563eb" }} activeDot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-      </div>
+            <span style={{ fontSize: 18, color: "#94a3b8", lineHeight: 1 }}>›</span>
+          </div>
+        </Link>
 
-      {/* ⑥ 오늘 예약 */}
-      <div style={{ padding: "10px 12px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <div style={S.sectionTitle}>오늘 예약 <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400 }}>오늘 기준</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {reservations.length > 0 && <span style={{ fontSize: 11, color: "#94a3b8" }}>{reservations.length}건</span>}
-            <Link href="/naver-calendar" style={S.viewBtn}>전체보기</Link>
+        {/* ⑥ 최근 7일 매출 추이 */}
+        <div>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionTitle}>최근 7일 매출</span>
+            {chartError && <button onClick={load} style={S.retryBtn}>재시도</button>}
+          </div>
+          <div style={{ ...S.card, padding: chartRows === null || chartError ? undefined : "10px 4px 6px 0" }}>
+            {chartError ? (
+              <div style={{ padding: "12px 16px", fontSize: 12, color: "#94a3b8" }}>차트를 불러올 수 없습니다.</div>
+            ) : chartRows === null ? (
+              <div style={{ padding: "12px 16px", fontSize: 12, color: "#94a3b8" }}>로딩 중...</div>
+            ) : !hasChartData ? (
+              <div style={{ padding: "12px 16px", fontSize: 12, color: "#94a3b8" }}>기간 내 매출 데이터가 없습니다.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={chartRows} margin={{ top: 4, right: 14, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    domain={[0, maxSales]}
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tickFormatter={(v) => v === 0 ? "0" : `${Math.round(v / 10000)}만`}
+                    axisLine={false} tickLine={false} width={34}
+                  />
+                  <Tooltip
+                    formatter={(v: any) => [`${Number(v).toLocaleString()}원`, "매출"]}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                  />
+                  <Line type="monotone" dataKey="sales" stroke="#2563eb" strokeWidth={2}
+                    dot={{ r: 3, fill: "#2563eb" }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
-        <div style={S.card}>
-          {reservations.length === 0 ? (
-            <div style={{ padding: "10px 14px", fontSize: 12, color: "#94a3b8" }}>오늘 예약이 없습니다.</div>
-          ) : (
-            reservations.slice(0, 5).map((r, i) => (
-              <div key={r.event_id}>
-                {i > 0 && <div style={S.divider} />}
-                <div style={{ padding: "9px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 3, alignSelf: "stretch", minHeight: 32, background: "#2563eb", borderRadius: 2, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
-                      {r.start_datetime?.slice(11, 16)} · {r.customer_name}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#64748b", marginTop: 1 }}>
-                      {r.branch_name}{r.status ? ` · ${r.status}` : ""}
+
+        {/* ⑦ 오늘 예약 */}
+        <div>
+          <div style={S.sectionHeader}>
+            <span style={S.sectionTitle}>오늘 예약</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {reservations.length > 0 && <span style={{ fontSize: 11, color: "#94a3b8" }}>{reservations.length}건</span>}
+              <Link href="/naver-calendar" style={S.outlineBtn}>전체보기</Link>
+            </div>
+          </div>
+          <div style={S.card}>
+            {reservations.length === 0 ? (
+              <div style={{ padding: "10px 16px", fontSize: 12, color: "#94a3b8" }}>오늘 예약이 없습니다.</div>
+            ) : (
+              reservations.slice(0, 5).map((r, i) => (
+                <div key={r.event_id}>
+                  {i > 0 && <div style={S.divider} />}
+                  <div style={{ padding: "9px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 3, alignSelf: "stretch", minHeight: 32, background: "#2563eb", borderRadius: 2, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
+                        {r.start_datetime?.slice(11, 16)} · {r.customer_name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#64748b", marginTop: 1 }}>
+                        {r.branch_name}{r.status ? ` · ${r.status}` : ""}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
+
       </div>
 
       {/* 하단 여백 */}
@@ -445,10 +459,10 @@ export default function MobileOwnerPage() {
 }
 
 const S: Record<string, React.CSSProperties> = {
-  page: { background: "#f1f5f9", minHeight: "100vh" },
+  page: { background: "#f8fafc", minHeight: "100vh" },
   header: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "12px 14px 10px",
+    padding: "12px 16px 10px",
     background: "#fff", borderBottom: "1px solid #e2e8f0",
   },
   badge: {
@@ -457,26 +471,34 @@ const S: Record<string, React.CSSProperties> = {
   },
   filterBar: {
     display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "7px 12px", background: "#fff", gap: 8,
+    padding: "7px 16px", background: "#fff", gap: 8,
   },
   presetBtn: {
-    padding: "5px 10px", borderRadius: 7, border: "none",
+    padding: "5px 10px", borderRadius: 7, border: "1px solid",
     fontSize: 13, fontWeight: 600, cursor: "pointer",
   },
   smallSelect: {
     padding: "5px 8px", borderRadius: 8, border: "1px solid #e2e8f0",
     fontSize: 13, background: "#f8fafc", color: "#374151", cursor: "pointer",
   },
-  card: { background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", overflow: "hidden" },
-  divider: { height: 1, background: "#f1f5f9", margin: "0 14px" },
-  sectionTitle: { fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 6 },
-  smallMetric: { flex: 1, padding: "7px 8px", textAlign: "center" as const },
+  body: {
+    padding: "12px 16px", display: "flex", flexDirection: "column" as const, gap: 20,
+  },
+  card: { background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden" },
+  divider: { height: 1, background: "#f1f5f9", margin: "0 16px" },
+  sectionHeader: {
+    display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8,
+  },
+  sectionTitle: { fontSize: 13, fontWeight: 800, color: "#1e293b" },
+  smallMetric: { padding: "8px 4px", textAlign: "center" as const },
   metricLbl: { fontSize: 10, color: "#64748b", marginBottom: 2 },
-  metricVal: { fontSize: 14, fontWeight: 900, color: "#1e293b", whiteSpace: "nowrap" as const },
+  metricVal: { fontSize: 14, fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" as const, fontVariantNumeric: "tabular-nums" },
   basisLbl: { fontSize: 9, color: "#94a3b8", fontWeight: 400 },
-  viewBtn: {
-    padding: "3px 9px", background: "#2563eb", color: "#fff",
-    borderRadius: 6, fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" as const,
+  unitLbl: { fontSize: 11, fontWeight: 400, color: "#64748b", marginLeft: 1 },
+  outlineBtn: {
+    padding: "3px 9px", background: "#fff", color: "#475569",
+    borderRadius: 6, fontSize: 11, fontWeight: 600, textDecoration: "none",
+    border: "1px solid #cbd5e1", whiteSpace: "nowrap" as const,
   },
   retryBtn: {
     padding: "3px 9px", background: "#f1f5f9", color: "#374151",
