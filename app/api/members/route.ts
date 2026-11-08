@@ -114,7 +114,8 @@ export async function POST(req: Request) {
       });
     }
 
-    const phoneLast4 = String(phone).slice(-4);
+    const normalizedPhone = String(phone).replace(/[^0-9]/g, "");
+    const phoneLast4 = normalizedPhone.slice(-4);
     const checkinCode = phoneLast4;
     const finalStaffName = staff_name || "관리자";
 
@@ -155,7 +156,7 @@ export async function POST(req: Request) {
       [
         finalBranchName,
         name,
-        phone,
+        normalizedPhone,
         phoneLast4,
         checkinCode,
         product_name || null,

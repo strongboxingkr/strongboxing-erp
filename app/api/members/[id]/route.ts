@@ -78,6 +78,9 @@ export async function PUT(
       }
     }
 
+    const normalizedPhone = String(phone || "").replace(/[^0-9]/g, "");
+    const normalizedLast4 = normalizedPhone.slice(-4);
+
     await pool.query(
       `
       UPDATE members
@@ -104,9 +107,9 @@ export async function PUT(
       [
         branch_name,
         name,
-        phone,
-        phone_last4,
-        checkin_code,
+        normalizedPhone,
+        phone_last4 || normalizedLast4,
+        checkin_code || normalizedLast4,
         product_name,
         pass_type,
         remaining_count,
