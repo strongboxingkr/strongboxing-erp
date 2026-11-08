@@ -20,16 +20,20 @@ export async function GET(req: Request) {
       params
     );
 
-    // daily_sales 테이블 (이지스포 업로드)
-    const [dsRows]: any = await pool.query(
-      `SELECT DATE_FORMAT(sale_date, '%m/%d') AS date, DATE(sale_date) AS raw_date, IFNULL(SUM(total_amount), 0) AS sales
-       FROM daily_sales
-       WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-       ${branchFilter}
-       GROUP BY DATE(sale_date)
-       ORDER BY DATE(sale_date)`,
-      params
-    );
+    // daily_sales 테이블 (이지스포 업로드) — 테이블 없을 수 있으므로 별도 try-catch
+    let dsRows: any[] = [];
+    try {
+      const [ds]: any = await pool.query(
+        `SELECT DATE_FORMAT(sale_date, '%m/%d') AS date, DATE(sale_date) AS raw_date, IFNULL(SUM(total_amount), 0) AS sales
+         FROM daily_sales
+         WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+         ${branchFilter}
+         GROUP BY DATE(sale_date)
+         ORDER BY DATE(sale_date)`,
+        params
+      );
+      dsRows = ds;
+    } catch {}
 
     // 두 소스 합치기
     const merged: Record<string, number> = {};
