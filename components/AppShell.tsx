@@ -50,6 +50,7 @@ const menuGroups = [
     items: [
       ["문자관리", "/sms"],
       ["공지사항", "/notice"],
+      ["회원앱 소식", "/member-news"],
       ["알림센터", "/alerts-center"],
     ],
   },

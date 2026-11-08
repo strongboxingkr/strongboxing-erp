@@ -307,205 +307,108 @@ export default function MemberDetailPage() {
     }
   }, [memberId]);
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const getMemberStatus = (m: any) => {
+    if (m.status === "REST") return { text: "휴회중", color: "#f59e0b" };
+    const endStr = m.end_date?.slice(0, 10);
+    if (!endStr || endStr < todayStr) return { text: "만료", color: "#ef4444" };
+    const diff = Math.ceil((new Date(endStr).getTime() - new Date(todayStr).getTime()) / 86400000);
+    if (diff <= 7) return { text: "만료임박", color: "#ff4d6d" };
+    return { text: "정상", color: "#22c55e" };
+  };
+
+  const getRemaining = (m: any) => {
+    if (m.status === "REST") return { text: "휴회중", color: "#f59e0b" };
+    if (m.pass_type === "COUNT") {
+      const c = Number(m.remaining_count ?? 0);
+      return c > 0 ? { text: `${c}회`, color: "#60a5fa" } : { text: "0회", color: "#ef4444" };
+    }
+    const endStr = m.end_date?.slice(0, 10);
+    if (!endStr) return { text: "-", color: "#666" };
+    const diff = Math.ceil((new Date(endStr).getTime() - new Date(todayStr).getTime()) / 86400000);
+    if (diff < 0) return { text: "만료", color: "#ef4444" };
+    if (diff === 0) return { text: "오늘 만료", color: "#ff4d6d" };
+    return { text: `${diff}일`, color: diff <= 7 ? "#ff4d6d" : diff <= 30 ? "#f59e0b" : "#22c55e" };
+  };
+
   return (
     <AppShell title="회원 상세">
-      <div style={{ zoom: 0.9 }}>
-      <button
-        className="btn secondary"
-        onClick={() => history.back()}
-        style={{ marginBottom: 12, fontSize: 15, padding: "8px 20px" }}
-      >
-        ← 뒤로가기
-      </button>
-      <div
-        className="card"
-        style={{
-          marginBottom: 18,
-          borderRadius: 24,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-          }}
-        >
-          <input
-            className="input"
-            placeholder="회원 ID 입력"
+      {/* 상단 네비 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <button className="btn secondary" onClick={() => history.back()}
+          style={{ fontSize: 13, padding: "5px 14px", height: 32 }}>
+          ← 목록으로
+        </button>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+          <input className="input" placeholder="다른 회원 ID"
             value={inputId}
-            onChange={(e) => {
-              setInputId(e.target.value);
-              setMemberId(e.target.value);
-            }}
-            style={{
-              width: 260,
-            }}
+            onChange={(e) => { setInputId(e.target.value); setMemberId(e.target.value); }}
+            style={{ width: 130, height: 32, fontSize: 12, padding: "0 8px" }}
           />
-
-          <button
-            className="btn"
-            onClick={load}
-          >
-            회원 조회
+          <button className="btn secondary" onClick={load}
+            style={{ height: 32, fontSize: 12, padding: "0 12px" }}>
+            조회
           </button>
         </div>
       </div>
 
       {data && (
         <>
-          <div
-            className="card"
-            style={{
-              borderRadius: 28,
-              marginBottom: 18,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                gap: 20,
-                flexWrap: "wrap",
-              }}
-            >
+          {/* 컴팩트 헤더 */}
+          <div className="card" style={{ marginBottom: 8, padding: "12px 16px", borderRadius: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 24, fontWeight: 900 }}>{data.member.name}</span>
+              {(() => {
+                const st = getMemberStatus(data.member);
+                return (
+                  <span style={{ background: `${st.color}22`, color: st.color, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900 }}>
+                    {st.text}
+                  </span>
+                );
+              })()}
+              {Number(data.member.remaining_count || 0) > 0 && Number(data.member.remaining_count) <= 3 && (
+                <span style={{ background: "rgba(255,77,109,.15)", color: "#ff4d6d", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900 }}>횟수부족</span>
+              )}
+              <button className="btn secondary"
+                style={{ fontSize: 12, padding: "3px 12px", height: 28, marginLeft: 4 }}
+                onClick={() => location.href = `/members?member_id=${data.member.member_id}&return=detail`}>
+                수정
+              </button>
+              <span style={{ fontSize: 13, color: "#9ca3af" }}>
+                {data.member.branch_name} · {data.member.phone}
+              </span>
+            </div>
+            <div style={{ marginTop: 8, display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13 }}>
+              <span><span style={{ color: "#6b7280" }}>회원번호 </span><strong>{data.member.member_no || "-"}</strong></span>
+              <span><span style={{ color: "#6b7280" }}>출석번호 </span><strong>{data.member.checkin_code || "-"}</strong></span>
+              <span><span style={{ color: "#6b7280" }}>담당자 </span><strong>{data.member.staff_name || "-"}</strong></span>
+            </div>
+          </div>
+
+          {/* 이용정보 띠 */}
+          <div className="card" style={{ marginBottom: 10, padding: "10px 16px", borderRadius: 14 }}>
+            <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "center" }}>
               <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 40,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {data.member.name}
-                  </div>
-
-                  <button
-                    className="btn secondary"
-                    onClick={() => {
-                      location.href = `/members?member_id=${data.member.member_id}&return=detail`;
-                    }}
-                  >
-                    수정
-                  </button>
-
-                  {data.member.status === "REST" && (
-                    <div
-                      style={{
-                        background: "rgba(245,158,11,.15)",
-                        color: "#f59e0b",
-                        padding: "6px 12px",
-                        borderRadius: 999,
-                        fontSize: 13,
-                        fontWeight: 900,
-                      }}
-                    >
-                      휴회중
-                    </div>
-                  )}
-
-                  {data.member.status === "EXPIRED" && (
-                    <div
-                      style={{
-                        background: "rgba(239,68,68,.15)",
-                        color: "#ef4444",
-                        padding: "6px 12px",
-                        borderRadius: 999,
-                        fontSize: 13,
-                        fontWeight: 900,
-                      }}
-                    >
-                      만료
-                    </div>
-                  )}
-
-                  {Number(data.member.remaining_count || 0) > 0 &&
-                    Number(data.member.remaining_count) <= 3 && (
-                      <div
-                        style={{
-                          background: "rgba(255,77,109,.15)",
-                          color: "#ff4d6d",
-                          padding: "6px 12px",
-                          borderRadius: 999,
-                          fontSize: 13,
-                          fontWeight: 900,
-                        }}
-                      >
-                        횟수부족
-                      </div>
-                    )}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#aaa",
-                  }}
-                >
-                  {data.member.branch_name} / {data.member.phone}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 20,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
-                    gap: 12,
-                  }}
-                >
-                  <Info label="회원번호" value={data.member.member_no || "-"} />
-                  <Info label="출석번호" value={data.member.checkin_code || "-"} />
-                  <Info label="락카번호" value={data.member.locker_no || "-"} />
-                  <Info label="담당자" value={data.member.staff_name || "-"} />
-                  <Info label="성별" value={data.member.gender || "-"} />
-                  <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
-                  <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
-                  <Info label="가입일" value={data.member.join_date?.slice(0, 10) || "-"} />
-                  <Info label="운동 시작일" value={data.member.start_date?.slice(0, 10) || "-"} />
-                  <Info label="운동 종료일" value={data.member.end_date?.slice(0, 10) || "-"} />
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>회원권</div>
+                <div style={{ fontWeight: 800, fontSize: 15 }}>{data.member.product_name || "-"}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>이용기간</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>
+                  {data.member.start_date?.slice(0, 10) || "-"} ~ {data.member.end_date?.slice(0, 10) || "-"}
                 </div>
               </div>
-
-              <div
-                style={{
-                  background:
-                    "var(--panel2)",
-                  borderRadius: 18,
-                  padding:
-                    "14px 20px",
-                }}
-              >
-                <div
-                  style={{
-                    color:
-                      "#aaa",
-                    fontSize: 13,
-                  }}
-                >
-                  회원권
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 6,
-                    fontWeight: 900,
-                    fontSize: 22,
-                  }}
-                >
-                  {
-                    data.member
-                      .product_name
-                  }
-                </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>잔여</div>
+                {(() => {
+                  const r = getRemaining(data.member);
+                  return <div style={{ fontWeight: 800, fontSize: 15, color: r.color }}>{r.text}</div>;
+                })()}
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>락카</div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{data.member.locker_no || "없음"}</div>
               </div>
             </div>
           </div>
@@ -513,9 +416,9 @@ export default function MemberDetailPage() {
           <div
             className="card"
             style={{
-              borderRadius: 18,
-              marginBottom: 18,
-              padding: 12,
+              borderRadius: 14,
+              marginBottom: 10,
+              padding: "8px 12px",
               display: "flex",
               gap: 8,
               flexWrap: "wrap",
@@ -1095,133 +998,19 @@ export default function MemberDetailPage() {
             </div>
           )}
           {tab === "INFO" && (
-            <div
-              className="card"
-              style={{
-                borderRadius: 24,
-                marginBottom: 18,
-              }}
-            >
-              <h2 style={{ marginTop: 0 }}>
-                기본정보
-              </h2>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(4,1fr)",
-                  gap: 12,
-                }}
-              >
-                <Info
-                  label="지점"
-                  value={
-                    data.member
-                      .branch_name || "-"
-                  }
-                />
-
-                <Info
-                  label="회원명"
-                  value={
-                    data.member.name ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="전화번호"
-                  value={
-                    data.member.phone ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="비상연락처"
-                  value={
-                    data.member
-                      .emergency_contact ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="회원번호"
-                  value={
-                    data.member
-                      .member_no || "-"
-                  }
-                />
-
-                <Info
-                  label="출석번호"
-                  value={
-                    data.member
-                      .checkin_code ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="락카번호"
-                  value={
-                    data.member
-                      .locker_no || "-"
-                  }
-                />
-
-                <Info
-                  label="담당자"
-                  value={
-                    data.member
-                      .staff_name || "-"
-                  }
-                />
-
-                <Info
-                  label="성별"
-                  value={
-                    data.member.gender ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="생년월일"
-                  value={
-                    data.member.birth_date?.slice(
-                      0,
-                      10
-                    ) || "-"
-                  }
-                />
-
-                <Info
-                  label="가입일"
-                  value={
-                    data.member.join_date?.slice(0, 10) || "-"
-                  }
-                />
-
-                <Info
-                  label="운동 시작일"
-                  value={data.member.start_date?.slice(0, 10) || "-"}
-                />
-
-                <Info
-                  label="운동 종료일"
-                  value={data.member.end_date?.slice(0, 10) || "-"}
-                />
-
-                <Info
-                  label="상태"
-                  value={
-                    data.member.status ||
-                    "-"
-                  }
-                />
+            <div className="card" style={{ borderRadius: 14, marginBottom: 16, padding: "14px 16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+                <Info label="성별" value={data.member.gender || "-"} />
+                <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
+                <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
+                <Info label="가입일" value={data.member.join_date?.slice(0, 10) || "-"} />
+                <Info label="상태" value={
+                  data.member.status === "ACTIVE" ? "정상"
+                  : data.member.status === "EXPIRED" ? "만료"
+                  : data.member.status === "REST" ? "휴회"
+                  : data.member.status || "-"
+                } />
+                <Info label="주소" value={data.member.address || "-"} />
               </div>
             </div>
           )}
@@ -1389,7 +1178,6 @@ export default function MemberDetailPage() {
           </div>
         </div>
       )}
-      </div>
     </AppShell>
   );
 }
