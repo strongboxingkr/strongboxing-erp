@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { withMemberChange } from "@/lib/membership-ops";
 
 function addDays(dateString: string, days: number) {
   const date = new Date(dateString);
@@ -83,7 +84,12 @@ export async function POST(req: Request) {
     const remaining_count =
       pass_type === "COUNT" ? count_value : 0;
 
-    await pool.query(
+    // 결제 기록과 회원권 갱신을 한 트랜잭션으로 (회원권 변경 내역은 트리거가 같은 트랜잭션에서 기록)
+    const hadPayment = !!memberRows[0].product_name || !!memberRows[0].end_date;
+    await withMemberChange(
+      { type: hadPayment ? "RENEW" : "REGISTER", reason: hadPayment ? "회원권 결제(연장·재등록)" : "회원권 등록", source: "payments/add", actor: "직원" },
+      async (conn) => {
+    const [payRes]: any = await conn.query(
       `
       INSERT INTO payments
       (
@@ -92,13 +98,17 @@ export async function POST(req: Request) {
         payment_date,
         payment_method,
         product_name,
+        pass_type,
+        total_count,
+        start_date,
+        end_date,
         amount,
         discount_amount,
         refund_amount,
         final_amount,
         memo
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         member_id,
@@ -106,6 +116,10 @@ export async function POST(req: Request) {
         payment_date,
         payment_method,
         product_name,
+        pass_type,
+        pass_type === "COUNT" ? count_value : null,
+        start_date,
+        end_date,
         amount,
         discount_amount || 0,
         refund_amount || 0,
@@ -113,8 +127,9 @@ export async function POST(req: Request) {
         memo || "",
       ]
     );
+    await conn.query(`SET @sbm_change_ref_type = 'payment', @sbm_change_ref_id = ?`, [payRes.insertId]);
 
-    await pool.query(
+    await conn.query(
       `
       UPDATE members
       SET
@@ -134,6 +149,8 @@ export async function POST(req: Request) {
         end_date,
         member_id,
       ]
+    );
+      }
     );
 
     return NextResponse.json({
