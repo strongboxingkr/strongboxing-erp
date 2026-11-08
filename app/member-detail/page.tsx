@@ -309,6 +309,7 @@ export default function MemberDetailPage() {
 
   return (
     <AppShell title="회원 상세">
+      <div style={{ zoom: 0.9 }}>
       <button
         className="btn secondary"
         onClick={() => history.back()}
@@ -1388,6 +1389,7 @@ export default function MemberDetailPage() {
           </div>
         </div>
       )}
+      </div>
     </AppShell>
   );
 }
