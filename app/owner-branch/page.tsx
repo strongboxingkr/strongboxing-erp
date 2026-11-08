@@ -18,6 +18,16 @@ const getWeekStart = () => {
   d.setDate(d.getDate() - d.getDay());
   return fmt(d);
 };
+const getLastWeekStart = () => {
+  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  d.setDate(d.getDate() - d.getDay() - 7);
+  return fmt(d);
+};
+const getLastWeekEnd = () => {
+  const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  d.setDate(d.getDate() - d.getDay() - 1);
+  return fmt(d);
+};
 const getMonthStart = () => {
   const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
   d.setDate(1);
@@ -27,6 +37,7 @@ const getMonthStart = () => {
 const today = kstToday();
 const PRESETS = [
   { label: "오늘", start: () => today, end: () => today },
+  { label: "지난주", start: getLastWeekStart, end: getLastWeekEnd },
   { label: "이번주", start: getWeekStart, end: () => today },
   { label: "이번달", start: getMonthStart, end: () => today },
 ];
