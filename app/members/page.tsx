@@ -12,7 +12,7 @@ function addMonths(dateString: string, months: number) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const pageSize = 15;
+const pageSize = 25;
 
 const miniBtnStyle = {
   padding: "5px 9px",
@@ -595,6 +595,27 @@ ${
     }
   };
 
+  const getRemainingDisplay = (m: any) => {
+    if (m.status === "REST") return { text: "휴회중", color: "#f59e0b" };
+    if (m.pass_type === "COUNT") {
+      const count = Number(m.remaining_count ?? 0);
+      return count > 0
+        ? { text: `${count}회`, color: "#60a5fa" }
+        : { text: "0회", color: "#ef4444" };
+    }
+    if (!m.end_date) return { text: "-", color: "#666" };
+    const endStr = m.end_date.slice(0, 10);
+    const diff = Math.ceil(
+      (new Date(endStr).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    if (diff < 0) return { text: "만료", color: "#ef4444" };
+    if (diff === 0) return { text: "오늘", color: "#ff4d6d" };
+    return {
+      text: `${diff}일`,
+      color: diff <= 7 ? "#ff4d6d" : diff <= 30 ? "#f59e0b" : "#22c55e",
+    };
+  };
+
   const getStatus = (m: any) => {
     if (m.status === "REST") return { text: "휴회", color: "#f59e0b" };
 
@@ -635,108 +656,109 @@ ${
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pagedMembers = filtered.slice((page - 1) * pageSize, page * pageSize);
 
+  const activeCount = members.filter((m) => {
+    const td = new Date().toISOString().slice(0, 10);
+    const exp =
+      (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0, 10) >= td)) ||
+      (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0, 10) < td) ||
+      (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
+    return !exp && m.status !== "REST";
+  }).length;
+  const expiredCount = members.filter((m) => {
+    const td = new Date().toISOString().slice(0, 10);
+    return (
+      (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0, 10) >= td)) ||
+      (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0, 10) < td) ||
+      (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0)
+    );
+  }).length;
+
   return (
     <AppShell title="회원관리">
-      <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 14,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <h1 style={{ margin: 0, fontSize: 34, fontWeight: 900 }}>
-              회원관리
-            </h1>
-
-            <p style={{ color: "#888", marginTop: 8 }}>
-              총 {filtered.length}명 / {page}페이지
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {isAdminOrOwner && (
-              <select
-                className="input"
-                style={{ width: 140 }}
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-              >
-                <option value="">전체 지점</option>
-                <option value="철산점">철산점</option>
-                <option value="목동점">목동점</option>
-                <option value="신정점">신정점</option>
-                <option value="개봉점">개봉점</option>
-              </select>
-            )}
-
-            <input
-              className="input"
-              placeholder="회원 검색"
-              style={{ width: 280 }}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") loadMembers(user);
-              }}
-            />
-
-            <button
-              className="btn"
-              style={{ background: "#f97316", color: "#fff" }}
-              onClick={() => {
-                setBulkExtendBranch(isAdminOrOwner ? "" : (user?.branch_name || ""));
-                setBulkExtendDays("1");
-                setShowBulkExtend(true);
-              }}
-            >
-              일괄 연장
-            </button>
-
-            <button className="btn" onClick={openAdd}>
-              회원등록
-            </button>
-
-            <label className="btn secondary" style={{ cursor: "pointer" }}>
-              {uploading ? "업로드중..." : "엑셀업로드"}
-
-              <input
-                hidden
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={uploadExcel}
-              />
-            </label>
-
-            <button className="btn secondary" onClick={() => loadMembers(user)}>
-              새로고침
-            </button>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          {([["ALL", "전체"], ["ACTIVE", "유효회원"], ["EXPIRED", "만료회원"]] as const).map(([val, label]) => (
+      {/* 컴팩트 툴바 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 8,
+          padding: "6px 0",
+        }}
+      >
+        {/* 필터 탭 */}
+        <div style={{ display: "flex", gap: 4 }}>
+          {([
+            ["ALL", `전체 ${members.length}`],
+            ["ACTIVE", `유효 ${activeCount}`],
+            ["EXPIRED", `만료 ${expiredCount}`],
+          ] as const).map(([val, label]) => (
             <button
               key={val}
               className={statusFilter === val ? "btn" : "btn secondary"}
-              style={{ fontSize: 13, padding: "5px 16px" }}
+              style={{ fontSize: 12, padding: "4px 12px", height: 32 }}
               onClick={() => { setStatusFilter(val); setPage(1); }}
             >
               {label}
-              {val === "ACTIVE" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => {
-                const td = new Date().toISOString().slice(0, 10);
-                const exp = (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0,10) >= td)) || (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0,10) < td) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
-                return !exp && m.status !== "REST";
-              }).length}</span>}
-              {val === "EXPIRED" && <span style={{ marginLeft: 6, opacity: 0.7 }}>{members.filter(m => {
-                const td = new Date().toISOString().slice(0, 10);
-                return (m.status === "EXPIRED" && !(m.end_date && m.end_date.slice(0,10) >= td)) || (m.pass_type !== "COUNT" && m.end_date && m.end_date.slice(0,10) < td) || (m.pass_type === "COUNT" && Number(m.remaining_count) <= 0);
-              }).length}</span>}
             </button>
           ))}
+        </div>
+
+        <div style={{ width: 1, height: 24, background: "#374151", margin: "0 4px" }} />
+
+        {/* 지점 필터 (admin/owner) */}
+        {isAdminOrOwner && (
+          <select
+            className="input"
+            style={{ width: 110, height: 32, padding: "0 8px", fontSize: 13 }}
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+          >
+            <option value="">전체 지점</option>
+            <option value="철산점">철산점</option>
+            <option value="목동점">목동점</option>
+            <option value="신정점">신정점</option>
+            <option value="개봉점">개봉점</option>
+          </select>
+        )}
+
+        {/* 검색 */}
+        <input
+          className="input"
+          placeholder="이름 · 전화 · 회원권 검색"
+          style={{ width: 220, height: 32, padding: "0 10px", fontSize: 13 }}
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onKeyDown={(e) => { if (e.key === "Enter") loadMembers(user); }}
+        />
+
+        <span style={{ fontSize: 12, color: "#9ca3af", marginLeft: 2 }}>
+          {filtered.length}명
+        </span>
+
+        {/* 오른쪽 버튼 그룹 */}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+          <button
+            className="btn"
+            style={{ background: "#f97316", color: "#fff", height: 32, fontSize: 13, padding: "0 14px" }}
+            onClick={() => {
+              setBulkExtendBranch(isAdminOrOwner ? "" : (user?.branch_name || ""));
+              setBulkExtendDays("1");
+              setShowBulkExtend(true);
+            }}
+          >
+            일괄 연장
+          </button>
+          <button className="btn" style={{ height: 32, fontSize: 13, padding: "0 14px" }} onClick={openAdd}>
+            회원등록
+          </button>
+          <label className="btn secondary" style={{ cursor: "pointer", height: 32, fontSize: 13, padding: "0 14px", display: "flex", alignItems: "center" }}>
+            {uploading ? "업로드중..." : "엑셀업로드"}
+            <input hidden type="file" accept=".xlsx,.xls" onChange={uploadExcel} />
+          </label>
+          <button className="btn secondary" style={{ height: 32, fontSize: 13, padding: "0 12px" }} onClick={() => loadMembers(user)}>
+            새로고침
+          </button>
         </div>
       </div>
 
@@ -1208,41 +1230,37 @@ ${
         </div>
       )}
 
+      {/* 테이블 — 고정 헤더 + 내부 스크롤 */}
       <div
         className="card"
         style={{
-          borderRadius: 16,
+          borderRadius: 12,
           padding: 0,
           overflow: "hidden",
-          marginBottom: 18,
+          display: "flex",
+          flexDirection: "column",
+          height: "calc(100vh - 170px)",
+          minHeight: 320,
         }}
       >
-        <div
-          style={{
-            padding: "14px 16px 10px",
-            fontSize: 18,
-            fontWeight: 900,
-            borderBottom: "1px solid #1f2937",
-          }}
-        >
-          회원 목록
-        </div>
-
+        {/* 고정 헤더 */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: memberGridColumns,
-            gap: 10,
-            padding: "10px 14px",
+            gap: 8,
+            padding: "7px 12px",
             borderBottom: "1px solid #374151",
             color: "#9ca3af",
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: 900,
             alignItems: "center",
-            background: "rgba(255,255,255,0.03)",
+            background: "rgba(255,255,255,0.04)",
+            flexShrink: 0,
+            letterSpacing: "0.03em",
           }}
         >
-          <div>No</div>
+          <div>#</div>
           <div>회원명</div>
           {showBranchCol && <div>지점</div>}
           <div>프로그램</div>
@@ -1254,169 +1272,170 @@ ${
           <div>관리</div>
         </div>
 
-        {pagedMembers.map((m, index) => {
-          const status = getStatus(m);
+        {/* 스크롤 바디 */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {pagedMembers.map((m, index) => {
+            const status = getStatus(m);
+            const remaining = getRemainingDisplay(m);
 
-          return (
-            <div
-              key={m.member_id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: memberGridColumns,
-                gap: 10,
-                padding: "8px 14px",
-                borderBottom: "1px solid #1f2937",
-                alignItems: "center",
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-              onClick={() => {
-                location.href = `/member-detail?member_id=${m.member_id}`;
-              }}
-            >
-              <div>{(page - 1) * pageSize + index + 1}</div>
-
-              <div style={{ fontWeight: 900 }}>{m.name}</div>
-
-              {showBranchCol && (
-                <div style={{ color: "#60a5fa", fontWeight: 700 }}>
-                  {m.branch_name}
-                </div>
-              )}
-
-              <div>{m.product_name || "-"}</div>
-
-              <div>
-                {m.start_date?.slice(0, 10) || "-"} ~{" "}
-                {m.end_date?.slice(0, 10) || "-"}
-              </div>
-
-              <div>{m.pass_type === "COUNT" ? `${m.remaining_count || 0}` : "-"}</div>
-
-              <div>{m.locker_no || "-"}</div>
-
-              <div>{m.checkin_code || "-"}</div>
-
-              <div>
-                <span
-                  style={{
-                    background: `${status.color}22`,
-                    color: status.color,
-                    padding: "4px 8px",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 900,
-                  }}
-                >
-                  {status.text}
-                </span>
-              </div>
-
+            return (
               <div
+                key={m.member_id}
                 style={{
-                  display: "flex",
-                  gap: 6,
-                  justifyContent: "flex-start",
-                  flexWrap: "nowrap",
+                  display: "grid",
+                  gridTemplateColumns: memberGridColumns,
+                  gap: 8,
+                  padding: "5px 12px",
+                  borderBottom: "1px solid #1f2937",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  minHeight: 36,
                 }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={() => {
+                  location.href = `/member-detail?member_id=${m.member_id}`;
+                }}
               >
-                <button
-                  className="btn secondary"
-                  onClick={() => openEdit(m)}
-                  style={miniBtnStyle}
-                >
-                  수정
-                </button>
+                <div style={{ color: "#6b7280", fontSize: 11 }}>{(page - 1) * pageSize + index + 1}</div>
 
-                <button
-                  className="btn"
-                  onClick={() => openExtend(m)}
-                  style={miniBtnStyle}
-                >
-                  재등록
-                </button>
+                <div style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</div>
 
+                {showBranchCol && (
+                  <div style={{ color: "#60a5fa", fontSize: 12, fontWeight: 700 }}>
+                    {m.branch_name}
+                  </div>
+                )}
+
+                <div style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.product_name || <span style={{ color: "#555" }}>미등록</span>}</div>
+
+                <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                  {m.start_date?.slice(0, 10) || "-"} ~ {m.end_date?.slice(0, 10) || "-"}
+                </div>
+
+                <div style={{ fontWeight: 700, color: remaining.color, fontSize: 13 }}>
+                  {remaining.text}
+                </div>
+
+                <div style={{ fontSize: 12, color: m.locker_no ? "#e2e8f0" : "#4b5563" }}>
+                  {m.locker_no || "없음"}
+                </div>
+
+                <div style={{ fontSize: 12, color: "#9ca3af" }}>{m.checkin_code || "-"}</div>
+
+                <div>
+                  <span
+                    style={{
+                      background: `${status.color}22`,
+                      color: status.color,
+                      padding: "2px 7px",
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 900,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {status.text}
+                  </span>
+                </div>
+
+                <div
+                  style={{ display: "flex", gap: 5, flexWrap: "nowrap" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className="btn secondary"
+                    onClick={() => openEdit(m)}
+                    style={{ ...miniBtnStyle, height: 28, padding: "3px 8px" }}
+                  >
+                    수정
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => openExtend(m)}
+                    style={{ ...miniBtnStyle, height: 28, padding: "3px 8px" }}
+                  >
+                    재등록
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {filtered.length === 0 && (
-          <div style={{ padding: 24, textAlign: "center", color: "#888" }}>
-            회원이 없습니다.
+          {filtered.length === 0 && (
+            <div style={{ padding: 32, textAlign: "center", color: "#555" }}>
+              회원이 없습니다.
+            </div>
+          )}
+        </div>
+
+        {/* 페이지네이션 (테이블 하단 고정) */}
+        {totalPages > 1 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 4,
+              padding: "6px 12px",
+              borderTop: "1px solid #1f2937",
+              flexShrink: 0,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              className="btn secondary"
+              style={{ height: 28, padding: "0 10px", fontSize: 12 }}
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              이전
+            </button>
+
+            {(() => {
+              const groupSize = 10;
+              const currentGroup = Math.floor((page - 1) / groupSize);
+              const startPage = currentGroup * groupSize + 1;
+              const endPage = Math.min(startPage + groupSize - 1, totalPages);
+              return (
+                <>
+                  {startPage > 1 && (
+                    <button className="btn secondary" style={{ height: 28, padding: "0 8px", fontSize: 12 }}
+                      onClick={() => setPage(Math.max(1, startPage - groupSize))}>◀◀</button>
+                  )}
+                  {Array.from({ length: endPage - startPage + 1 }).map((_, i) => {
+                    const pageNum = startPage + i;
+                    return (
+                      <button key={pageNum}
+                        className={page === pageNum ? "btn" : "btn secondary"}
+                        style={{ height: 28, minWidth: 32, padding: "0 6px", fontSize: 12 }}
+                        onClick={() => setPage(pageNum)}>
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  {endPage < totalPages && (
+                    <button className="btn secondary" style={{ height: 28, padding: "0 8px", fontSize: 12 }}
+                      onClick={() => setPage(Math.min(totalPages, startPage + groupSize))}>▶▶</button>
+                  )}
+                </>
+              );
+            })()}
+
+            <button
+              className="btn secondary"
+              style={{ height: 28, padding: "0 10px", fontSize: 12 }}
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              다음
+            </button>
+
+            <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 4 }}>
+              {page} / {totalPages}
+            </span>
           </div>
         )}
       </div>
-
-      {filtered.length > pageSize && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 8,
-            marginTop: 20,
-            flexWrap: "wrap",
-          }}
-        >
-          <button
-            className="btn secondary"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            이전
-          </button>
-
-          {(() => {
-            const groupSize = 10;
-            const currentGroup = Math.floor((page - 1) / groupSize);
-            const startPage = currentGroup * groupSize + 1;
-            const endPage = Math.min(startPage + groupSize - 1, totalPages);
-
-            return (
-              <>
-                <button
-                  className="btn secondary"
-                  disabled={startPage === 1}
-                  onClick={() => setPage(Math.max(1, startPage - groupSize))}
-                >
-                  ◀◀
-                </button>
-
-                {Array.from({ length: endPage - startPage + 1 }).map((_, i) => {
-                  const pageNum = startPage + i;
-
-                  return (
-                    <button
-                      key={pageNum}
-                      className={page === pageNum ? "btn" : "btn secondary"}
-                      onClick={() => setPage(pageNum)}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-
-                <button
-                  className="btn secondary"
-                  disabled={endPage === totalPages}
-                  onClick={() => setPage(Math.min(totalPages, startPage + groupSize))}
-                >
-                  ▶▶
-                </button>
-              </>
-            );
-          })()}
-
-          <button
-            className="btn secondary"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            다음
-          </button>
-        </div>
-      )}
     </AppShell>
   );
 }
