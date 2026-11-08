@@ -144,7 +144,8 @@ export default function MobileOwnerPage() {
     },
   ];
 
-  const presetChartTitle = preset === 0 ? "최근 7일 매출" : preset === 1 ? "최근 7일 매출 (주간)" : "최근 7일 매출 (월간)";
+  // 차트는 항상 최근 7일 고정 (preset과 무관)
+  const presetChartTitle = "최근 7일 매출";
 
   return (
     <div style={S.page}>
@@ -231,7 +232,55 @@ export default function MobileOwnerPage() {
         </div>
       </div>
 
-      {/* ③ 확인 필요한 항목 */}
+      {/* ③ 지점별 실적 */}
+      {branch === "전체" && (
+        <div style={{ padding: "10px 12px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+            <div style={S.sectionTitle}>지점별 실적</div>
+            <div style={{ fontSize: 10, color: "#94a3b8" }}>{compLabel}</div>
+          </div>
+          <div style={S.card}>
+            {branchSales.length === 0 && !data ? (
+              <div style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8" }}>로딩 중...</div>
+            ) : branchSales.map((b: any, i: number) => {
+              const growth = b.sales_growth;
+              const hasGrowth = growth !== null && growth !== undefined;
+              return (
+                <div key={b.branch_name}>
+                  {i > 0 && <div style={S.divider} />}
+                  <Link
+                    href={`/owner-branch?branch=${encodeURIComponent(b.branch_name)}&preset=${preset}&start=${startDate}&end=${endDate}`}
+                    style={{ textDecoration: "none", display: "block" }}
+                  >
+                    <div style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: "0 0 auto" }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{b.branch_name}</div>
+                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
+                          신규 {b.new_members || 0} · 재등록 {b.rereg_count || 0} · 유효 {b.active_members || 0}명
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", flex: "0 0 auto" }}>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: "#2563eb", whiteSpace: "nowrap" }}>
+                          {money(b.sales || 0)}
+                        </div>
+                        {hasGrowth ? (
+                          <div style={{ fontSize: 11, color: growth >= 0 ? "#16a34a" : "#dc2626", marginTop: 1, fontWeight: 600 }}>
+                            {growth >= 0 ? "▲" : "▼"}{Math.abs(growth)}%
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 1 }}>—</div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ④ 확인 필요한 항목 */}
       <div style={{ padding: "10px 12px 0" }}>
         <div style={S.sectionTitle}>확인 필요한 항목
           <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginLeft: 6 }}>현재 기준</span>
@@ -272,54 +321,6 @@ export default function MobileOwnerPage() {
           })}
         </div>
       </div>
-
-      {/* ④ 지점별 실적 */}
-      {branch === "전체" && (
-        <div style={{ padding: "10px 12px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-            <div style={S.sectionTitle}>지점별 실적</div>
-            <div style={{ fontSize: 10, color: "#94a3b8" }}>{compLabel}</div>
-          </div>
-          <div style={S.card}>
-            {branchSales.length === 0 && !data ? (
-              <div style={{ padding: "12px 14px", fontSize: 13, color: "#94a3b8" }}>로딩 중...</div>
-            ) : branchSales.map((b: any, i: number) => {
-              const growth = b.sales_growth;
-              const hasGrowth = growth !== null && growth !== undefined;
-              return (
-                <div key={b.branch_name}>
-                  {i > 0 && <div style={S.divider} />}
-                  <Link
-                    href={`/mobile-branch?branch=${encodeURIComponent(b.branch_name)}`}
-                    style={{ textDecoration: "none", display: "block" }}
-                  >
-                    <div style={{ padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: "0 0 auto" }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{b.branch_name}</div>
-                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                          신규 {b.new_members || 0} · 재등록 {b.rereg_count || 0} · 유효 {b.active_members || 0}명
-                        </div>
-                      </div>
-                      <div style={{ textAlign: "right", flex: "0 0 auto" }}>
-                        <div style={{ fontSize: 15, fontWeight: 900, color: "#2563eb", whiteSpace: "nowrap" }}>
-                          {money(b.sales || 0)}
-                        </div>
-                        {hasGrowth ? (
-                          <div style={{ fontSize: 11, color: growth >= 0 ? "#16a34a" : "#dc2626", marginTop: 1, fontWeight: 600 }}>
-                            {growth >= 0 ? "▲" : "▼"}{Math.abs(growth)}%
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 1 }}>—</div>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* ⑤ 매출 추이 */}
       <div style={{ padding: "10px 12px 0" }}>
@@ -423,7 +424,7 @@ export default function MobileOwnerPage() {
       <nav style={S.bottomNav}>
         {[
           { href: "/mobile-owner", label: "홈", active: true },
-          { href: "/mobile-branch", label: "지점현황", active: false },
+          { href: "/owner-branch", label: "지점현황", active: false },
           { href: "/mobile-monthly-sales", label: "매출", active: false },
           { href: "/mobile-members", label: "회원", active: false },
         ].map((item) => (

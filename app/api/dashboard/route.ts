@@ -306,7 +306,7 @@ export async function GET(req: Request) {
     const daysDiff = Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000);
     const prevEndDate = new Date(new Date(startDate).getTime() - 86400000).toISOString().slice(0, 10);
     const prevStartDate = new Date(new Date(startDate).getTime() - (daysDiff + 1) * 86400000).toISOString().slice(0, 10);
-    const compLabel = daysDiff === 0 ? "전일 대비" : daysDiff <= 7 ? "전주 대비" : "전기간 대비";
+    const compLabel = daysDiff === 0 ? "전일 대비" : daysDiff < 7 ? "전주 대비" : daysDiff < 32 ? "전달 대비" : "전기간 대비";
 
     const [branchPrevSalesRaw]: any = await pool.query(
       `
