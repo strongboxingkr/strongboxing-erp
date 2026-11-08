@@ -151,6 +151,10 @@ export default function PaymentsPage() {
         member_id: Number(form.member_id),
         amount: finalAmount,
         memo: autoMemo,
+        // products는 PASS_PRODUCT 목록만 담음 — 여기에 있으면 반드시 회원권
+        payment_purpose: products.some((p: any) => p.option_name === form.product_name)
+          ? "PASS"
+          : "GENERAL",
       }),
     });
 

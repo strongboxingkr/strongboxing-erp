@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { taggedQuery } from "@/lib/membership-ops";
 
 export async function POST(req: Request) {
   try {
@@ -16,7 +17,8 @@ export async function POST(req: Request) {
     await pool.query("DELETE FROM attendance WHERE attendance_id = ?", [attendance_id]);
 
     if (wasSuccess && pass_type === "COUNT" && member_id) {
-      await pool.query(
+      // 출석 삭제에 따른 횟수 복구는 출석 기록 영역 (변경 내역에 넣지 않음)
+      await taggedQuery({ type: "ATTENDANCE_UNDO", source: "attendance/delete" },
         "UPDATE members SET remaining_count = remaining_count + 1 WHERE member_id = ?",
         [member_id]
       );

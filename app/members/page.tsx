@@ -361,6 +361,7 @@ export default function MembersPage() {
               amount: payAmt,
               final_amount: payAmt,
               memo: "",
+              payment_purpose: "PASS",
             }),
           });
         }
@@ -420,6 +421,7 @@ export default function MembersPage() {
         discount_amount: Number(reregForm.discount_amount) || 0,
         final_amount: Number(reregForm.final_amount),
         memo: reregForm.memo,
+        payment_purpose: "PASS",
       }),
     });
 

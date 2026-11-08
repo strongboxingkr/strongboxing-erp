@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { SolapiMessageService } from "solapi";
+import { computeReleaseEnd, kstToday, withMemberChange } from "@/lib/membership-ops";
 
 export async function POST(req: Request) {
   try {
@@ -137,27 +138,21 @@ export async function POST(req: Request) {
         const holdEndD = new Date(hold.hold_end);
         holdEndD.setHours(0, 0, 0, 0);
 
-        // 휴회 시작일 기준 남은 일수 계산 (hold_start → old end_date)
-        const oldEndD = member.end_date ? new Date(member.end_date) : holdEndD;
-        oldEndD.setHours(0, 0, 0, 0);
-        const remainingDays = Math.ceil((oldEndD.getTime() - holdStartD.getTime()) / 86400000);
+        // [수정] 휴회 전 만료일(old_end_date) 기준으로 잔여일수 계산 → 이중 연장 방지 (lib/membership-ops.ts)
+        void holdStartD;
+        void holdEndD;
+        const { newEnd: newEndDate, remaining: remainingDays } = computeReleaseEnd(hold, member.end_date, kstToday());
 
-        // 휴회 해제 처리
-        await pool.query(
-          `UPDATE member_holds SET released_at = NOW(), released_by = '시스템(자동)' WHERE hold_id = ?`,
-          [hold.hold_id]
-        );
-
-        // new end_date = min(오늘, 휴회종료일) + 잔여일수
-        // 늦게 복귀해도 휴회종료일 이후 초과분은 소멸
-        const releaseD = todayD <= holdEndD ? todayD : holdEndD;
-        const newEndD = new Date(releaseD);
-        newEndD.setDate(newEndD.getDate() + remainingDays);
-        const newEndDate = newEndD.toISOString().slice(0, 10);
-
-        await pool.query(
-          `UPDATE members SET status = 'ACTIVE', end_date = ? WHERE member_id = ?`,
-          [newEndDate, member.member_id]
+        // 휴회 해제 + 만료일 재계산을 한 트랜잭션으로 (변경 내역 자동 기록)
+        await withMemberChange(
+          { type: "HOLD_RELEASE", reason: "휴회 후 첫 출석으로 이용 재개", source: "check-in", refType: "hold", refId: hold.hold_id, actor: "시스템(자동)" },
+          async (conn) => {
+            await conn.query(
+              `UPDATE member_holds SET released_at = NOW(), released_by = '시스템(자동)' WHERE hold_id = ? AND released_at IS NULL`,
+              [hold.hold_id]
+            );
+            await conn.query(`UPDATE members SET status = 'ACTIVE', end_date = ? WHERE member_id = ? AND status = 'REST'`, [newEndDate, member.member_id]);
+          }
         );
 
         // member 객체 갱신 (이후 로직에서 사용)
@@ -197,13 +192,8 @@ export async function POST(req: Request) {
     }
 
     if (member.status === "EXPIRED" || (endDate && endDate < today)) {
-      await pool.query(
-        `
-        UPDATE members
-        SET status = 'EXPIRED'
-        WHERE member_id = ?
-        `,
-        [member.member_id]
+      await withMemberChange({ type: "AUTO_EXPIRE", reason: "만료일 경과", source: "check-in", actor: "시스템(자동)" }, (conn) =>
+        conn.query(`UPDATE members SET status = 'EXPIRED' WHERE member_id = ?`, [member.member_id])
       );
 
       await saveAttendance(member, "EXPIRED", memo || "만료된 회원");
@@ -237,13 +227,9 @@ export async function POST(req: Request) {
         });
       }
 
-      await pool.query(
-        `
-        UPDATE members
-        SET remaining_count = remaining_count - 1
-        WHERE member_id = ?
-        `,
-        [member.member_id]
+      // 출석에 따른 횟수 차감: 변경 내역이 아니라 출석 기록에서 확인 (ATTENDANCE 컨텍스트 → 트리거가 기록하지 않음)
+      await withMemberChange({ type: "ATTENDANCE", source: "check-in" }, (conn) =>
+        conn.query(`UPDATE members SET remaining_count = remaining_count - 1 WHERE member_id = ?`, [member.member_id])
       );
 
       remainingCount = remainingCount - 1;

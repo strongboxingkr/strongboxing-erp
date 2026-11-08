@@ -1,100 +1,33 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
+import { applyHold, HoldError, withMemberChange } from "@/lib/membership-ops";
 
-function addDays(dateString: string, days: number) {
-  const date = new Date(dateString);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-function diffDays(start: string, end: string) {
-  const s = new Date(start);
-  const e = new Date(end);
-  const diff = e.getTime() - s.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-}
-
+/**
+ * 데스크 휴회 등록 (회원관리 화면). 계산 규칙은 기존과 같음: 시작~종료 포함 일수만큼 만료일 연장 + REST.
+ * 변경점: 회원 행 잠금 + 트랜잭션, 이미 휴회 중·만료·겹치는 휴회 차단, 회원권 변경 내역 기록,
+ *         같은 회원의 대기 중 앱 신청은 자동 종료(중복 반영 방지)
+ */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { member_id, hold_start, hold_end, reason } = body;
-
-    const [rows]: any = await pool.query(
-      "SELECT * FROM members WHERE member_id = ?",
-      [member_id]
-    );
-
-    if (rows.length === 0) {
-      return NextResponse.json({
-        success: false,
-        message: "회원 없음",
-      });
+    const user = getUserFromRequest(req);
+    const { member_id, hold_start, hold_end, reason } = await req.json();
+    if (!member_id || !hold_start || !hold_end) {
+      return NextResponse.json({ success: false, message: "회원ID, 휴회 시작일, 종료일은 필수입니다." });
     }
-
-    const member = rows[0];
-
-    const hold_days = diffDays(hold_start, hold_end);
-    const old_end_date = member.end_date?.toISOString
-      ? member.end_date.toISOString().slice(0, 10)
-      : String(member.end_date).slice(0, 10);
-
-    const new_end_date = addDays(old_end_date, hold_days);
-
-    await pool.query(
-      `
-      INSERT INTO member_holds
-      (
-        member_id,
-        hold_start,
-        hold_end,
-        hold_days,
-        reason,
-        old_end_date,
-        new_end_date
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        member_id,
-        hold_start,
-        hold_end,
-        hold_days,
-        reason || "",
-        old_end_date,
-        new_end_date,
-      ]
+    const actor = user.login_id || "관리자";
+    const r = await withMemberChange({ type: "HOLD", reason: "휴회 처리", source: "members/hold", actor }, (conn) =>
+      applyHold(conn, { memberId: Number(member_id), holdStart: String(hold_start).slice(0, 10), holdEnd: String(hold_end).slice(0, 10), reason, actor })
     );
-
-    await pool.query(
-      `
-      UPDATE members
-      SET 
-        end_date = ?,
-        status = 'REST',
-        memo = CONCAT(IFNULL(memo, ''), '\n[휴회] ', ?, ' ~ ', ?, ' / ', ?, '일 / ', ?)
-      WHERE member_id = ?
-      `,
-      [
-        new_end_date,
-        hold_start,
-        hold_end,
-        hold_days,
-        reason || "",
-        member_id,
-      ]
-    );
-
     return NextResponse.json({
       success: true,
       message: "휴회 처리 완료",
-      hold_days,
-      old_end_date,
-      new_end_date,
+      hold_days: r.holdDays,
+      old_end_date: r.oldEnd,
+      new_end_date: r.newEnd,
     });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error,
-    });
+    if (error instanceof HoldError) return NextResponse.json({ success: false, message: error.message, code: error.code });
+    console.error(error);
+    return NextResponse.json({ success: false, message: "휴회 처리 실패" });
   }
 }

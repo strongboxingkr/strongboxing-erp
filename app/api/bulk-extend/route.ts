@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { taggedQuery } from "@/lib/membership-ops";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function GET(req: Request) {
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
       sql += ` AND branch_name = ?`; params.push(user.branch_name);
     }
 
-    const [result]: any = await pool.query(sql, params);
+    const [result]: any = await taggedQuery({ type: "BULK_EXTEND", reason: `지점 기간 일괄 연장 ${days}일`, source: "bulk-extend", actor: "직원" }, sql, params);
     return NextResponse.json({ success: true, affected: result.affectedRows });
   } catch (error) {
     return NextResponse.json({ success: false, error });

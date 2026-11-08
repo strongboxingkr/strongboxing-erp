@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { taggedQuery } from "@/lib/membership-ops";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function POST(req: Request) {
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "권한이 없습니다" });
     }
 
-    const [result]: any = await pool.query(
+    const [result]: any = await taggedQuery({ type: "BULK_EXTEND", reason: `지점 기간 일괄 연장 ${days}일`, source: "members/bulk-extend", actor: "직원" },
       `UPDATE members
        SET end_date = DATE_ADD(end_date, INTERVAL ? DAY)
        WHERE branch_name = ?

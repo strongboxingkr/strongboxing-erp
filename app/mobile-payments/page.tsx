@@ -14,6 +14,7 @@ export default function MobilePaymentsPage() {
   const [payments, setPayments] = useState<any[]>([]);
 
   const [todaySales, setTodaySales] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   const [search, setSearch] = useState("");
 
@@ -100,33 +101,41 @@ export default function MobilePaymentsPage() {
       return;
     }
 
-    const res = await apiFetch(
-      "/api/payments/add",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          amount: Number(form.amount),
-        }),
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const res = await apiFetch(
+        "/api/payments/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            ...form,
+            amount: Number(form.amount),
+            payment_purpose: "GENERAL", // 결제 기록만, 회원권 갱신 없음
+          }),
+        }
+      );
+
+      const json = await res.json();
+
+      if (json.success) {
+        alert("결제 등록 완료!");
+
+        setForm({
+          member_id: "",
+          payment_date: today,
+          payment_method: "CARD",
+          amount: "",
+          memo: "",
+        });
+
+        loadPayments();
+      } else {
+        alert(json.message || "등록 실패");
       }
-    );
-
-    const json = await res.json();
-
-    if (json.success) {
-      alert("결제 등록 완료!");
-
-      setForm({
-        member_id: "",
-        payment_date: today,
-        payment_method: "CARD",
-        amount: "",
-        memo: "",
-      });
-
-      loadPayments();
-    } else {
-      alert(json.message || "등록 실패");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -217,10 +226,13 @@ export default function MobilePaymentsPage() {
           style={{
             fontSize: 22,
             fontWeight: 900,
-            marginBottom: 14,
+            marginBottom: 8,
           }}
         >
           결제 등록
+        </div>
+        <div style={{ fontSize: 12, color: "#f59e0b", background: "rgba(245,158,11,0.1)", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>
+          ⚠ 이 화면은 결제 금액만 기록합니다. 회원권 등록·연장은 회원 목록 화면에서 진행해주세요.
         </div>
 
         <input
@@ -328,14 +340,16 @@ export default function MobilePaymentsPage() {
         <button
           className="btn"
           onClick={savePayment}
+          disabled={saving}
           style={{
             width: "100%",
             height: 56,
             fontWeight: 900,
             fontSize: 18,
+            opacity: saving ? 0.6 : 1,
           }}
         >
-          결제 저장
+          {saving ? "저장 중..." : "결제 저장"}
         </button>
       </div>
 

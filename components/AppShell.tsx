@@ -51,6 +51,7 @@ const menuGroups = [
       ["문자관리", "/sms"],
       ["공지사항", "/notice"],
       ["회원앱 소식", "/member-news"],
+      ["마무리 운동", "/finishers"],
       ["알림센터", "/alerts-center"],
     ],
   },
@@ -185,8 +186,9 @@ export default function AppShell({
     setInterval(poll, 8000);
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem("user");
+    await fetch("/api/logout", { method: "POST" }).catch(() => {}); // 서버 세션 쿠키도 종료
     location.href = "/login";
   };
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { taggedQuery } from "@/lib/membership-ops";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function PUT(
@@ -81,7 +82,7 @@ export async function PUT(
     const normalizedPhone = String(phone || "").replace(/[^0-9]/g, "");
     const normalizedLast4 = normalizedPhone.slice(-4);
 
-    await pool.query(
+    await taggedQuery({ type: "CORRECTION", reason: "회원 정보 수정", source: "members/[id]", actor: "직원" },
       `
       UPDATE members
       SET

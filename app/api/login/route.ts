@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { createErpSession, sessionCookie } from "@/lib/erp-session";
 
 export async function POST(req: Request) {
   try {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       await pool.query(`UPDATE users SET password_hash = ? WHERE user_id = ?`, [hashed, user.user_id]);
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       user: {
         user_id: user.user_id,
@@ -53,6 +54,13 @@ export async function POST(req: Request) {
         branch_name: user.branch_name,
       },
     });
+    // 서버 세션 쿠키 (새 관리 API 전용). erp_sessions 테이블이 없으면 기존 로그인만 동작
+    try {
+      res.headers.append("Set-Cookie", sessionCookie(await createErpSession(user.user_id)));
+    } catch (e: any) {
+      if (e?.code !== "ER_NO_SUCH_TABLE") console.error("[login] 세션 발급 실패", e);
+    }
+    return res;
   } catch (error) {
     console.error(error);
     return NextResponse.json({ success: false, message: "로그인 실패", error });

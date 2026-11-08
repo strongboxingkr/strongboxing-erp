@@ -24,7 +24,9 @@ function AttendanceCalendar({
   // 날짜별 출석 맵
   const byDate: Record<string, any[]> = {};
   checkins.forEach((c) => {
-    const d = new Date(c.checkin_time).toLocaleDateString("sv-SE"); // YYYY-MM-DD
+    // checkin_time이 "2026-11-08 05:25:00" 형식이면 앞 10자리만 사용
+    const raw: string = c.checkin_time || "";
+    const d = raw.length >= 10 ? raw.slice(0, 10) : new Date(c.checkin_time).toLocaleDateString("sv-SE");
     if (!byDate[d]) byDate[d] = [];
     byDate[d].push(c);
   });
@@ -1217,26 +1219,33 @@ export default function MemberDetailPage() {
               </div>
               <input className="input" type="date" value={addPayForm.payment_date} onChange={e => setAddPayForm({ ...addPayForm, payment_date: e.target.value })} />
               <textarea className="input" placeholder="메모" value={addPayForm.memo} onChange={e => setAddPayForm({ ...addPayForm, memo: e.target.value })} style={{ minHeight: 60 }} />
-              <button className="btn" style={{ fontSize: 16 }} onClick={async () => {
+              <button className="btn" style={{ fontSize: 16 }} onClick={async (e) => {
                 if (!addPayForm.product_name) return alert("상품을 선택해주세요.");
                 if (!addPayForm.final_amount) return alert("결제금액을 입력해주세요.");
-                const res = await apiFetch("/api/payments/add", {
-                  method: "POST",
-                  body: JSON.stringify({
-                    member_id: data?.member?.member_id,
-                    branch_name: data?.member?.branch_name,
-                    product_name: addPayForm.product_name,
-                    amount: Number(addPayForm.final_amount),
-                    final_amount: Number(addPayForm.final_amount),
-                    discount_amount: 0,
-                    payment_method: addPayForm.payment_method,
-                    payment_date: addPayForm.payment_date,
-                    memo: addPayForm.memo,
-                  }),
-                });
-                const json = await res.json();
-                if (json.success) { alert("결제 추가 완료!"); setAddPayModal(false); loadPayments(String(data?.member?.member_id)); }
-                else alert(json.message || "추가 실패");
+                const btn = e.currentTarget;
+                btn.disabled = true;
+                try {
+                  const res = await apiFetch("/api/payments/add", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      member_id: data?.member?.member_id,
+                      branch_name: data?.member?.branch_name,
+                      product_name: addPayForm.product_name,
+                      amount: Number(addPayForm.final_amount),
+                      final_amount: Number(addPayForm.final_amount),
+                      discount_amount: 0,
+                      payment_method: addPayForm.payment_method,
+                      payment_date: addPayForm.payment_date,
+                      memo: addPayForm.memo,
+                      payment_purpose: "PASS",
+                    }),
+                  });
+                  const json = await res.json();
+                  if (json.success) { alert("결제 추가 완료!"); setAddPayModal(false); loadPayments(String(data?.member?.member_id)); }
+                  else alert(json.message || "추가 실패");
+                } finally {
+                  btn.disabled = false;
+                }
               }}>저장</button>
             </div>
           </div>

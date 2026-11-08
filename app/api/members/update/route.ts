@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { taggedQuery } from "@/lib/membership-ops";
 
 export async function POST(req: Request) {
   try {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     const finalCheckinCode = checkin_code || oldMember.checkin_code || phoneLast4;
     const toDate = (v: any) => v ? String(v).slice(0, 10) : null;
 
-    await pool.query(
+    await taggedQuery({ type: "CORRECTION", reason: "회원 정보 수정", source: "members/update", actor: "직원" },
       `
       UPDATE members
       SET

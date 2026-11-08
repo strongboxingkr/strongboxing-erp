@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { taggedQuery } from "@/lib/membership-ops";
 
 export async function POST(req: Request) {
   try {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     );
 
     if (lastPayRows.length === 0) {
-      await pool.query(
+      await taggedQuery({ type: "CANCEL", reason: "결제 취소", source: "payments/cancel", refType: "payment", refId: Number(payment_id), actor: "직원" },
         "UPDATE members SET status = 'EXPIRED' WHERE member_id = ?",
         [payment.member_id]
       );
