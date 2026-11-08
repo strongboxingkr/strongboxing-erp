@@ -12,7 +12,7 @@ function addMonths(dateString: string, months: number) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const pageSize = 25;
+const pageSize = 13;
 
 const miniBtnStyle = {
   padding: "5px 9px",
@@ -114,8 +114,8 @@ export default function MembersPage() {
   // DIRECTOR는 자기 지점만 보므로 지점 컬럼 숨김
   const showBranchCol = isAdminOrOwner;
   const memberGridColumns = showBranchCol
-    ? "36px 90px 65px 110px minmax(140px,1fr) 55px 50px 65px 60px 140px"
-    : "36px 100px 120px minmax(150px,1fr) 60px 55px 70px 65px 140px";
+    ? "36px 80px 60px 100px minmax(130px,1fr) 50px 50px 60px 55px 75px 125px"
+    : "36px 90px 110px minmax(140px,1fr) 55px 50px 65px 60px 80px 125px";
 
   const loadBranches = async () => {
     const res = await apiFetch("/api/settings?option_type=BRANCH");
@@ -1237,10 +1237,6 @@ ${
           borderRadius: 12,
           padding: 0,
           overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          height: "calc(100vh - 170px)",
-          minHeight: 320,
         }}
       >
         {/* 고정 헤더 */}
@@ -1269,11 +1265,11 @@ ${
           <div>락카</div>
           <div>출석번호</div>
           <div>상태</div>
+          <div>가입일</div>
           <div>관리</div>
         </div>
 
-        {/* 스크롤 바디 */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div>
           {pagedMembers.map((m, index) => {
             const status = getStatus(m);
             const remaining = getRemainingDisplay(m);
@@ -1336,6 +1332,10 @@ ${
                   >
                     {status.text}
                   </span>
+                </div>
+
+                <div style={{ fontSize: 11, color: "#6b7280" }}>
+                  {m.join_date?.slice(0, 10) || m.start_date?.slice(0, 10) || "-"}
                 </div>
 
                 <div
