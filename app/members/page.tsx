@@ -114,8 +114,8 @@ export default function MembersPage() {
   // DIRECTOR는 자기 지점만 보므로 지점 컬럼 숨김
   const showBranchCol = isAdminOrOwner;
   const memberGridColumns = showBranchCol
-    ? "50px 140px 90px 130px 190px 70px 70px 90px 90px 260px"
-    : "50px 140px 130px 190px 70px 70px 90px 90px 260px";
+    ? "36px 90px 65px 110px minmax(140px,1fr) 55px 50px 65px 60px 140px"
+    : "36px 100px 120px minmax(150px,1fr) 60px 55px 70px 65px 140px";
 
   const loadBranches = async () => {
     const res = await apiFetch("/api/settings?option_type=BRANCH");
