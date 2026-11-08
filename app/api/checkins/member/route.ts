@@ -23,7 +23,7 @@ export async function GET(req: Request) {
       FROM attendance
       WHERE member_id = ?
       ORDER BY checkin_time DESC
-      LIMIT 30
+      LIMIT 500
       `,
       [member_id]
     );

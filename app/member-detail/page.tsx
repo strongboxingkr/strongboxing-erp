@@ -105,11 +105,16 @@ function AttendanceCalendar({
                 fontSize: 13, fontWeight: hasAttendance ? 800 : 400,
                 color: isSelected ? "#fff" : dow === 0 ? "#ef4444" : dow === 6 ? "#2563eb" : hasAttendance ? "#1d4ed8" : "#374151",
               }}>{day}</div>
-              {hasAttendance && (
-                <div style={{ fontSize: 10, color: isSelected ? "#bfdbfe" : "#2563eb", fontWeight: 700 }}>
-                  {records.length}회
-                </div>
-              )}
+              {hasAttendance && (() => {
+                const inCnt = records.filter((r: any) => r.result === "SUCCESS").length;
+                const outCnt = records.filter((r: any) => r.result === "CHECK_OUT").length;
+                return (
+                  <div style={{ fontSize: 9, lineHeight: 1.4, marginTop: 1 }}>
+                    {inCnt > 0 && <div style={{ color: isSelected ? "#bfdbfe" : "#2563eb", fontWeight: 700 }}>입 {inCnt}</div>}
+                    {outCnt > 0 && <div style={{ color: isSelected ? "#fde68a" : "#d97706", fontWeight: 700 }}>출 {outCnt}</div>}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
