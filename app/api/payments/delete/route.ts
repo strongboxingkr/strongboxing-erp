@@ -29,6 +29,49 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, message: "권한이 없습니다" });
     }
 
+    // ── DAILY 결제 취소: payments 행 보존 + refund 기록, day_pass CANCELLED ──
+    // PERIOD/COUNT는 기존 행 삭제 방식 유지; DAILY만 상태 변경 방식
+    if (payment.pass_type === "DAILY") {
+      // 이미 취소된 결제인지 확인 (refund_amount == final_amount)
+      if (Number(payment.refund_amount) >= Number(payment.final_amount) && Number(payment.final_amount) > 0) {
+        return NextResponse.json({ success: false, message: "이미 취소된 결제입니다." });
+      }
+
+      const conn = await (pool as any).getConnection();
+      try {
+        await conn.beginTransaction();
+        const [dpRows]: any = await conn.query(
+          "SELECT pass_id, status, attendance_id FROM day_passes WHERE payment_id = ? FOR UPDATE",
+          [payment_id]
+        );
+        if (dpRows.length > 0 && dpRows[0].status === "USED") {
+          await conn.rollback();
+          return NextResponse.json({
+            success: false,
+            message: "이미 사용된 일일권입니다. 출석 기록을 먼저 취소한 후 결제 취소를 진행해주세요.",
+            attendance_id: dpRows[0].attendance_id,
+          });
+        }
+
+        const cancelNote = `[결제취소 ${new Date(Date.now() + 9*3600000).toISOString().slice(0,10)}]`;
+        await conn.query(
+          `UPDATE payments SET refund_amount = final_amount, memo = CONCAT(COALESCE(memo,''), ' ', ?) WHERE payment_id = ?`,
+          [cancelNote, payment_id]
+        );
+
+        if (dpRows.length > 0) {
+          await conn.query("UPDATE day_passes SET status='CANCELLED' WHERE pass_id=?", [dpRows[0].pass_id]);
+        }
+        await conn.commit();
+      } catch (e) {
+        await conn.rollback();
+        throw e;
+      } finally {
+        conn.release();
+      }
+      return NextResponse.json({ success: true, message: "일일권 결제 취소 완료" });
+    }
+
     // 삭제할 결제가 PASS이고 현재 회원 패스와 일치하는지 확인
     const isPass = payment.pass_type != null;
     const [memberRows]: any = await pool.query(

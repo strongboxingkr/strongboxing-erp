@@ -21,18 +21,22 @@ export default function CheckInPage() {
     if (phone.length < 8) setPhone((p) => p + value);
   };
 
-  const submit = async (checkType: "CHECK_IN" | "CHECK_OUT") => {
+  const submit = async (checkType: "CHECK_IN" | "CHECK_OUT", usePass?: "REGULAR" | "DAILY") => {
     if (phone.length < 1 || phone.length > 8 || loading) return;
     setLoading(true);
+    const body: any = { phone_last4: phone, check_type: checkType, branch_name: branchName || undefined };
+    if (usePass) body.use_pass = usePass;
     const res = await fetch("/api/check-in", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone_last4: phone, check_type: checkType, branch_name: branchName || undefined }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     setResult({ ...data, checkType });
     setLoading(false);
-    setTimeout(() => { setPhone(""); setResult(null); }, 4000);
+    if (data.result !== "MULTIPLE_PASSES") {
+      setTimeout(() => { setPhone(""); setResult(null); }, 4000);
+    }
   };
 
   // 가변 길이: 현재 입력 길이에 맞춰 최소 1칸, 최대 8칸 표시
@@ -81,7 +85,66 @@ export default function CheckInPage() {
       </div>
 
       {/* 결과 표시 */}
-      {result ? (
+      {result?.result === "MULTIPLE_PASSES" ? (
+        <div style={{
+          width: "100%",
+          marginTop: 24,
+          padding: "24px 20px",
+          borderRadius: 20,
+          background: "#fff9ec",
+          border: "2px solid #ff9500",
+        }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#ff9500", textAlign: "center", marginBottom: 8 }}>
+            이용권을 선택해주세요
+          </div>
+          <div style={{ fontSize: 15, color: "#1c1c1e", textAlign: "center", marginBottom: 20 }}>
+            {result.member?.name}님
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* 정기권 */}
+            <button
+              onClick={() => submit("CHECK_IN", "REGULAR")}
+              style={{
+                padding: "16px 20px",
+                borderRadius: 14,
+                border: "2px solid #007aff",
+                background: "#f0f5ff",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <div style={{ fontSize: 13, color: "#007aff", fontWeight: 700, marginBottom: 4 }}>정기 회원권</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#1c1c1e" }}>{result.regular_pass?.product_name || "-"}</div>
+              <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>
+                {result.regular_pass?.pass_type === "COUNT"
+                  ? `잔여 ${result.regular_pass?.remaining_count}회`
+                  : `만료일 ${result.regular_pass?.end_date || "-"}`}
+              </div>
+            </button>
+            {/* 일일권 */}
+            <button
+              onClick={() => submit("CHECK_IN", "DAILY")}
+              style={{
+                padding: "16px 20px",
+                borderRadius: 14,
+                border: "2px solid #c0392b",
+                background: "#fff0f0",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <div style={{ fontSize: 13, color: "#c0392b", fontWeight: 700, marginBottom: 4 }}>일일권</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#1c1c1e" }}>이용일: {result.day_pass?.use_date || "-"}</div>
+            </button>
+          </div>
+          <button
+            onClick={() => { setPhone(""); setResult(null); }}
+            style={{ marginTop: 16, width: "100%", padding: "12px 0", borderRadius: 12, border: "1.5px solid #d1d1d6", background: "#f2f2f7", fontSize: 15, fontWeight: 700, cursor: "pointer", color: "#1c1c1e" }}
+          >
+            취소
+          </button>
+        </div>
+      ) : result ? (
         <div style={{
           width: "100%",
           marginTop: 32,

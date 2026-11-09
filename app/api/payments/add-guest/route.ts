@@ -34,6 +34,26 @@ export async function POST(req: Request) {
     const useDate = use_date_input ? String(use_date_input).slice(0, 10) : kstToday;
 
     if (isDailyPass) {
+      // 비회원 일일권: 현장 입장용 pass_code 자동 생성 (4자리 숫자)
+      // 같은 지점의 members.checkin_code, 같은 지점+날짜의 PENDING day_pass와 충돌 금지
+      // 4자리 숫자, 앞자리 0 보존 (0000~9999 → padStart)
+      // 동시 발급 중복 방지: 충돌 없는 코드 확인 후 INSERT IGNORE + 재시도
+      let passCode: string | null = null;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const candidate = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+        const [conflict]: any = await pool.query(
+          `SELECT 1 FROM day_passes WHERE branch_name=? AND use_date=? AND pass_code=? AND status='PENDING'
+           UNION ALL
+           SELECT 1 FROM members WHERE branch_name=? AND checkin_code=?
+           LIMIT 1`,
+          [branch_name, useDate, candidate, branch_name, candidate]
+        );
+        if (conflict.length === 0) { passCode = candidate; break; }
+      }
+      if (!passCode) {
+        return NextResponse.json({ success: false, message: "입장코드 생성 실패 (재시도 필요)" });
+      }
+
       // 일일권: payments + day_passes 원자적 삽입
       const conn = await (pool as any).getConnection();
       try {
@@ -46,9 +66,9 @@ export async function POST(req: Request) {
         );
 
         await conn.query(
-          `INSERT INTO day_passes (payment_id, member_id, guest_name, guest_phone, branch_name, use_date, status)
-           VALUES (?, NULL, ?, ?, ?, ?, 'PENDING')`,
-          [payRes.insertId, guest_name || null, guest_phone || null, branch_name, useDate]
+          `INSERT INTO day_passes (payment_id, member_id, guest_name, guest_phone, pass_code, branch_name, use_date, status)
+           VALUES (?, NULL, ?, ?, ?, ?, ?, 'PENDING')`,
+          [payRes.insertId, guest_name || null, guest_phone || null, passCode, branch_name, useDate]
         );
 
         await conn.commit();
@@ -59,7 +79,7 @@ export async function POST(req: Request) {
         conn.release();
       }
 
-      return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료" });
+      return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료", pass_code: passCode });
     }
 
     // 일반 비회원 결제 (non-DAILY)

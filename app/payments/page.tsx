@@ -24,7 +24,8 @@ export default function PaymentsPage() {
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: today, memo: "" });
   const [guestModal, setGuestModal] = useState(false);
-  const [guestForm, setGuestForm] = useState({ branch_name: "", product_name: "", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" });
+  const [guestForm, setGuestForm] = useState({ branch_name: "", product_name: "", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" });
+  const [submitting, setSubmitting] = useState(false);
 
   const [branch, setBranch] = useState("전체");
   const [memberSearch, setMemberSearch] = useState("");
@@ -37,6 +38,7 @@ export default function PaymentsPage() {
     payment_method: "CARD",
     payment_date: today,
     memo: "",
+    use_date: today,
   });
 
   useEffect(() => {
@@ -112,6 +114,12 @@ export default function PaymentsPage() {
     (m) => String(m.member_id) === String(form.member_id)
   );
 
+  const selectedProduct = products.find((p: any) => p.option_name === form.product_name);
+  const isDailyProduct = selectedProduct?.option_value === "DAILY";
+
+  const guestSelectedProduct = products.find((p: any) => p.option_name === guestForm.product_name);
+  const guestIsDailyProduct = guestSelectedProduct?.option_value === "DAILY";
+
   const extraAmount = extraProducts
     .filter((p) => selectedExtras.includes(p.option_name))
     .reduce((sum, p) => sum + Number(p.option_value || 0), 0);
@@ -136,48 +144,56 @@ export default function PaymentsPage() {
       return;
     }
 
-    const autoMemo = [
-      form.memo,
-      selectedExtras.length > 0 ? `추가상품: ${selectedExtras.join(", ")}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    if (submitting) return;
+    setSubmitting(true);
 
-    const res = await apiFetch("/api/payments/add", {
-      method: "POST",
-      body: JSON.stringify({
-        ...form,
-        branch_name: selectedMember?.branch_name || form.branch_name,
-        member_id: Number(form.member_id),
-        amount: finalAmount,
-        memo: autoMemo,
-        // products는 PASS_PRODUCT 목록만 담음 — 여기에 있으면 반드시 회원권
-        payment_purpose: products.some((p: any) => p.option_name === form.product_name)
-          ? "PASS"
-          : "GENERAL",
-      }),
-    });
+    try {
+      const autoMemo = [
+        form.memo,
+        selectedExtras.length > 0 ? `추가상품: ${selectedExtras.join(", ")}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
-    const data = await res.json();
-
-    if (data.success) {
-      alert("결제 등록 완료!");
-
-      setForm({
-        member_id: "",
-        branch_name: "",
-        product_name: "",
-        amount: "",
-        payment_method: "CARD",
-        payment_date: today,
-        memo: "",
+      const res = await apiFetch("/api/payments/add", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          branch_name: selectedMember?.branch_name || form.branch_name,
+          member_id: Number(form.member_id),
+          amount: finalAmount,
+          memo: autoMemo,
+          payment_purpose: isDailyProduct ? "PASS" : (
+            products.some((p: any) => p.option_name === form.product_name) ? "PASS" : "GENERAL"
+          ),
+          ...(isDailyProduct ? { use_date: form.use_date } : {}),
+        }),
       });
 
-      setSelectedExtras([]);
-      setMemberSearch("");
-      loadPayments();
-    } else {
-      alert(data.message || "결제 등록 실패");
+      const data = await res.json();
+
+      if (data.success) {
+        alert("결제 등록 완료!");
+
+        setForm({
+          member_id: "",
+          branch_name: "",
+          product_name: "",
+          amount: "",
+          payment_method: "CARD",
+          payment_date: today,
+          memo: "",
+          use_date: today,
+        });
+
+        setSelectedExtras([]);
+        setMemberSearch("");
+        loadPayments();
+      } else {
+        alert(data.message || "결제 등록 실패");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -234,7 +250,7 @@ export default function PaymentsPage() {
             </select>
           )}
           <button onClick={loadPayments} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
-          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
+          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
           <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
         </div>
       </div>
@@ -380,21 +396,45 @@ export default function PaymentsPage() {
                   <button key={m} className={guestForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setGuestForm({ ...guestForm, payment_method: m })}>{METHOD_LABEL[m]}</button>
                 ))}
               </div>
+              {guestIsDailyProduct && (
+                <>
+                  <input className="input" placeholder="이름 (선택)" value={guestForm.guest_name} onChange={e => setGuestForm({ ...guestForm, guest_name: e.target.value })} />
+                  <input className="input" placeholder="연락처 (선택)" value={guestForm.guest_phone} onChange={e => setGuestForm({ ...guestForm, guest_phone: e.target.value })} />
+                  <div>
+                    <label style={{ fontSize: 13, color: "#6B7280", marginBottom: 4, display: "block" }}>이용일</label>
+                    <input className="input" type="date" value={guestForm.use_date} onChange={e => setGuestForm({ ...guestForm, use_date: e.target.value })} />
+                  </div>
+                </>
+              )}
               <input className="input" type="date" value={guestForm.payment_date} onChange={e => setGuestForm({ ...guestForm, payment_date: e.target.value })} />
               <textarea className="input" placeholder="메모 (선택)" value={guestForm.memo} onChange={e => setGuestForm({ ...guestForm, memo: e.target.value })} style={{ minHeight: 60 }} />
-              <button className="btn" style={{ fontSize: 16 }} onClick={async () => {
+              <button className="btn" style={{ fontSize: 16 }} disabled={submitting} onClick={async () => {
                 const branchToUse = isAdminOrOwner ? guestForm.branch_name : user?.branch_name;
                 if (!branchToUse) return alert("지점을 선택해주세요.");
                 if (!guestForm.product_name) return alert("상품을 선택해주세요.");
                 if (!guestForm.final_amount) return alert("금액을 입력해주세요.");
-                const res = await apiFetch("/api/payments/add-guest", {
-                  method: "POST",
-                  body: JSON.stringify({ ...guestForm, branch_name: branchToUse, final_amount: Number(guestForm.final_amount) }),
-                });
-                const json = await res.json();
-                if (json.success) { alert("비회원 결제 완료!"); setGuestModal(false); loadPayments(); }
-                else alert(json.message || "결제 실패");
-              }}>결제 등록</button>
+                setSubmitting(true);
+                try {
+                  const res = await apiFetch("/api/payments/add-guest", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      ...guestForm,
+                      branch_name: branchToUse,
+                      final_amount: Number(guestForm.final_amount),
+                      ...(guestIsDailyProduct ? { use_date: guestForm.use_date, guest_name: guestForm.guest_name, guest_phone: guestForm.guest_phone } : {}),
+                    }),
+                  });
+                  const json = await res.json();
+                  if (json.success) {
+                    const passMsg = json.pass_code ? `\n입장코드: ${json.pass_code}` : "";
+                    alert(`비회원 결제 완료!${passMsg}`);
+                    setGuestModal(false);
+                    loadPayments();
+                  } else alert(json.message || "결제 실패");
+                } finally {
+                  setSubmitting(false);
+                }
+              }}>{submitting ? "처리 중..." : "결제 등록"}</button>
             </div>
           </div>
         </div>

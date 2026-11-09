@@ -35,5 +35,11 @@ export async function GET(req: Request) {
     params
   );
 
-  return NextResponse.json({ success: true, rows });
+  const kstTodayStr = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+  const enrichedRows = rows.map((r: any) => ({
+    ...r,
+    is_expired: r.status === "PENDING" && String(r.use_date).slice(0, 10) < kstTodayStr,
+  }));
+
+  return NextResponse.json({ success: true, rows: enrichedRows });
 }
