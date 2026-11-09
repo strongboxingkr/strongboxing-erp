@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     if (check_type === "CHECK_OUT") {
       // 오늘 입장 기록 없으면 입장으로 처리
-      const todayText = new Date().toISOString().slice(0, 10);
+      const todayText = kstToday(); // UTC→KST 변환 (new Date().toISOString()은 UTC 기준으로 KST 23:00~24:00에 날짜 오차 발생)
       const [todayIn]: any = await pool.query(
         `SELECT attendance_id FROM attendance WHERE member_id = ? AND result = 'SUCCESS' AND DATE(checkin_time) = ? LIMIT 1`,
         [member.member_id, todayText]
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     }
 
     const today = new Date();
-    const todayText = today.toISOString().slice(0, 10);
+    const todayText = kstToday(); // KST 기준 (UTC 사용 시 KST 23:00~24:00에 중복 판정 실패)
 
     const [todayCheckins]: any = await pool.query(
       `
@@ -183,15 +183,10 @@ export async function POST(req: Request) {
       }
     }
 
-    const endDate = member.end_date ? new Date(member.end_date) : null;
+    // KST 문자열 비교로 만료 판정 (new Date(end_date) UTC 파싱 오차 방지)
+    const endDateStr: string | null = member.end_date ? String(member.end_date).slice(0, 10) : null;
 
-    today.setHours(0, 0, 0, 0);
-
-    if (endDate) {
-      endDate.setHours(0, 0, 0, 0);
-    }
-
-    if (member.status === "EXPIRED" || (endDate && endDate < today)) {
+    if (member.status === "EXPIRED" || (endDateStr && endDateStr < todayText)) {
       await withMemberChange({ type: "AUTO_EXPIRE", reason: "만료일 경과", source: "check-in", actor: "시스템(자동)" }, (conn) =>
         conn.query(`UPDATE members SET status = 'EXPIRED' WHERE member_id = ?`, [member.member_id])
       );
@@ -292,7 +287,7 @@ export async function POST(req: Request) {
           member.pass_type === "COUNT"
             ? remainingCount
             : member.end_date
-            ? Math.max(0, Math.ceil((new Date(member.end_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000)) + "일"
+            ? Math.max(0, Math.round((new Date(String(member.end_date).slice(0, 10)).getTime() - new Date(kstToday()).getTime()) / 86400000)) + "일"
             : "기간권",
         end_date: member.end_date,
         start_date: member.start_date,

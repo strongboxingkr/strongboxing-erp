@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { withMemberChange } from "@/lib/membership-ops";
-import { getErpUser, canManageBranch } from "@/lib/erp-session";
+import { getErpUser, canManageBranch, requireRole } from "@/lib/erp-session";
 
 export async function POST(req: Request) {
   try {
@@ -30,6 +30,11 @@ export async function POST(req: Request) {
     }
 
     const { result, member_id, member_name, branch_name: attBranch, used_count, att_pass_type, memo: origMemo } = rows[0];
+
+    // 역할 검증: COACH 이하는 취소 불가
+    if (!requireRole(user, ["ADMIN", "OWNER", "DIRECTOR"])) {
+      return NextResponse.json({ success: false, message: "권한이 없습니다." }, { status: 403 });
+    }
 
     // 지점 권한 검증: DIRECTOR는 자기 지점 출석만 취소 가능
     if (attBranch && !canManageBranch(user, attBranch)) {
