@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { SolapiMessageService } from "solapi";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
+import { kstToday } from "@/lib/membership-ops";
+
+function addDays(dateStr: string, d: number) {
+  const dt = new Date(dateStr + "T00:00:00+09:00");
+  dt.setDate(dt.getDate() + d);
+  return dt.toISOString().slice(0, 10);
+}
 
 const cleanPhone = (phone: string) => String(phone || "").replace(/[^0-9]/g, "");
 
@@ -40,25 +47,27 @@ export async function GET(req: Request) {
     const messageService = apiKey && apiSecret ? new SolapiMessageService(apiKey, apiSecret) : null;
 
     let sentCount = 0;
+    const today = kstToday(); // KST 기준 오늘 날짜 (UTC 사용 시 00:00~09:00 경계 오류 방지)
 
     for (const rule of rules) {
       let targets: any[] = [];
 
       if (rule.rule_type === "EXPIRING_3DAYS" || rule.rule_type === "EXPIRING_2DAYS") {
         const days = rule.days ?? (rule.rule_type === "EXPIRING_3DAYS" ? 3 : 2);
+        const targetDate = addDays(today, days);
         const [rows]: any = await pool.query(`
           SELECT branch_name, name, phone, end_date, remaining_count
           FROM members WHERE status = 'ACTIVE'
-          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL ? DAY)
-        `, [days]);
+          AND DATE(end_date) = ?
+        `, [targetDate]);
         targets = rows;
       }
 
       if (rule.rule_type === "EXPIRING_TODAY") {
         const [rows]: any = await pool.query(`
           SELECT branch_name, name, phone, end_date, remaining_count
-          FROM members WHERE status != 'REST' AND DATE(end_date) = CURDATE()
-        `);
+          FROM members WHERE status != 'REST' AND DATE(end_date) = ?
+        `, [today]);
         targets = rows;
       }
 
@@ -74,9 +83,9 @@ export async function GET(req: Request) {
       if (rule.rule_type === "CRM_TODAY") {
         const [rows]: any = await pool.query(`
           SELECT branch_name, customer_name AS name, phone
-          FROM crm_leads WHERE next_contact_date = CURDATE()
+          FROM crm_leads WHERE next_contact_date = ?
           AND status IN ('상담중', '방문예약', '재연락필요', '보류')
-        `);
+        `, [today]);
         targets = rows;
       }
 
@@ -85,8 +94,8 @@ export async function GET(req: Request) {
 
         const [exists]: any = await pool.query(
           `SELECT COUNT(*) cnt FROM sms_logs
-           WHERE receiver_phone = ? AND target_type = ? AND DATE(created_at) = CURDATE()`,
-          [t.phone, rule.rule_type]
+           WHERE receiver_phone = ? AND target_type = ? AND DATE(created_at) = ?`,
+          [t.phone, rule.rule_type, today]
         );
         if (exists[0].cnt > 0) continue;
 
