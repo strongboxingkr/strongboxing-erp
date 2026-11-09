@@ -408,21 +408,24 @@ export default function MembersPage() {
     if (!reregForm.final_amount) { alert("결제금액을 입력해주세요"); return; }
 
     const startDate = (reregForm as any).start_date || reregForm.payment_date;
+    const useDate = (reregForm as any).use_date || null;
+    const payload: any = {
+      member_id: extendMember.member_id,
+      branch_name: extendMember.branch_name,
+      payment_date: reregForm.payment_date,
+      start_date: startDate,
+      payment_method: reregForm.payment_method,
+      product_name: reregForm.product_name,
+      amount: Number(reregForm.amount) || Number(reregForm.final_amount),
+      discount_amount: Number(reregForm.discount_amount) || 0,
+      final_amount: Number(reregForm.final_amount),
+      memo: reregForm.memo,
+      payment_purpose: "PASS",
+    };
+    if (useDate) payload.use_date = useDate;
     const res = await apiFetch("/api/payments/add", {
       method: "POST",
-      body: JSON.stringify({
-        member_id: extendMember.member_id,
-        branch_name: extendMember.branch_name,
-        payment_date: reregForm.payment_date,
-        start_date: startDate,
-        payment_method: reregForm.payment_method,
-        product_name: reregForm.product_name,
-        amount: Number(reregForm.amount) || Number(reregForm.final_amount),
-        discount_amount: Number(reregForm.discount_amount) || 0,
-        final_amount: Number(reregForm.final_amount),
-        memo: reregForm.memo,
-        payment_purpose: "PASS",
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -991,15 +994,31 @@ ${
                 onChange={(e) => setReregForm({ ...reregForm, payment_date: e.target.value })}
               />
             </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>시작일 <span style={{ color: "#2563eb" }}>(만료일 이후 이어붙이기 가능)</span></div>
-              <input
-                className="input"
-                type="date"
-                value={(reregForm as any).start_date || reregForm.payment_date}
-                onChange={(e) => setReregForm({ ...reregForm, start_date: e.target.value } as any)}
-              />
-            </div>
+            {(() => {
+              const selProduct = products.find((p: any) => p.option_name === reregForm.product_name);
+              const isDaily = selProduct?.option_value === "DAILY";
+              return isDaily ? (
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>이용일 <span style={{ color: "#f97316" }}>(일일권 사용 날짜)</span></div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={(reregForm as any).use_date || reregForm.payment_date}
+                    onChange={(e) => setReregForm({ ...reregForm, use_date: e.target.value } as any)}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>시작일 <span style={{ color: "#2563eb" }}>(만료일 이후 이어붙이기 가능)</span></div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={(reregForm as any).start_date || reregForm.payment_date}
+                    onChange={(e) => setReregForm({ ...reregForm, start_date: e.target.value } as any)}
+                  />
+                </div>
+              );
+            })()}
             <div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제수단</div>
               <select

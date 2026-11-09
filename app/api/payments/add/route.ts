@@ -162,11 +162,40 @@ export async function POST(req: Request) {
     }
 
     const pass_type: string = product.option_value || "";
-    if (pass_type !== "PERIOD" && pass_type !== "COUNT") {
+    if (pass_type !== "PERIOD" && pass_type !== "COUNT" && pass_type !== "DAILY") {
       return NextResponse.json({
         success: false,
-        message: `상품 "${product_name}"의 유형(PERIOD/COUNT)이 설정되지 않았습니다. 상품 마스터를 수정해주세요.`,
+        message: `상품 "${product_name}"의 유형(PERIOD/COUNT/DAILY)이 설정되지 않았습니다. 상품 마스터를 수정해주세요.`,
       });
+    }
+
+    // ── 일일권(DAILY): payments + day_passes만 기록, members 불변 ──
+    if (pass_type === "DAILY") {
+      const kstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      const useDate = (body.use_date ? String(body.use_date).slice(0, 10) : null) || kstToday;
+
+      const conn = await (pool as any).getConnection();
+      try {
+        await conn.beginTransaction();
+        const [payRes]: any = await conn.query(
+          `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name,
+           pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo)
+           VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?)`,
+          [member_id, branch_name, payment_date, payment_method, product_name,
+           useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || ""]
+        );
+        await conn.query(
+          `INSERT INTO day_passes (payment_id, member_id, branch_name, use_date, status) VALUES (?,?,?,?,'PENDING')`,
+          [payRes.insertId, member_id, branch_name, useDate]
+        );
+        await conn.commit();
+      } catch (e) {
+        await conn.rollback();
+        throw e;
+      } finally {
+        conn.release();
+      }
+      return NextResponse.json({ success: true, message: "일일권 등록 완료" });
     }
 
     const duration_months = Number(product.duration_months || 0);

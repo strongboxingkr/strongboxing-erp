@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
     const code = checkin_code || phone_last4;
 
-    if (!code || !/^\d{4}$/.test(code)) {
+    if (!code || !/^\d{1,8}$/.test(code)) {
       return NextResponse.json({
         success: false,
         message: "출석번호 4자리를 입력해주세요.",
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       );
 
       if (todayIn.length === 0) {
-        // 입장으로 대신 처리 (아래 CHECK_IN 로직으로 fall-through)
+        // fall-through to CHECK_IN logic below
       } else {
         if (Number(member.checkout_sms_enabled || 0) === 1 && member.phone) {
           await sendCheckoutSms(member);
@@ -100,6 +100,43 @@ export async function POST(req: Request) {
 
     const today = new Date();
     const todayText = today.toISOString().slice(0, 10);
+
+    // ── 일일권(DAILY) 체크인: PENDING pass가 있으면 먼저 처리 ──────
+    const [dayPassRows]: any = await pool.query(
+      `SELECT pass_id FROM day_passes WHERE member_id = ? AND use_date = ? AND status = 'PENDING' LIMIT 1`,
+      [member.member_id, todayText]
+    );
+    if (dayPassRows.length > 0) {
+      const passId = dayPassRows[0].pass_id;
+      const [attRes]: any = await pool.query(
+        `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, result, memo) VALUES (?,?,?,'DAILY',0,'SUCCESS',?)`,
+        [member.member_id, member.branch_name, member.name, memo || "일일권 출석"]
+      );
+      await pool.query(
+        `UPDATE day_passes SET status='USED', used_at=NOW(), attendance_id=? WHERE pass_id=?`,
+        [attRes.insertId, passId]
+      );
+      return NextResponse.json({
+        success: true,
+        result: "SUCCESS",
+        message: "출석 완료 (일일권)",
+        member: {
+          member_id: member.member_id,
+          name: member.name,
+          branch_name: member.branch_name,
+          phone: member.phone,
+          checkin_code: member.checkin_code,
+          product_name: member.product_name,
+          pass_type: "DAILY",
+          remaining_count: "일일권",
+          end_date: member.end_date,
+          start_date: member.start_date,
+          has_uniform: member.has_uniform || 0,
+          has_locker: member.has_locker || 0,
+          locker_no: member.locker_no || "",
+        },
+      });
+    }
 
     const [todayCheckins]: any = await pool.query(
       `
