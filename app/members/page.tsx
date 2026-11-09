@@ -262,6 +262,7 @@ export default function MembersPage() {
     setReregForm({
       product_name: m.product_name || "",
       payment_date: today,
+      start_date: today,
       payment_method: "CARD",
       amount: "",
       discount_amount: "0",

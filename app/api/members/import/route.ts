@@ -102,6 +102,9 @@ export async function POST(req: Request) {
       if (dupRows.length > 0) {
         // 이미 존재하는 회원 → 상품/날짜/횟수/상태 업데이트 (재등록 처리)
         const existingId = dupRows[0].member_id;
+        const productName = String(getValue(row, ["프로그램", "상품", "회원권", "product_name"])).trim();
+        const remainingCount = Number(getValue(row, ["잔여횟수", "남은횟수", "remaining_count"]) || 0);
+        const passType = remainingCount > 0 ? "COUNT" : "PERIOD";
         await pool.query(
           `UPDATE members SET
             product_name = COALESCE(NULLIF(?, ''), product_name),

@@ -174,7 +174,6 @@ export default function PaymentsPage() {
       });
 
       setSelectedExtras([]);
-      setReviewRefund(false);
       setMemberSearch("");
       loadPayments();
     } else {
