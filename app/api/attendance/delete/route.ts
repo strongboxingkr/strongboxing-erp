@@ -88,6 +88,80 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── 일일권(DAILY) 출석 취소: day_pass PENDING 복원 ─────────────
+    if (att_pass_type === "DAILY" && result === "SUCCESS") {
+      const conn = await (pool as any).getConnection();
+      try {
+        await conn.beginTransaction();
+
+        const [attCheck]: any = await conn.query(
+          "SELECT attendance_id FROM attendance WHERE attendance_id = ? FOR UPDATE",
+          [attendance_id]
+        );
+        if (attCheck.length === 0) {
+          await conn.rollback();
+          return NextResponse.json({ success: false, message: "이미 삭제된 기록입니다." });
+        }
+
+        // day_passes에서 연결된 행 찾기 (attendance_id로)
+        const [dpRows]: any = await conn.query(
+          "SELECT pass_id, status FROM day_passes WHERE attendance_id = ? FOR UPDATE",
+          [attendance_id]
+        );
+
+        await conn.query("DELETE FROM attendance WHERE attendance_id = ?", [attendance_id]);
+
+        if (dpRows.length > 0 && dpRows[0].status === "USED") {
+          // 지난 날짜의 일일권은 복원 불가 (use_date 확인)
+          const [dpDetail]: any = await conn.query(
+            "SELECT use_date FROM day_passes WHERE pass_id = ?",
+            [dpRows[0].pass_id]
+          );
+          const kstTodayVal = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+          const useDate = dpDetail[0]?.use_date ? String(dpDetail[0].use_date).slice(0, 10) : null;
+
+          if (useDate && useDate >= kstTodayVal) {
+            // 오늘 이후 일일권만 PENDING으로 복원
+            await conn.query(
+              "UPDATE day_passes SET status='PENDING', used_at=NULL, attendance_id=NULL WHERE pass_id=?",
+              [dpRows[0].pass_id]
+            );
+          }
+          // 지난 날짜: 출석 기록만 삭제, day_pass는 CANCELLED로 전환
+          else if (useDate) {
+            await conn.query(
+              "UPDATE day_passes SET status='CANCELLED', attendance_id=NULL WHERE pass_id=?",
+              [dpRows[0].pass_id]
+            );
+          }
+        }
+
+        if (member_id) {
+          await conn.query(
+            `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, new_value, created_by)
+             VALUES (?, ?, 'ATTENDANCE_UNDO', ?, ?, ?, ?)`,
+            [
+              member_id,
+              member_name || null,
+              cancel_reason || "일일권 입장 취소",
+              JSON.stringify({ attendance_id, result, pass_type: "DAILY", memo: origMemo }),
+              JSON.stringify({ day_pass: dpRows[0] ? `pass_id=${dpRows[0].pass_id} 복원` : "연결된 day_pass 없음" }),
+              actor,
+            ]
+          );
+        }
+
+        await conn.commit();
+      } catch (e) {
+        await conn.rollback();
+        throw e;
+      } finally {
+        conn.release();
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
     if (shouldRestore && member_id) {
       await withMemberChange(
         { type: "ATTENDANCE_UNDO", reason: cancel_reason || "입장 취소", source: "attendance/delete", actor },

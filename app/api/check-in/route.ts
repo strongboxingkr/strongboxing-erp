@@ -217,6 +217,86 @@ export async function POST(req: Request) {
       });
     }
 
+    // ── 일일권 확인 ──────────────────────────────────────────────
+    // use_pass: 클라이언트가 명시적으로 선택한 이용권 타입 ("REGULAR" | "DAILY")
+    // 없으면 자동 선택 (둘 다 가능하면 MULTIPLE_PASSES 반환)
+    const usePass = body.use_pass as string | undefined;
+
+    const [dayPassRows]: any = await pool.query(
+      `SELECT pass_id FROM day_passes WHERE member_id = ? AND use_date = ? AND status = 'PENDING' LIMIT 1 FOR UPDATE`,
+      [member.member_id, todayText]
+    );
+    const hasDayPass = dayPassRows.length > 0;
+    const dayPass = hasDayPass ? dayPassRows[0] : null;
+
+    // 정기 회원권 유효 여부 (만료·잔여 횟수 0 포함)
+    const regularPassValid = !(
+      member.status === "EXPIRED" ||
+      (endDateStr && endDateStr < todayText) ||
+      (member.pass_type === "COUNT" && Number(member.remaining_count || 0) <= 0)
+    );
+
+    // 둘 다 사용 가능 → 선택 필요 (임의 차감 금지)
+    if (hasDayPass && regularPassValid && !usePass) {
+      return NextResponse.json({
+        success: false,
+        result: "MULTIPLE_PASSES",
+        message: "정기 회원권과 일일권이 모두 있습니다. 사용할 이용권을 선택해주세요.",
+        member: { member_id: member.member_id, name: member.name },
+        options: ["REGULAR", "DAILY"],
+      });
+    }
+
+    // 일일권 사용 경로
+    if ((usePass === "DAILY" || (!regularPassValid && hasDayPass))) {
+      if (!hasDayPass) {
+        return NextResponse.json({ success: false, result: "NO_DAY_PASS", message: "오늘 사용 가능한 일일권이 없습니다." });
+      }
+
+      const conn = await (pool as any).getConnection();
+      let attendanceId: number;
+      try {
+        await conn.beginTransaction();
+
+        // 동시 요청 방지: FOR UPDATE로 이미 잠근 행을 다시 확인
+        const [dpCheck]: any = await conn.query(
+          `SELECT pass_id FROM day_passes WHERE pass_id = ? AND status = 'PENDING' FOR UPDATE`,
+          [dayPass.pass_id]
+        );
+        if (dpCheck.length === 0) {
+          await conn.rollback();
+          return NextResponse.json({ success: false, result: "DAY_PASS_USED", message: "일일권이 이미 사용됐습니다." });
+        }
+
+        const [attRes]: any = await conn.query(
+          `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, result, memo) VALUES (?,?,?,?,0,'SUCCESS',?)`,
+          [member.member_id, member.branch_name, member.name, "DAILY", memo || "일일권 출석"]
+        );
+        attendanceId = attRes.insertId;
+
+        await conn.query(
+          `UPDATE day_passes SET status='USED', used_at=NOW(), attendance_id=? WHERE pass_id=?`,
+          [attendanceId, dayPass.pass_id]
+        );
+
+        await conn.commit();
+      } catch (e) {
+        await conn.rollback();
+        throw e;
+      } finally {
+        conn.release();
+      }
+
+      return NextResponse.json({
+        success: true,
+        result: "SUCCESS",
+        message: "일일권 출석 완료",
+        pass_type: "DAILY",
+        member: { member_id: member.member_id, name: member.name, branch_name: member.branch_name },
+      });
+    }
+
+    // ── 정기 회원권 경로 ───────────────────────────────────────────
     let remainingCount = Number(member.remaining_count || 0);
 
     if (member.pass_type === "COUNT") {

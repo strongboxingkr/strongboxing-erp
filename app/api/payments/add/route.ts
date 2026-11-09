@@ -26,6 +26,7 @@ export async function POST(req: Request) {
       branch_name,
       payment_date,
       start_date: start_date_input,
+      use_date: use_date_input, // 일일권 전용: 지정 이용일 (없으면 KST 오늘)
       payment_method,
       product_name,
       payment_purpose, // "PASS" | "GENERAL" — 호출처가 명시적으로 전달
@@ -166,13 +167,65 @@ export async function POST(req: Request) {
     }
 
     const pass_type: string = product.option_value || "";
-    if (pass_type !== "PERIOD" && pass_type !== "COUNT") {
+    if (pass_type !== "PERIOD" && pass_type !== "COUNT" && pass_type !== "DAILY") {
       return NextResponse.json({
         success: false,
-        message: `상품 "${product_name}"의 유형(PERIOD/COUNT)이 설정되지 않았습니다. 상품 마스터를 수정해주세요.`,
+        message: `상품 "${product_name}"의 유형(PERIOD/COUNT/DAILY)이 설정되지 않았습니다. 상품 마스터를 수정해주세요.`,
       });
     }
 
+    // ── 일일권(DAILY) 별도 처리 ───────────────────────────────────
+    // members 테이블을 건드리지 않고 payments + day_passes에만 기록
+    if (pass_type === "DAILY") {
+      const kstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      const useDate = use_date_input ? String(use_date_input).slice(0, 10) : kstToday;
+
+      // idempotency_key 중복 → 기존 결과 반환
+      if (idempotency_key) {
+        const [existing]: any = await pool.query(
+          `SELECT payment_id FROM payments WHERE idempotency_key = ? LIMIT 1`,
+          [idempotency_key]
+        );
+        if (existing.length > 0) {
+          return NextResponse.json({ success: true, message: "일일권 등록 완료 (중복 요청)", idempotent: true });
+        }
+      }
+
+      const conn = await (pool as any).getConnection();
+      try {
+        await conn.beginTransaction();
+
+        const pSql = idempotency_key
+          ? `INSERT IGNORE INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,?)`
+          : `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?)`;
+        const pParams = idempotency_key
+          ? [member_id, branch_name, payment_date, payment_method, product_name, useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || "", idempotency_key]
+          : [member_id, branch_name, payment_date, payment_method, product_name, useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || ""];
+
+        const [payRes]: any = await conn.query(pSql, pParams);
+
+        if (idempotency_key && payRes.affectedRows === 0) {
+          await conn.commit();
+          return NextResponse.json({ success: true, message: "일일권 등록 완료 (중복 요청)", idempotent: true });
+        }
+
+        await conn.query(
+          `INSERT INTO day_passes (payment_id, member_id, branch_name, use_date, status) VALUES (?,?,?,?,'PENDING')`,
+          [payRes.insertId, member_id, branch_name, useDate]
+        );
+
+        await conn.commit();
+      } catch (e) {
+        await conn.rollback();
+        throw e;
+      } finally {
+        conn.release();
+      }
+
+      return NextResponse.json({ success: true, message: "일일권 등록 완료" });
+    }
+
+    // ── 기존 PERIOD / COUNT 처리 ──────────────────────────────────
     const duration_months = Number(product.duration_months || 0);
     const count_value = Number(product.count_value || 0);
 
