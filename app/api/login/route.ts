@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { login_id, password } = body;
 
     const [rows]: any = await pool.query(
-      `SELECT user_id, login_id, password_hash, name, role, branch_name, use_yn, status
+      `SELECT user_id, login_id, password_hash, name, role, branch_name, use_yn
        FROM users WHERE login_id = ? LIMIT 1`,
       [login_id]
     );
@@ -22,10 +22,6 @@ export async function POST(req: Request) {
 
     if (user.use_yn !== "Y") {
       return NextResponse.json({ success: false, message: "사용 중지 계정" });
-    }
-
-    if (user.status && user.status !== "APPROVED") {
-      return NextResponse.json({ success: false, message: "승인되지 않은 계정입니다." });
     }
 
     // bcrypt 해시 또는 평문 비밀번호 둘 다 지원
