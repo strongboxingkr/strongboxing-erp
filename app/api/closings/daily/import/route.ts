@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import * as XLSX from "xlsx";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const formData = await req.formData();
 
     const file = formData.get("file") as File;

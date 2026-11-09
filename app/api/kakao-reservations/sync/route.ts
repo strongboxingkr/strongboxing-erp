@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Imap from "imap";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 import { simpleParser } from "mailparser";
 import pool from "@/lib/db";
 
@@ -266,8 +267,12 @@ const syncOneAccount = (account: HiworksAccount) => {
   });
 };
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     let checked = 0;
     let inserted = 0;
     let skipped = 0;

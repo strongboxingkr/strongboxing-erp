@@ -1,5 +1,6 @@
 import pool from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
@@ -26,6 +27,9 @@ const judgeRow = (item: {
 };
 
 export async function GET(req: NextRequest) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const { searchParams } = new URL(req.url);
     const month = searchParams.get("month");
@@ -51,6 +55,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const body = await req.json();
     const { report_month, title, summary_text, next_action_text, totals, items } = body;
