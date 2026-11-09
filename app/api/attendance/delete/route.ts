@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // → 현재 회원권이 PERIOD이더라도 used_count > 0 이면 remaining_count+1 적용
     // → 이 경우 현재 회원권과 무관한 복원이 발생할 수 있음 (구조적 한계)
     const [rows]: any = await pool.query(
-      `SELECT a.attendance_id, a.result, a.member_id, a.member_name, a.branch_name, a.used_count, a.pass_type AS att_pass_type, a.memo
+      `SELECT a.attendance_id, a.result, a.member_id, a.member_name, a.branch_name, a.used_count, a.pass_type AS att_pass_type, a.memo, a.checkin_time
        FROM attendance a
        WHERE a.attendance_id = ?`,
       [attendance_id]
@@ -43,10 +43,46 @@ export async function POST(req: Request) {
 
     // 퇴장(CHECK_OUT) 기록: result='CHECK_OUT' → used_count=0 이므로 복원 없음
     // 실패 기록(EXPIRED, NO_COUNT 등): used_count=0 → 복원 없음
-    // COUNT 성공 입장: result='SUCCESS' AND used_count>0 → 복원
+    // COUNT 성공 입장: result='SUCCESS' AND used_count>0 → 복원 후보
     const shouldRestore = result === "SUCCESS" && Number(used_count) > 0;
 
     const actor = user.login_id || "관리자";
+
+    // COUNT 패스 재등록 후 과거 출석 취소 차단
+    // attendance에 payment_id 없으므로 start_date 경계로 소속 패스 판별
+    if (shouldRestore && member_id) {
+      const [memberRows]: any = await pool.query(
+        "SELECT pass_type, start_date FROM members WHERE member_id = ?",
+        [member_id]
+      );
+      const member = memberRows[0];
+      const checkinRow = rows[0] as any;
+
+      if (
+        member &&
+        member.pass_type === "COUNT" &&
+        member.start_date
+      ) {
+        const memberStartDate = String(member.start_date).slice(0, 10);
+        // checkin_time은 DATETIME — 날짜 부분만 비교
+        const checkinDate = checkinRow.checkin_time
+          ? String(checkinRow.checkin_time).slice(0, 10)
+          : null;
+
+        // 출석 날짜가 현재 패스 시작일보다 명확히 이전인 경우 차단
+        // 같은 날(==)은 허용 (당일 재등록 엣지케이스)
+        if (checkinDate && checkinDate < memberStartDate) {
+          return NextResponse.json(
+            {
+              success: false,
+              requiresManualReview: true,
+              message: `현재 회원권(시작일: ${memberStartDate}) 이전 출석 기록입니다. 현재 회원권과 다른 패스의 기록일 수 있어 자동 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+    }
 
     if (shouldRestore && member_id) {
       await withMemberChange(
