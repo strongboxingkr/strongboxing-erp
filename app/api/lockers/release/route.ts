@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
     const { locker_id } = await req.json();
 
     // 해제 전 member_id 조회 (members.locker_no 초기화용)

@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
     const { branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date, memo, has_luggage } = await req.json();
 
     if (!branch_name || !locker_no) {

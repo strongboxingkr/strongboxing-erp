@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import * as XLSX from "xlsx";
+import { getUserFromRequest } from "@/lib/auth";
 
 const SOURCE_MAP: Record<string, string> = {
   "네이버 검색광고": "NAVER_AD",
@@ -49,6 +50,8 @@ function toDate(v: any): string | null {
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
