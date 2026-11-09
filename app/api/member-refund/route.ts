@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { withMemberChange } from "@/lib/membership-ops";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(req: Request) {
@@ -47,75 +48,105 @@ export async function POST(req: Request) {
     const member = memberRows[0];
     const createdBy = user.login_id || "관리자";
 
-    const [paymentResult]: any = await pool.query(
-      `
-      INSERT INTO payments (
-        member_id,
-        branch_name,
-        payment_date,
-        payment_method,
-        product_name,
-        pass_type,
-        amount,
-        discount_amount,
-        refund_amount,
-        final_amount,
-        unpaid_amount,
-        operator_name,
-        history_type,
-        memo
-      )
-      VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        member.member_id,
-        member.branch_name,
-        payment_method || "TRANSFER",
-        member.product_name,
-        member.pass_type,
-        0,
-        0,
-        refund_amount,
-        -Math.abs(refund_amount),
-        0,
-        createdBy,
-        "REFUND",
-        refund_reason || "회원 환불",
-      ]
-    );
+    // 현재 회원의 패스가 있는지 판단 (환불 후 EXPIRED 처리 필요 여부)
+    const hasActivePass = !!(member.product_name || member.end_date);
 
-    await pool.query(
-      `
-      INSERT INTO member_histories (
-        member_id,
-        member_name,
-        action_type,
-        action_memo,
-        old_value,
-        new_value,
-        created_by
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        member.member_id,
-        member.name,
-        "REFUND",
-        "회원 환불 처리",
-        JSON.stringify(member),
-        JSON.stringify({
-          refund_amount,
-          refund_reason,
-          payment_id: paymentResult.insertId,
-        }),
-        createdBy,
-      ]
+    let insertedPaymentId: number;
+    await withMemberChange(
+      { type: "REFUND", reason: refund_reason || "회원 환불", source: "member-refund", actor: createdBy },
+      async (conn) => {
+        const [paymentResult]: any = await conn.query(
+          `
+          INSERT INTO payments (
+            member_id,
+            branch_name,
+            payment_date,
+            payment_method,
+            product_name,
+            pass_type,
+            amount,
+            discount_amount,
+            refund_amount,
+            final_amount,
+            unpaid_amount,
+            operator_name,
+            history_type,
+            memo
+          )
+          VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            member.member_id,
+            member.branch_name,
+            payment_method || "TRANSFER",
+            member.product_name,
+            member.pass_type,
+            0,
+            0,
+            refund_amount,
+            -Math.abs(refund_amount),
+            0,
+            createdBy,
+            "REFUND",
+            refund_reason || "회원 환불",
+          ]
+        );
+        insertedPaymentId = paymentResult.insertId;
+
+        await conn.query(
+          `SET @sbm_change_ref_type = 'payment', @sbm_change_ref_id = ?`,
+          [insertedPaymentId]
+        );
+
+        // 현재 회원에 패스가 있으면 EXPIRED 처리
+        if (hasActivePass) {
+          await conn.query(
+            `UPDATE members
+             SET status = 'EXPIRED',
+                 product_name = NULL,
+                 pass_type = NULL,
+                 remaining_count = 0,
+                 start_date = NULL,
+                 end_date = NULL
+             WHERE member_id = ?`,
+            [member.member_id]
+          );
+        }
+
+        await conn.query(
+          `
+          INSERT INTO member_histories (
+            member_id,
+            member_name,
+            action_type,
+            action_memo,
+            old_value,
+            new_value,
+            created_by
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            member.member_id,
+            member.name,
+            "REFUND",
+            "회원 환불 처리",
+            JSON.stringify(member),
+            JSON.stringify({
+              refund_amount,
+              refund_reason,
+              payment_id: insertedPaymentId,
+            }),
+            createdBy,
+          ]
+        );
+      }
     );
 
     return NextResponse.json({
       success: true,
       message: "환불 처리 완료",
-      payment_id: paymentResult.insertId,
+      payment_id: insertedPaymentId!,
     });
   } catch (error) {
     console.error(error);

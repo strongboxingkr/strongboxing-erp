@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       `UPDATE members
        SET end_date = DATE_ADD(end_date, INTERVAL ? DAY)
        WHERE branch_name = ?
-         AND pass_type = 'DATE'
+         AND pass_type = 'PERIOD'
          AND DATE(end_date) >= CURDATE()`,
       [days, branch_name]
     );
