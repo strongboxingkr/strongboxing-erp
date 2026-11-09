@@ -1,5 +1,6 @@
 import pool from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 import { generateMarketingDocx } from "@/lib/marketing/generateMarketingDocx";
 import { generateSummaryText, generateNextActionText } from "@/lib/marketing/generateMarketingSummary";
 import { generateMarketingReportText } from "@/lib/marketing/generateMarketingReportText";
@@ -51,9 +52,12 @@ const safeFileName = (s: string) =>
   s.replace(/[\/\\:*?"<>|]/g, "").replace(/\s+/g, "_").slice(0, 100);
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getUserFromRequest(req);
+  if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  if (!isAdminOrOwner(user.role)) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
   try {
     const { id } = await params;
 

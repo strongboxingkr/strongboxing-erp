@@ -1,9 +1,12 @@
 import pool from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
 
-export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
   try {
     const { id } = await ctx.params;
     await pool.query(

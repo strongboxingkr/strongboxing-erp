@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { SolapiMessageService } from "solapi";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 const cleanPhone = (phone: string) => {
   return String(phone || "").replace(/[^0-9]/g, "");
@@ -36,6 +37,8 @@ ${reservation.customer_name}님 예약이 확정되었습니다.
 };
 
 export async function POST(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json();
     const { reservation_id, status, memo, sms_message, phone } = body;
@@ -58,6 +61,10 @@ export async function POST(req: Request) {
     }
 
     const before = beforeRows[0];
+
+    if (!canAccessBranch(user.role, user.branch_name, before.branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     let safeBranchName = before.branch_name;
 

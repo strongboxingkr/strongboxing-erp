@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
     const branch_name = searchParams.get("branch_name");
@@ -16,6 +19,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { branch_name, zone_name, start_no, end_no, sort_order, cols } = await req.json();
     if (!branch_name || !zone_name || !start_no || !end_no) {
@@ -32,6 +37,8 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { zone_id, cols, row_first } = await req.json();
     if (!zone_id) return NextResponse.json({ success: false, message: "필수값 누락" });
@@ -49,6 +56,8 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { zone_id } = await req.json();
     await pool.query(`DELETE FROM locker_zones WHERE zone_id = ?`, [zone_id]);

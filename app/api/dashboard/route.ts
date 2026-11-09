@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 const branchNames = ["철산점", "목동점", "개봉점", "신정점"];
 
 export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
 

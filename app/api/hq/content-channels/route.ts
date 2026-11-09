@@ -1,10 +1,13 @@
 import pool from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getUserFromRequest } from "@/lib/auth";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
 
 export async function PUT(req: NextRequest) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
   try {
     const { id, is_uploaded, post_url } = await req.json();
     await pool.query(

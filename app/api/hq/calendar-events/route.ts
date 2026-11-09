@@ -1,10 +1,14 @@
 import pool from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const [rows]: any = await pool.query(
       `SELECT e.*, b.name AS branch_name FROM hq_calendar_events e
@@ -19,6 +23,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const b = await req.json();
     const [r]: any = await pool.query(

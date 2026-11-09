@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 function decodeBase64(data?: string) {
   if (!data) return "";
@@ -255,7 +256,10 @@ function pickKakaoDateTime(text: string) {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,

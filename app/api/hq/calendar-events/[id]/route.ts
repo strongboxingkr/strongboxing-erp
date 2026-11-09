@@ -1,10 +1,14 @@
 import pool from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
 
 export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const { id } = await ctx.params;
     const b = await req.json();
@@ -20,7 +24,10 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
 }
 
-export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const { id } = await ctx.params;
     await pool.query("UPDATE hq_calendar_events SET deleted_at=NOW(),is_active=0 WHERE id=?", [id]);

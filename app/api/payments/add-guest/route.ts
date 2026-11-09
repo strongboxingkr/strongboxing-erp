@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json();
     const { branch_name, payment_date, payment_method, product_name, final_amount, memo } = body;
+    if (branch_name && !canAccessBranch(user.role, user.branch_name, branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     if (!branch_name) return NextResponse.json({ success: false, message: "지점 선택 필요" });
     if (!product_name) return NextResponse.json({ success: false, message: "상품 선택 필요" });

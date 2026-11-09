@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
     const member_id = searchParams.get("member_id");
@@ -11,6 +14,15 @@ export async function GET(req: Request) {
         success: false,
         message: "member_id가 필요합니다.",
       });
+    }
+
+    const [memberRows]: any = await pool.query(
+      `SELECT branch_name FROM members WHERE member_id = ? LIMIT 1`,
+      [member_id]
+    );
+    if (memberRows.length === 0) return NextResponse.json({ success: false, message: "회원 없음" }, { status: 404 });
+    if (!canAccessBranch(user.role, user.branch_name, memberRows[0].branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const [rows]: any = await pool.query(
@@ -37,10 +49,12 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json();
 
-    const { member_id, note_type, content, created_by } = body;
+    const { member_id, note_type, content } = body;
 
     if (!member_id || !content) {
       return NextResponse.json({
@@ -50,66 +64,38 @@ export async function POST(req: Request) {
     }
 
     const [memberRows]: any = await pool.query(
-      `
-      SELECT *
-      FROM members
-      WHERE member_id = ?
-      LIMIT 1
-      `,
+      `SELECT * FROM members WHERE member_id = ? LIMIT 1`,
       [member_id]
     );
 
     if (memberRows.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "회원을 찾을 수 없습니다.",
-        },
+        { success: false, message: "회원을 찾을 수 없습니다." },
         { status: 404 }
       );
     }
 
     const member = memberRows[0];
-    const finalCreatedBy = created_by || "관리자";
+    if (!canAccessBranch(user.role, user.branch_name, member.branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const [result]: any = await pool.query(
-      `
-      INSERT INTO member_notes (
-        member_id,
-        note_type,
-        content,
-        created_by
-      )
-      VALUES (?, ?, ?, ?)
-      `,
-      [member_id, note_type || "GENERAL", content, finalCreatedBy]
+      `INSERT INTO member_notes (member_id, note_type, content, created_by) VALUES (?, ?, ?, ?)`,
+      [member_id, note_type || "GENERAL", content, user.name || "관리자"]
     );
 
     await pool.query(
-      `
-      INSERT INTO member_histories (
-        member_id,
-        member_name,
-        action_type,
-        action_memo,
-        old_value,
-        new_value,
-        created_by
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
+      `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, new_value, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         member_id,
         member.name,
         "NOTE",
         "회원 메모 추가",
         null,
-        JSON.stringify({
-          note_id: result.insertId,
-          note_type: note_type || "GENERAL",
-          content,
-        }),
-        finalCreatedBy,
+        JSON.stringify({ note_id: result.insertId, note_type: note_type || "GENERAL", content }),
+        user.name || "관리자",
       ]
     );
 
@@ -120,13 +106,8 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error(error);
-
     return NextResponse.json(
-      {
-        success: false,
-        message: "메모 추가 중 오류가 발생했습니다.",
-        error,
-      },
+      { success: false, message: "메모 추가 중 오류가 발생했습니다.", error },
       { status: 500 }
     );
   }

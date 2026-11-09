@@ -1,4 +1,6 @@
 import pool from "@/lib/db";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
 // One-time SEO metadata batch update for existing blog posts.
 // POST /api/hq/batch-update-posts-seo  — no body needed
@@ -97,7 +99,10 @@ const UPDATES: { slug: string; title: string; description: string }[] = [
   },
 ];
 
-export async function POST() {
+export async function POST(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const results: { slug: string; status: "updated" | "not_found" }[] = [];
 
   for (const row of UPDATES) {

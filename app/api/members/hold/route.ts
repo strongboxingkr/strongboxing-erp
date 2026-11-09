@@ -4,8 +4,8 @@ import { applyHold, HoldError, withMemberChange } from "@/lib/membership-ops";
 
 /**
  * 데스크 휴회 등록 (회원관리 화면). 계산 규칙은 기존과 같음: 시작~종료 포함 일수만큼 만료일 연장 + REST.
- * 변경점: 회원 행 잠금 + 트랜잭션, 이미 휴회 중·만료·겹치는 휴회 차단, 회원권 변경 내역 기록,
- *         같은 회원의 대기 중 앱 신청은 자동 종료(중복 반영 방지)
+ * 변경점: 회원 행 잠금 + 트랜잭션, 이미 휴회 중·만료·겹치는 휴회 차단, 회원권 변경 내역 기록
+ *         (휴회는 관장이 ERP에서 직접 처리. 회원 앱에는 휴회 신청 기능 없음)
  */
 export async function POST(req: Request) {
   try {

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const [rows]: any = await pool.query(
       `SELECT user_id, name, login_id, phone, branch_name, role, status, created_at

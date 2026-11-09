@@ -1,5 +1,6 @@
 import pool from "@/lib/db";
 import { NextRequest } from "next/server";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
@@ -30,9 +31,12 @@ const agg = (items: any[], key: string) => {
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const { id } = await params;
     const [[report]]: any = await pool.query(
@@ -85,9 +89,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const { id } = await params;
     await pool.query("DELETE FROM marketing_reports WHERE id = ?", [id]);

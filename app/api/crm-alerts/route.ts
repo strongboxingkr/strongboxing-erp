@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
     const branch_name = searchParams.get("branch_name");
+    if (branch_name && !canAccessBranch(user.role, user.branch_name, branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     let sql = `
       SELECT *

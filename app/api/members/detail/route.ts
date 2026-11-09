@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
     const member_id = searchParams.get("member_id");
@@ -17,6 +20,10 @@ export async function GET(req: Request) {
     );
 
     if (rows.length === 0) return NextResponse.json({ success: false, message: "회원 없음" });
+
+    if (!canAccessBranch(user.role, user.branch_name, rows[0].branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     return NextResponse.json({ success: true, member: rows[0] });
   } catch (error) {

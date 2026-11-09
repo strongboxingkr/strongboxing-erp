@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
+import { getUserFromRequest } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const user = await getUserFromRequest(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const headers = ["날짜", "지점", "유입경로", "광고비", "노출수", "클릭수", "문의수", "예약수", "등록수", "매출"];
 
   const example = [

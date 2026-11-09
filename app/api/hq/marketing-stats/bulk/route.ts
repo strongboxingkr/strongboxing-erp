@@ -1,10 +1,14 @@
-import pool from "@/lib/db";
+﻿import pool from "@/lib/db";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 const ok = (data: unknown) => Response.json({ success: true, data });
 const err = (msg: string, status = 500) => Response.json({ success: false, message: msg }, { status });
 
 export async function POST(req: NextRequest) {
+  const user = await getUserFromRequest(req);
+  if (!user) return err("Unauthorized", 401);
+  if (!isAdminOrOwner(user.role)) return err("Forbidden", 403);
   try {
     const { rows } = await req.json();
     if (!Array.isArray(rows) || rows.length === 0) return err("rows 없음", 400);
