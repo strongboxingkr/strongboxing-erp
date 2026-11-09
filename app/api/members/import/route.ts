@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import * as XLSX from "xlsx";
+import { getUserFromRequest, isAdminOrOwner, canAccessBranch } from "@/lib/auth";
 
 const cleanPhone = (v: any) =>
   String(v || "").replace(/[^0-9]/g, "");
@@ -41,6 +42,10 @@ const normalizeGender = (v: any) => {
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const branchName = String(formData.get("branch_name") || "");
@@ -51,6 +56,10 @@ export async function POST(req: Request) {
 
     if (!branchName) {
       return NextResponse.json({ success: false, message: "지점을 선택해주세요." });
+    }
+
+    if (!canAccessBranch(user.role, user.branch_name, branchName)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

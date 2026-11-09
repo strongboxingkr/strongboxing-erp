@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import path from "path";
 import { mkdir, writeFile } from "fs/promises";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const formData = await req.formData();
 
     const file = formData.get("file") as File | null;
@@ -24,6 +28,15 @@ export async function POST(req: Request) {
         success: false,
         message: "member_id가 없습니다.",
       });
+    }
+
+    // 회원 소속 지점 검증
+    const [memberRows]: any = await pool.query(
+      `SELECT branch_name FROM members WHERE member_id = ? LIMIT 1`,
+      [member_id]
+    );
+    if (memberRows.length > 0 && !canAccessBranch(user.role, user.branch_name, memberRows[0].branch_name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const bytes = await file.arrayBuffer();
