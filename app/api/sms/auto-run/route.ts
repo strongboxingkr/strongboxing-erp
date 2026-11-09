@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { SolapiMessageService } from "solapi";
+import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 const cleanPhone = (phone: string) => String(phone || "").replace(/[^0-9]/g, "");
 
@@ -12,7 +13,20 @@ const getFromNumber = (branchName: string) => {
   return process.env.SOLAPI_FROM_CHULSAN;
 };
 
-export async function GET() {
+export async function GET(req: Request) {
+  // cron 호출: Authorization: Bearer <CRON_SECRET> 헤더로 인증
+  // 직원 호출: erp_session OWNER/ADMIN 쿠키로 인증
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization") || "";
+  const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+  if (!isCron) {
+    const user = await getUserFromRequest(req);
+    if (!user || !isAdminOrOwner(user.role)) {
+      return NextResponse.json({ success: false, message: "인증이 필요합니다." }, { status: 401 });
+    }
+  }
+
   try {
     const [rules]: any = await pool.query(`
       SELECT * FROM sms_auto_rules WHERE use_yn = 'Y' AND branch_name IS NULL
