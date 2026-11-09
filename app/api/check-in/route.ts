@@ -13,6 +13,8 @@ export async function POST(req: Request) {
     // 기기 토큰으로 지점 확정 (우선). 없으면 body.branch_name 사용 (체크인 화면 등)
     let branch_name: string | undefined = body.branch_name as string | undefined;
     const kioskToken = (req.headers.get("x-kiosk-token") || "").trim();
+    // REQUIRE_KIOSK_TOKEN=true 시 토큰 없음·미등록·해제 요청은 모두 거절 (전환 완료 후 사용)
+    const requireToken = process.env.REQUIRE_KIOSK_TOKEN === "true";
     if (kioskToken) {
       const [devRows]: any = await pool.query(
         `SELECT branch_name FROM kiosk_devices WHERE device_token = ? AND revoked_at IS NULL LIMIT 1`,
@@ -20,8 +22,13 @@ export async function POST(req: Request) {
       );
       if (devRows[0]) {
         branch_name = devRows[0].branch_name; // 서버 확정 지점 (클라이언트 값 덮어씀)
+      } else {
+        // 토큰이 있지만 미등록이거나 해제된 경우 → 항상 거절
+        return NextResponse.json({ success: false, result: "INVALID_KIOSK_TOKEN", message: "등록되지 않았거나 해제된 기기입니다." });
       }
-      // 등록되지 않은 토큰은 무시 (기존 무인증 흐름과 동일)
+    } else if (requireToken) {
+      // 토큰 없음 + 엄격 모드 → 거절
+      return NextResponse.json({ success: false, result: "KIOSK_TOKEN_REQUIRED", message: "기기 인증이 필요합니다." });
     }
 
     // use_pass(이용권 명시 선택)는 OWNER·ADMIN·DIRECTOR·COACH 직원만 허용
