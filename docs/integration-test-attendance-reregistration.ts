@@ -83,16 +83,20 @@ async function simulateDeleteAttendance(attendanceId: number): Promise<{ status:
         [member_id]
       );
       const member = memberRows[0];
-      if (member && member.pass_type === "COUNT" && member.start_date) {
-        const memberStartDate = String(member.start_date).slice(0, 10);
+      if (member && member.pass_type === "COUNT") {
+        const memberStartDate = member.start_date ? String(member.start_date).slice(0, 10) : null;
         const checkinDate = checkin_time ? String(checkin_time).slice(0, 10) : null;
-        if (checkinDate && checkinDate < memberStartDate) {
+        // 허용 조건: checkin > start_date만 (NULL 차단, 당일 차단, 이전 차단)
+        const isCurrentPass = memberStartDate && checkinDate && checkinDate > memberStartDate;
+        if (!isCurrentPass) {
           return {
             status: 409,
             body: {
               success: false,
               requiresManualReview: true,
-              message: `현재 회원권(시작일: ${memberStartDate}) 이전 출석 기록입니다. 현재 회원권과 다른 패스의 기록일 수 있어 자동 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`,
+              message: memberStartDate
+                ? `현재 회원권(시작일: ${memberStartDate}) 범위를 벗어난 출석 기록입니다. 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`
+                : "현재 회원권의 시작일을 확인할 수 없어 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.",
             },
           };
         }
@@ -188,39 +192,37 @@ async function runTests() {
     assert(!(await attendanceExists(attId)), "attendance should be deleted");
   });
 
-  // T4: 당일 재등록 — checkin_date == start_date → 허용 (차단 아님)
-  await test("T4: 당일 재등록 (checkin_date == start_date) → 허용, 복원됨", async () => {
+  // T4: 당일 재등록 — checkin_date == start_date → 차단 (증명 불가)
+  await test("T4: 당일 재등록 (checkin_date == start_date) → 409, 데이터 불변", async () => {
     await setup();
-    // 출석일 = start_date = 2026-11-01 (같은 날)
+    // 출석일 = start_date = 2026-11-01 (같은 날 — 이전 패스 출석과 구분 불가 → 차단)
     const attId = await insertAttendance("2026-11-01", 1, "COUNT");
     const before = await getRemainingCount();
 
     const res = await simulateDeleteAttendance(attId);
-    assert(res.status === 200, `expected 200 (same-day allowed), got ${res.status}`);
-    assert(res.body.success === true, "expected success");
+    assert(res.status === 409, `expected 409 (same-day blocked), got ${res.status}`);
+    assert(res.body.requiresManualReview === true, "expected requiresManualReview");
 
     const after = await getRemainingCount();
-    assert(after === before + 1, `same-day: expected ${before + 1}, got ${after}`);
+    assert(after === before, `remaining_count should NOT change: before=${before}, after=${after}`);
+    assert(await attendanceExists(attId), "attendance should NOT be deleted on 409");
   });
 
-  // T5: start_date 없는 COUNT 회원 — 복원 없이 삭제 허용
-  await test("T5: start_date 없는 COUNT 회원 → 삭제 허용, 복원 없음", async () => {
+  // T5: start_date NULL COUNT 회원 → 패스 소속 증명 불가 → 409
+  await test("T5: start_date NULL COUNT 회원 → 409, 데이터 불변", async () => {
     await setup();
     await pool.query(`UPDATE members SET start_date=NULL WHERE member_id=?`, [TEST_MEMBER_ID]);
     const attId = await insertAttendance("2026-10-01", 1, "COUNT");
     const before = await getRemainingCount();
 
     const res = await simulateDeleteAttendance(attId);
-    // start_date 없으면 비교 불가 → 복원 없이 삭제
-    // 현재 로직: member.start_date falsy → 차단 조건 미충족 → shouldRestore 경로로 진입 → 복원됨
-    // start_date=NULL이면 safe side는 복원 없이 삭제. 하지만 현재 코드는 start_date 없으면 차단 안 함 → 복원 발생
-    // 이는 허용 가능한 tradeoff: 출처 모호하지만 start_date 없으면 단순 복원
-    assert(res.status === 200, `expected 200, got ${res.status}`);
-    assert(res.body.success === true, "expected success");
-    // start_date 없으면 복원 발생 (OK — 보수적 복원)
+    // start_date NULL → 현재 패스 시작일 미확인 → 패스 소속 증명 불가 → 409
+    assert(res.status === 409, `expected 409 (NULL start_date blocked), got ${res.status}`);
+    assert(res.body.requiresManualReview === true, "expected requiresManualReview");
+
     const after = await getRemainingCount();
-    assert(after === before + 1 || after === before, `expected ${before} or ${before + 1}, got ${after}`);
-    assert(!(await attendanceExists(attId)), "attendance should be deleted");
+    assert(after === before, `remaining_count should NOT change: before=${before}, after=${after}`);
+    assert(await attendanceExists(attId), "attendance should NOT be deleted on 409");
   });
 
   await cleanup();

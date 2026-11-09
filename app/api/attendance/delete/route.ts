@@ -49,7 +49,8 @@ export async function POST(req: Request) {
     const actor = user.login_id || "관리자";
 
     // COUNT 패스 재등록 후 과거 출석 취소 차단
-    // attendance에 payment_id 없으므로 start_date 경계로 소속 패스 판별
+    // attendance에 payment_id가 없어 "어느 패스의 차감인지" 확실히 증명 불가
+    // 현재 패스 start_date와 비교해 소속 패스를 추정하되, 증명 불가 시 항상 409 반환
     if (shouldRestore && member_id) {
       const [memberRows]: any = await pool.query(
         "SELECT pass_type, start_date FROM members WHERE member_id = ?",
@@ -58,25 +59,28 @@ export async function POST(req: Request) {
       const member = memberRows[0];
       const checkinRow = rows[0] as any;
 
-      if (
-        member &&
-        member.pass_type === "COUNT" &&
-        member.start_date
-      ) {
-        const memberStartDate = String(member.start_date).slice(0, 10);
-        // checkin_time은 DATETIME — 날짜 부분만 비교
+      if (member && member.pass_type === "COUNT") {
+        const memberStartDate = member.start_date
+          ? String(member.start_date).slice(0, 10)
+          : null;
         const checkinDate = checkinRow.checkin_time
           ? String(checkinRow.checkin_time).slice(0, 10)
           : null;
 
-        // 출석 날짜가 현재 패스 시작일보다 명확히 이전인 경우 차단
-        // 같은 날(==)은 허용 (당일 재등록 엣지케이스)
-        if (checkinDate && checkinDate < memberStartDate) {
+        // 차단 조건: start_date 없음(패스 식별 불가) 또는 출석일이 start_date와 같거나 이전
+        // - start_date NULL: 현재 패스가 어느 날 시작됐는지 알 수 없어 증명 불가 → 차단
+        // - checkin == start_date: 당일 재등록 가능 — 이전 패스 출석과 구분 불가 → 차단
+        // - checkin < start_date: 명확히 이전 패스 → 차단
+        // 허용은 checkin > start_date인 경우에만 (현재 패스 기간 내 출석임이 확실)
+        const isCurrentPass = memberStartDate && checkinDate && checkinDate > memberStartDate;
+        if (!isCurrentPass) {
           return NextResponse.json(
             {
               success: false,
               requiresManualReview: true,
-              message: `현재 회원권(시작일: ${memberStartDate}) 이전 출석 기록입니다. 현재 회원권과 다른 패스의 기록일 수 있어 자동 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`,
+              message: memberStartDate
+                ? `현재 회원권(시작일: ${memberStartDate}) 범위를 벗어난 출석 기록입니다. 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`
+                : "현재 회원권의 시작일을 확인할 수 없어 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.",
             },
             { status: 409 }
           );
