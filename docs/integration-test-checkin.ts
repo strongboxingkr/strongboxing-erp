@@ -24,9 +24,11 @@ function assert(cond: boolean, msg: string) {
 
 async function resetData() {
   await pool.query(`DELETE FROM attendance`);
-  await pool.query(`UPDATE members SET remaining_count = 5, pass_type = 'COUNT' WHERE checkin_code = '1001'`);
-  await pool.query(`UPDATE members SET remaining_count = 0, pass_type = 'PERIOD' WHERE checkin_code = '1002'`);
-  await pool.query(`UPDATE members SET remaining_count = 0, pass_type = 'COUNT' WHERE checkin_code = '1005'`);
+  // end_date를 미래로 초기화해야 만료 판정 테스트가 격리됨
+  const futureDate = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+  await pool.query(`UPDATE members SET remaining_count = 5, pass_type = 'COUNT', end_date = ? WHERE checkin_code = '1001'`, [futureDate]);
+  await pool.query(`UPDATE members SET remaining_count = 0, pass_type = 'PERIOD', end_date = ? WHERE checkin_code = '1002'`, [futureDate]);
+  await pool.query(`UPDATE members SET remaining_count = 0, pass_type = 'COUNT', end_date = ? WHERE checkin_code = '1005'`, [futureDate]);
   await pool.query(`UPDATE members SET status = 'ACTIVE' WHERE checkin_code IN ('1001','1002','1003','1004')`);
 }
 
