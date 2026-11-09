@@ -1,36 +1,30 @@
+import { getErpUser } from "@/lib/erp-session";
+export type { ErpUser } from "@/lib/erp-session";
+
 export type UserRole = "ADMIN" | "OWNER" | "DIRECTOR" | "COACH";
 
-export function getUserFromRequest(req: Request) {
-  const role = req.headers.get("x-user-role") as UserRole | null;
-  const branch_name = (() => { try { return decodeURIComponent(req.headers.get("x-user-branch") || ""); } catch { return req.headers.get("x-user-branch"); } })();
-  const user_id = req.headers.get("x-user-id");
-  const login_id = req.headers.get("x-user-login-id");
-
-  return {
-    user_id,
-    login_id,
-    role,
-    branch_name,
-  };
+/** x-user-* 헤더는 더 이상 신뢰하지 않습니다. erp_session 쿠키만 사용합니다. */
+export async function getUserFromRequest(req: Request) {
+  return getErpUser(req);
 }
 
 export function isAdminOrOwner(role?: string | null) {
   return role === "ADMIN" || role === "OWNER";
 }
 
-export function requireLogin(req: Request) {
-  const user = getUserFromRequest(req);
+export async function requireLogin(req: Request) {
+  const user = await getUserFromRequest(req);
 
-  if (!user.role) {
+  if (!user) {
     return {
-      ok: false,
-      user,
+      ok: false as const,
+      user: null,
       message: "로그인이 필요합니다.",
     };
   }
 
   return {
-    ok: true,
+    ok: true as const,
     user,
     message: "",
   };

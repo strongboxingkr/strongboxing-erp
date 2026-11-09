@@ -49,7 +49,8 @@ export async function PUT(
 
     const oldMember = oldRows[0];
 
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
 
     if (!isAdminOrOwner(user.role) && oldMember.branch_name !== user.branch_name) {
     return NextResponse.json(
@@ -218,7 +219,8 @@ export async function DELETE(
 
     const oldMember = oldRows[0];
 
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
 
     if (!isAdminOrOwner(user.role) && oldMember.branch_name !== user.branch_name) {
     return NextResponse.json(

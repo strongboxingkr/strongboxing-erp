@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { withMemberChange } from "@/lib/membership-ops";
+import { getErpUser } from "@/lib/erp-session";
 
 export async function POST(req: Request) {
   try {
+    const user = await getErpUser(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     const { attendance_id } = await req.json();
     if (!attendance_id) return NextResponse.json({ success: false, message: "attendance_id 없음" });
 

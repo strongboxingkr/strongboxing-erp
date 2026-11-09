@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { applyHold, HoldError, withMemberChange } from "@/lib/membership-ops";
 
@@ -9,7 +9,10 @@ import { applyHold, HoldError, withMemberChange } from "@/lib/membership-ops";
  */
 export async function POST(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     const { member_id, hold_start, hold_end, reason } = await req.json();
     if (!member_id || !hold_start || !hold_end) {
       return NextResponse.json({ success: false, message: "회원ID, 휴회 시작일, 종료일은 필수입니다." });

@@ -21,15 +21,9 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  if (user) {
-    headers.set("x-user-id", String(user.user_id || ""));
-    headers.set("x-user-login-id", String(user.login_id || ""));
-    headers.set("x-user-role", String(user.role || ""));
-    headers.set("x-user-branch", encodeURIComponent(String(user.branch_name || "")));
-  }
-
   return fetch(url, {
     ...options,
     headers,
+    credentials: "include",
   });
 }

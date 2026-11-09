@@ -4,7 +4,8 @@ import { getUserFromRequest } from "@/lib/auth";
 
 export async function PATCH(req: Request, context: any) {
   try {
-    getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
     const paymentId = context.params.id;
     const body = await req.json();
     const { payment_date, payment_method, amount, final_amount } = body;

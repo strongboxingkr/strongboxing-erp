@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
 
     const { searchParams } = new URL(req.url);
     const branch_name = searchParams.get("branch_name");
@@ -62,7 +65,10 @@ export async function GET(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     const body = await req.json();
     const { payment_id, product_name, final_amount, payment_method, payment_date, memo } = body;
 

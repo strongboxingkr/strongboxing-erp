@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const year = searchParams.get("year") || new Date().getFullYear().toString();
     const month = searchParams.get("month") || String(new Date().getMonth() + 1);

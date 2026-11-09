@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const member_id = searchParams.get("member_id");
     if (!member_id) return NextResponse.json({ success: false });

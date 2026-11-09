@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     if (user.role !== "OWNER") {
       return NextResponse.json({ success: false, message: "권한 없음" }, { status: 403 });
     }

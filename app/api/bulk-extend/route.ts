@@ -1,11 +1,14 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { taggedQuery } from "@/lib/membership-ops";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const base_date = searchParams.get("base_date");
     const branch_name = searchParams.get("branch_name");
@@ -33,7 +36,10 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const user = getUserFromRequest(req);
+    const user = await getUserFromRequest(req);
+
+    if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
     const { base_date, days, branch_name } = await req.json();
 
     if (!base_date || days === undefined) return NextResponse.json({ success: false, message: "기준일/조정일 필요" });

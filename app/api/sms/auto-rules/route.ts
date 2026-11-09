@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
@@ -40,7 +40,10 @@ export async function PUT(req: Request) {
     let userRole = "ADMIN";
     let userBranch: string | null = null;
     try {
-      const user = getUserFromRequest(req);
+      const user = await getUserFromRequest(req);
+
+      if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
+
       userRole = user.role;
       userBranch = user.branch_name || null;
     } catch {}
