@@ -39,6 +39,7 @@ const menuGroups = [
     title: "💰 결제/재무",
     items: [
       ["결제관리", "/payments"],
+      ["회원 일일권 현황", "/day-passes"],
       ["월별매출", "/monthly-sales"],
       ["재무", "/finance"],
       ["재무 요약", "/finance-summary"],

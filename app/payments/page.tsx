@@ -426,8 +426,7 @@ export default function PaymentsPage() {
                   });
                   const json = await res.json();
                   if (json.success) {
-                    const passMsg = json.pass_code ? `\n입장코드: ${json.pass_code}` : "";
-                    alert(`비회원 결제 완료!${passMsg}`);
+                    alert("결제 등록 완료");
                     setGuestModal(false);
                     loadPayments();
                   } else alert(json.message || "결제 실패");

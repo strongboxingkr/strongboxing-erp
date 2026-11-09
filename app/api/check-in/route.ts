@@ -2,12 +2,40 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { SolapiMessageService } from "solapi";
 import { computeReleaseEnd, kstToday, withMemberChange } from "@/lib/membership-ops";
+import { getErpUser } from "@/lib/erp-session";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { phone_last4, checkin_code, branch_name, memo, check_type = "CHECK_IN", } = body;
+    const { phone_last4, checkin_code, memo, check_type = "CHECK_IN", } = body;
+
+    // 기기 토큰으로 지점 확정 (우선). 없으면 body.branch_name 사용 (체크인 화면 등)
+    let branch_name: string | undefined = body.branch_name as string | undefined;
+    const kioskToken = (req.headers.get("x-kiosk-token") || "").trim();
+    if (kioskToken) {
+      const [devRows]: any = await pool.query(
+        `SELECT branch_name FROM kiosk_devices WHERE device_token = ? AND revoked_at IS NULL LIMIT 1`,
+        [kioskToken]
+      );
+      if (devRows[0]) {
+        branch_name = devRows[0].branch_name; // 서버 확정 지점 (클라이언트 값 덮어씀)
+      }
+      // 등록되지 않은 토큰은 무시 (기존 무인증 흐름과 동일)
+    }
+
+    // use_pass(이용권 명시 선택)는 OWNER·ADMIN·DIRECTOR·COACH 직원만 허용
+    // KIOSK 역할 또는 세션 없는 요청은 use_pass를 보내도 무시 → 서버 자동 선택
+    const rawUsePass = body.use_pass as string | undefined;
+    let allowedUsePass: string | undefined;
+    let sessionStaff: Awaited<ReturnType<typeof getErpUser>> = null;
+    if (rawUsePass) {
+      sessionStaff = await getErpUser(req);
+      const staffRoles = ["OWNER", "ADMIN", "DIRECTOR", "COACH"];
+      if (sessionStaff && staffRoles.includes(sessionStaff.role)) {
+        allowedUsePass = rawUsePass;
+      }
+    }
 
     const code = checkin_code || phone_last4;
 
@@ -256,12 +284,12 @@ export async function POST(req: Request) {
     }
 
     // ── 일일권 확인 ──────────────────────────────────────────────
-    // use_pass: 클라이언트가 명시적으로 선택한 이용권 타입 ("REGULAR" | "DAILY")
-    // 없으면 자동 선택 (둘 다 가능하면 MULTIPLE_PASSES 반환)
-    const usePass = body.use_pass as string | undefined;
+    // usePass: ERP 세션 인증된 직원만 사용 가능 (위에서 allowedUsePass로 검증됨)
+    // 키오스크 등 비인증 요청은 allowedUsePass=undefined → 서버 자동 선택
+    const usePass = allowedUsePass;
 
     const [dayPassRows]: any = await pool.query(
-      `SELECT pass_id FROM day_passes WHERE member_id = ? AND use_date = ? AND status = 'PENDING' LIMIT 1 FOR UPDATE`,
+      `SELECT pass_id, branch_name, use_date FROM day_passes WHERE member_id = ? AND use_date = ? AND status = 'PENDING' LIMIT 1`,
       [member.member_id, todayText]
     );
     const hasDayPass = dayPassRows.length > 0;
@@ -274,45 +302,33 @@ export async function POST(req: Request) {
       (member.pass_type === "COUNT" && Number(member.remaining_count || 0) <= 0)
     );
 
-    // 둘 다 사용 가능 → 선택 필요 (임의 차감 금지)
-    if (hasDayPass && regularPassValid && !usePass) {
-      // 선택 화면에 필요한 상세 정보 포함
-      const [dpDetail]: any = await pool.query(
-        "SELECT use_date FROM day_passes WHERE pass_id = ? LIMIT 1",
-        [dayPass.pass_id]
-      );
-      return NextResponse.json({
-        success: false,
-        result: "MULTIPLE_PASSES",
-        message: "정기 회원권과 일일권이 모두 있습니다. 사용할 이용권을 선택해주세요.",
-        member: { member_id: member.member_id, name: member.name },
-        regular_pass: {
-          product_name: member.product_name,
-          end_date: member.end_date ? String(member.end_date).slice(0, 10) : null,
-          remaining_count: member.pass_type === "COUNT" ? member.remaining_count : null,
-          pass_type: member.pass_type,
-        },
-        day_pass: {
-          pass_id: dayPass.pass_id,
-          use_date: dpDetail[0]?.use_date ? String(dpDetail[0].use_date).slice(0, 10) : todayText,
-        },
-        options: ["REGULAR", "DAILY"],
-      });
+    // DIRECTOR·COACH: 세션의 담당 지점과 회원 지점 대조
+    // OWNER·ADMIN은 전 지점 허용. 클라이언트 branch_name을 신뢰하지 않음
+    if (usePass && sessionStaff && ["DIRECTOR", "COACH"].includes(sessionStaff.role)) {
+      if (sessionStaff.branch_name && member.branch_name && sessionStaff.branch_name !== member.branch_name) {
+        return NextResponse.json({ success: false, result: "BRANCH_MISMATCH", message: "담당 지점 회원이 아닙니다." });
+      }
     }
 
-    // use_pass 선택 시 서버 재검증: 지점 소속 확인
-    if (usePass === "REGULAR" && branch_name && member.branch_name && member.branch_name !== branch_name) {
-      return NextResponse.json({ success: false, result: "BRANCH_MISMATCH", message: "회원 지점이 일치하지 않습니다." });
+    // 직원 명시 선택: REGULAR → 정기권 유효 여부 확인
+    if (usePass === "REGULAR") {
+      if (!regularPassValid) {
+        return NextResponse.json({ success: false, result: "EXPIRED", message: "유효한 정기 회원권이 없습니다.", member: { name: member.name } });
+      }
+      // → 아래 정기권 경로로 fall-through
     }
 
-    // 일일권 사용 경로
-    if ((usePass === "DAILY" || (!regularPassValid && hasDayPass))) {
+    // 일일권 사용 경로:
+    //   - 직원이 "DAILY" 명시 선택, 또는
+    //   - use_pass 없을 때 오늘 일일권이 있으면 자동 선택 (일일권 우선),
+    //   - 정기권이 무효하고 일일권만 있는 경우
+    if (usePass === "DAILY" || (!usePass && hasDayPass) || (!regularPassValid && hasDayPass)) {
       if (!hasDayPass) {
         return NextResponse.json({ success: false, result: "NO_DAY_PASS", message: "오늘 사용 가능한 일일권이 없습니다." });
       }
 
-      // day_pass 지점 검증
-      if (branch_name && dayPass.branch_name && dayPass.branch_name !== branch_name) {
+      // day_pass 지점 검증 (회원 일일권은 member.branch_name 기준)
+      if (dayPass.branch_name && member.branch_name && dayPass.branch_name !== member.branch_name) {
         return NextResponse.json({ success: false, result: "BRANCH_MISMATCH", message: "일일권 지점이 일치하지 않습니다." });
       }
 

@@ -16,9 +16,10 @@ export async function GET(req: Request) {
     let sql = `
       SELECT
         p.*,
-        m.name
+        m.name,
+        CASE WHEN p.member_id IS NULL THEN 'Y' ELSE 'N' END AS is_guest
       FROM payments p
-      JOIN members m
+      LEFT JOIN members m
         ON p.member_id = m.member_id
       WHERE 1=1
     `;

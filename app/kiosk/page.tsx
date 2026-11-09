@@ -1,30 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
 
 export default function KioskPage() {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("출석번호를 입력해주세요");
   const [member, setMember] = useState<any>(null);
-  const [multiPasses, setMultiPasses] = useState<any>(null); // MULTIPLE_PASSES 선택 대기
-
-  const reset = () => { setCode(""); setMember(null); setMessage("출석번호를 입력해주세요"); setMultiPasses(null); };
+  const reset = () => { setCode(""); setMember(null); setMessage("출석번호를 입력해주세요"); };
 
   const checkWithCode = async (inputCode: string, type: "CHECK_IN" | "CHECK_OUT", usePass?: "REGULAR" | "DAILY") => {
     if (!inputCode.trim()) return;
     const body: any = { checkin_code: inputCode, check_type: type };
     if (usePass) body.use_pass = usePass;
-    const res = await apiFetch("/api/check-in", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      const token = localStorage.getItem("kiosk_device_token");
+      if (token) headers["x-kiosk-token"] = token;
+    } catch {}
+    const res = await fetch("/api/check-in", { method: "POST", headers, body: JSON.stringify(body) });
     const data = await res.json();
-    if (data.result === "MULTIPLE_PASSES") {
-      setMultiPasses({ ...data, savedCode: inputCode });
-      return;
-    }
-    setMultiPasses(null);
     if (data.success) {
       setMember(data.member);
       setMessage(type === "CHECK_OUT" ? `${data.member?.name || ""}님 퇴실 완료!` : `${data.member?.name || data.guest_name || ""}님 입장 완료!`);
@@ -76,48 +70,11 @@ export default function KioskPage() {
         </div>
 
         <div style={{ padding: "28px 24px 24px" }}>
-          {/* MULTIPLE_PASSES 선택 */}
-          {multiPasses && (
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ textAlign: "center", fontSize: 20, fontWeight: 900, color: "#ff9500", marginBottom: 8 }}>
-                이용권을 선택해주세요
-              </div>
-              <div style={{ textAlign: "center", fontSize: 15, color: "#ccc", marginBottom: 16 }}>{multiPasses.member?.name}님</div>
-              <div style={{ display: "flex", gap: 12 }}>
-                <button
-                  onClick={() => checkWithCode(multiPasses.savedCode, "CHECK_IN", "REGULAR")}
-                  style={{ flex: 1, padding: "16px 12px", borderRadius: 14, border: "2px solid #3a7bd5", background: "#0d1f3c", cursor: "pointer", textAlign: "left" }}
-                >
-                  <div style={{ fontSize: 12, color: "#5b9af5", fontWeight: 700, marginBottom: 4 }}>정기 회원권</div>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>{multiPasses.regular_pass?.product_name || "-"}</div>
-                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>
-                    {multiPasses.regular_pass?.pass_type === "COUNT"
-                      ? `잔여 ${multiPasses.regular_pass?.remaining_count}회`
-                      : `만료일 ${multiPasses.regular_pass?.end_date || "-"}`}
-                  </div>
-                </button>
-                <button
-                  onClick={() => checkWithCode(multiPasses.savedCode, "CHECK_IN", "DAILY")}
-                  style={{ flex: 1, padding: "16px 12px", borderRadius: 14, border: "2px solid #ef4444", background: "#1f0d0d", cursor: "pointer", textAlign: "left" }}
-                >
-                  <div style={{ fontSize: 12, color: "#ef4444", fontWeight: 700, marginBottom: 4 }}>일일권</div>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>이용일</div>
-                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>{multiPasses.day_pass?.use_date || "-"}</div>
-                </button>
-              </div>
-              <button onClick={() => reset()} style={{ marginTop: 12, width: "100%", padding: "12px 0", borderRadius: 12, border: "1px solid #333", background: "#1f1f1f", fontSize: 14, fontWeight: 700, cursor: "pointer", color: "#aaa" }}>
-                취소
-              </button>
-            </div>
-          )}
-
           {/* 메시지 */}
-          {!multiPasses && (
           <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 16 }}>
             {message}
             {member && <div style={{ color: "#ef4444", fontSize: 16, marginTop: 6 }}>{member.branch_name}</div>}
           </div>
-          )}
 
           {/* 디스플레이 */}
           <div style={{
@@ -168,6 +125,42 @@ export default function KioskPage() {
             }}>퇴실</button>
           </div>
         </div>
+      </div>
+
+      {/* 기기 등록 — 하단 소형 버튼 (직원이 처음 1회 실행) */}
+      <div style={{ marginTop: 24, textAlign: "center" }}>
+        <button
+          onClick={async () => {
+            try {
+              const existing = localStorage.getItem("kiosk_device_token");
+              if (existing) { alert("이미 등록된 기기입니다.\n토큰: " + existing.slice(0, 8) + "…"); return; }
+            } catch {}
+            const branch = prompt("등록할 지점명을 입력하세요 (예: 철산점)");
+            if (!branch) return;
+            const label = prompt("기기 이름 (선택, 예: 1번키오스크)") || undefined;
+            const res = await fetch("/api/kiosk-device", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ branch_name: branch, label }),
+              credentials: "include",
+            });
+            const data = await res.json();
+            if (data.success && data.device_token) {
+              try { localStorage.setItem("kiosk_device_token", data.device_token); } catch {}
+              alert(`등록 완료!\n지점: ${branch}\n이 기기에서 체크인 시 서버가 지점을 자동으로 확정합니다.`);
+            } else {
+              alert(data.error || data.message || "등록 실패 — 직원으로 로그인 후 시도하세요.");
+            }
+          }}
+          style={{ background: "none", border: "none", color: "#333", fontSize: 12, cursor: "pointer", padding: "8px 16px" }}
+        >기기 등록</button>
+        <button
+          onClick={() => {
+            try { localStorage.removeItem("kiosk_device_token"); } catch {}
+            alert("기기 등록이 해제됐습니다. 서버 목록에서도 삭제하려면 관리자에게 문의하세요.");
+          }}
+          style={{ background: "none", border: "none", color: "#333", fontSize: 12, cursor: "pointer", padding: "8px 16px" }}
+        >등록 해제</button>
       </div>
     </div>
   );
