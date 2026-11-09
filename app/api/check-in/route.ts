@@ -227,16 +227,20 @@ export async function POST(req: Request) {
         });
       }
 
-      // 출석에 따른 횟수 차감: 변경 내역이 아니라 출석 기록에서 확인 (ATTENDANCE 컨텍스트 → 트리거가 기록하지 않음)
-      await withMemberChange({ type: "ATTENDANCE", source: "check-in" }, (conn) =>
-        conn.query(`UPDATE members SET remaining_count = remaining_count - 1 WHERE member_id = ?`, [member.member_id])
-      );
+      // 횟수 차감 + 출석 INSERT를 한 트랜잭션으로 (원자성: 둘 다 성공하거나 둘 다 롤백)
+      await withMemberChange({ type: "ATTENDANCE", source: "check-in" }, async (conn) => {
+        await conn.query(`UPDATE members SET remaining_count = remaining_count - 1 WHERE member_id = ?`, [member.member_id]);
+        await conn.query(
+          `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, result, memo) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [member.member_id, member.branch_name, member.name, member.pass_type, 1, "SUCCESS", memo || "출석 완료"]
+        );
+      });
 
       remainingCount = remainingCount - 1;
+    } else {
+      await saveAttendance(member, "SUCCESS", memo || "출석 완료");
     }
 
-    await saveAttendance(member, "SUCCESS", memo || "출석 완료");
-    
     if (
       Number(member.checkin_sms_enabled || 0) === 1 &&
       member.emergency_contact
