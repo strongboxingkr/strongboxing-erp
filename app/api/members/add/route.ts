@@ -45,10 +45,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "해당 지점에 대한 권한이 없습니다." }, { status: 403 });
     }
 
-    if (!/^\d{4}$/.test(checkin_code)) {
+    if (!/^\d{1,8}$/.test(checkin_code)) {
       return NextResponse.json({
         success: false,
-        message: "출석번호는 숫자 4자리로 입력해주세요.",
+        message: "출석번호는 숫자 최대 8자리로 입력해주세요.",
       });
     }
 

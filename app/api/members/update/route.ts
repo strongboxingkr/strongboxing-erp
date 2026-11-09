@@ -68,7 +68,21 @@ export async function POST(req: Request) {
 
     const oldMember = oldRows[0];
     const phoneLast4 = String(phone || oldMember.phone || "").slice(-4);
-    const finalCheckinCode = checkin_code || oldMember.checkin_code || phoneLast4;
+    // checkin_code 형식 검증: 숫자 1~8자리
+    const rawCode = checkin_code || oldMember.checkin_code || phoneLast4;
+    if (!/^\d{1,8}$/.test(rawCode)) {
+      return NextResponse.json({ success: false, message: "출석번호는 숫자 최대 8자리로 입력해주세요." });
+    }
+    const finalCheckinCode = rawCode;
+
+    // 같은 지점 내 중복 코드 차단 (본인 제외)
+    const [codeConflict]: any = await pool.query(
+      `SELECT member_id FROM members WHERE branch_name = ? AND checkin_code = ? AND member_id != ? LIMIT 1`,
+      [branch_name || oldMember.branch_name, finalCheckinCode, member_id]
+    );
+    if (codeConflict.length > 0) {
+      return NextResponse.json({ success: false, message: `출석번호 ${finalCheckinCode}는 이미 같은 지점 다른 회원이 사용 중입니다.` });
+    }
     const toDate = (v: any) => v ? String(v).slice(0, 10) : null;
 
     const finalLockerNo = locker_no ?? oldMember.locker_no;

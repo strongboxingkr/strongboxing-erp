@@ -82,6 +82,12 @@ export async function POST(req: Request) {
         continue;
       }
 
+      // 8자리 초과 코드: 임의로 자르지 않고 건너뜀 (별도 보고 필요)
+      if (checkinCode.length > 8) {
+        skipCount++;
+        continue;
+      }
+
       const [dupRows]: any = await pool.query(
         `
         SELECT member_id

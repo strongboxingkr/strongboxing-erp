@@ -11,29 +11,37 @@ export async function POST(req: Request) {
 
     const code = checkin_code || phone_last4;
 
-    if (!code || !/^\d{4}$/.test(code)) {
+    // 숫자로만 구성된 1~8자리 허용 (기존 4자리·7자리·최대 8자리 모두 지원)
+    if (!code || !/^\d{1,8}$/.test(code)) {
       return NextResponse.json({
         success: false,
-        message: "출석번호 4자리를 입력해주세요.",
+        message: "출석번호(숫자 최대 8자리)를 입력해주세요.",
       });
     }
 
-    let memberSql = `
-      SELECT *
-      FROM members
-      WHERE checkin_code = ?
-    `;
-
+    // branch_name: 클라이언트 제공 값 그대로 사용
+    // 기기 인증 미구현으로 서버에서 지점을 확정할 수 없음 → branch_name 없으면 전 지점 조회
+    // 같은 코드가 같은 지점 내 중복인 경우 여러 행이 존재할 수 있음 → LIMIT 1은 임의 선택 위험
+    let memberSql = `SELECT * FROM members WHERE checkin_code = ?`;
     const memberParams: any[] = [code];
 
     if (branch_name) {
-      memberSql += ` AND branch_name = ? `;
+      memberSql += ` AND branch_name = ?`;
       memberParams.push(branch_name);
     }
 
-    memberSql += ` LIMIT 1 `;
+    // 중복 체크: 같은 조건으로 2건 이상이면 임의 선택하지 않고 안내
+    memberSql += ` LIMIT 2`;
 
     const [rows]: any = await pool.query(memberSql, memberParams);
+
+    if (rows.length > 1) {
+      return NextResponse.json({
+        success: false,
+        result: "DUPLICATE_CODE",
+        message: "같은 출석번호를 가진 회원이 여러 명입니다. 관리자에게 문의해주세요.",
+      });
+    }
 
     if (rows.length === 0) {
       await pool.query(

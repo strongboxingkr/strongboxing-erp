@@ -25,7 +25,7 @@ export default function KioskPage() {
     setTimeout(() => { setCode(""); setMember(null); setMessage("출석번호를 입력해주세요"); }, 2500);
   };
 
-  const pressNumber = (num: string) => { if (code.length >= 4) return; setCode((prev) => prev + num); };
+  const pressNumber = (num: string) => { if (code.length >= 8) return; setCode((prev) => prev + num); };
   const backspace = () => setCode((prev) => prev.slice(0, -1));
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export default function KioskPage() {
             marginBottom: 20,
             color: "#ef4444",
           }}>
-            {code || <span style={{ color: "#2a2a2a", fontSize: 40 }}>- - - -</span>}
+            {code || <span style={{ color: "#2a2a2a", fontSize: 32 }}>- - - - - - - -</span>}
           </div>
 
           {/* 키패드 */}

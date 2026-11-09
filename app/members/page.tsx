@@ -790,7 +790,7 @@ ${
 
             <input className="input" placeholder="회원명" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             <input className="input" placeholder="전화번호" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <input className="input" placeholder="출석번호 4자리" maxLength={4} value={form.checkin_code} onChange={(e) => setForm({ ...form, checkin_code: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) })} />
+            <input className="input" placeholder="출석번호 (숫자 최대 8자리)" maxLength={8} value={form.checkin_code} onChange={(e) => setForm({ ...form, checkin_code: e.target.value.replace(/[^0-9]/g, "").slice(0, 8) })} />
 
             <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
               <option value="">성별</option>

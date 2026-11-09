@@ -18,11 +18,11 @@ export default function CheckInPage() {
   const press = (value: string) => {
     if (result) { setResult(null); }
     if (value === "back") { setPhone((p) => p.slice(0, -1)); return; }
-    if (phone.length < 4) setPhone((p) => p + value);
+    if (phone.length < 8) setPhone((p) => p + value);
   };
 
   const submit = async (checkType: "CHECK_IN" | "CHECK_OUT") => {
-    if (phone.length !== 4 || loading) return;
+    if (phone.length < 1 || phone.length > 8 || loading) return;
     setLoading(true);
     const res = await fetch("/api/check-in", {
       method: "POST",
@@ -35,7 +35,9 @@ export default function CheckInPage() {
     setTimeout(() => { setPhone(""); setResult(null); }, 4000);
   };
 
-  const digits = Array.from({ length: 4 }, (_, i) => phone[i] || null);
+  // 가변 길이: 현재 입력 길이에 맞춰 최소 1칸, 최대 8칸 표시
+  const displayLen = Math.max(phone.length + (phone.length < 8 ? 1 : 0), 1);
+  const digits = Array.from({ length: displayLen }, (_, i) => phone[i] || null);
   const isSuccess = result?.success === true;
 
   return (
@@ -138,7 +140,7 @@ export default function CheckInPage() {
         <>
           {/* 안내 텍스트 */}
           <div style={{ fontSize: "clamp(16px, 3.5vw, 22px)", fontWeight: 800, color: "#1c1c1e", margin: "clamp(12px, 2vh, 28px) 0 clamp(10px, 1.5vh, 20px)", textAlign: "center" }}>
-            전화번호 뒤 4자리를 입력해 주세요
+            출석번호를 입력 후 확인을 눌러주세요
           </div>
 
           {/* 숫자 표시 */}
@@ -176,10 +178,10 @@ export default function CheckInPage() {
             <button onClick={() => press("0")} style={keyStyle}>0</button>
             <button
               onClick={() => submit("CHECK_IN")}
-              disabled={phone.length !== 4 || loading}
+              disabled={phone.length < 1 || loading}
               style={{
                 ...keyStyle,
-                background: phone.length === 4 ? "#c0392b" : "#e0e0e0",
+                background: phone.length >= 1 ? "#c0392b" : "#e0e0e0",
                 color: "#fff",
                 border: "none",
                 fontWeight: 900,
@@ -199,7 +201,7 @@ export default function CheckInPage() {
       <div style={{ width: "100%", marginTop: "clamp(10px, 2vh, 24px)" }}>
         <button
           onClick={() => submit("CHECK_OUT")}
-          disabled={phone.length !== 4 || loading}
+          disabled={phone.length < 1 || loading}
           style={{
             width: "100%",
             padding: "clamp(14px, 2.5vh, 22px) 0",
@@ -207,8 +209,8 @@ export default function CheckInPage() {
             fontSize: "clamp(16px, 3vw, 22px)",
             fontWeight: 800,
             border: "none",
-            cursor: phone.length === 4 ? "pointer" : "not-allowed",
-            background: phone.length === 4 ? "#1c1c1e" : "#c0c0c0",
+            cursor: phone.length >= 1 ? "pointer" : "not-allowed",
+            background: phone.length >= 1 ? "#1c1c1e" : "#c0c0c0",
             color: "#fff",
             letterSpacing: 1,
           }}
