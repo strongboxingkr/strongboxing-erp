@@ -14,6 +14,7 @@ export async function POST(req: Request, context: any) {
       payment_date, payment_method, product_name, pass_type,
       amount, discount_amount, refund_amount, final_amount,
       unpaid_amount, start_date, end_date, total_count, memo, staff_name,
+      extend_locker,  // true: 라커 종료일을 회원권 종료일에 맞춤
     } = body;
 
     let responsePayload: any = null;
@@ -65,7 +66,32 @@ export async function POST(req: Request, context: any) {
           ]
         );
 
-        responsePayload = { success: true, message: "재등록이 완료되었습니다.", payment_id: paymentResult.insertId };
+        // 라커 기간 함께 연장: extend_locker=true 이고 회원권 종료일이 있을 때만
+        // 라커가 없는 회원에게는 임의 배정하지 않음, 이용료 임의 생성 없음
+        if (extend_locker && end_date && member.locker_no) {
+          await conn.query(
+            `UPDATE lockers SET end_date = ?
+             WHERE branch_name = ? AND locker_no = ? AND member_id = ?`,
+            [end_date, member.branch_name, member.locker_no, memberId]
+          );
+          await conn.query(
+            `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, new_value, created_by)
+             VALUES (?, ?, 'LOCKER_EXTEND', ?, ?, ?, ?)`,
+            [
+              memberId, member.name, "라커 기간 연장(재등록)",
+              JSON.stringify({ locker_no: member.locker_no, old_end_date: member.end_date }),
+              JSON.stringify({ locker_no: member.locker_no, new_end_date: end_date }),
+              finalStaffName,
+            ]
+          );
+        }
+
+        responsePayload = {
+          success: true,
+          message: "재등록이 완료되었습니다.",
+          payment_id: paymentResult.insertId,
+          locker_extended: !!(extend_locker && end_date && member.locker_no),
+        };
       }
     );
 

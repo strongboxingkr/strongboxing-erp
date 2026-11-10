@@ -85,6 +85,7 @@ export default function MembersPage() {
     count: 1,
     customMonths: "",
     customCount: "",
+    extend_locker: false,
   });
 
   const [reregForm, setReregForm] = useState({
@@ -393,6 +394,7 @@ export default function MembersPage() {
       discount_amount: "0",
       final_amount: "",
       memo: "",
+      extend_locker: false,
     });
 
     setShowExtendForm(true);
@@ -410,11 +412,16 @@ export default function MembersPage() {
 
     const startDate = (reregForm as any).start_date || reregForm.payment_date;
     const useDate = (reregForm as any).use_date || null;
+    const selProduct = products.find((p: any) => p.option_name === reregForm.product_name);
+    const isDaily = selProduct?.option_value === "DAILY";
+    const endDate = !isDaily ? (reregForm as any).end_date || null : null;
+
     const payload: any = {
       member_id: extendMember.member_id,
       branch_name: extendMember.branch_name,
       payment_date: reregForm.payment_date,
       start_date: startDate,
+      end_date: endDate || null,
       payment_method: reregForm.payment_method,
       product_name: reregForm.product_name,
       amount: Number(reregForm.amount) || Number(reregForm.final_amount),
@@ -432,6 +439,13 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
+      // 라커 기간 함께 연장: 회원에게 라커가 있고 선택된 경우에만
+      if ((reregForm as any).extend_locker && endDate && extendMember.locker_no) {
+        await apiFetch(`/api/members/${extendMember.member_id}/renew`, {
+          method: "POST",
+          body: JSON.stringify({ extend_locker: true, end_date: endDate }),
+        });
+      }
       alert("재등록 완료!");
       setShowExtendForm(false);
       setExtendMember(null);
@@ -474,6 +488,13 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
+      // 기간 연장 시 라커 함께 연장: 회원에게 라커가 있고 선택한 경우에만
+      if (extendForm.extend_locker && nextEndDate && extendMember.locker_no) {
+        await apiFetch(`/api/members/${extendMember.member_id}/renew`, {
+          method: "POST",
+          body: JSON.stringify({ extend_locker: true, end_date: nextEndDate }),
+        });
+      }
       const extendedMonths = extendMember.pass_type === "PERIOD"
         ? (extendForm.customMonths ? Number(extendForm.customMonths) : extendForm.months)
         : null;
@@ -1054,6 +1075,23 @@ ${
               onChange={(e) => setReregForm({ ...reregForm, memo: e.target.value })}
             />
           </div>
+
+          {extendMember.locker_no && (
+            <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--card-bg, #1a1a2e)", borderRadius: 10, border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
+                현재 락커: <strong>{extendMember.locker_no}</strong>
+                {extendMember.end_date && <span style={{ marginLeft: 8, color: "var(--muted)" }}>종료일: {extendMember.end_date.slice(0, 10)}</span>}
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={!!(reregForm as any).extend_locker}
+                  onChange={(e) => setReregForm({ ...reregForm, extend_locker: e.target.checked } as any)}
+                />
+                락커 기간도 회원권 종료일에 맞춰 연장
+              </label>
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <button className="btn" onClick={saveRereg}>

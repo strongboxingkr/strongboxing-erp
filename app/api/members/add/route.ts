@@ -139,6 +139,21 @@ export async function POST(req: Request) {
 
     const memberId = result.insertId;
 
+    // 라커 배정: locker_no 있으면 lockers 테이블도 동기화 (members 테이블과 일치 보장)
+    if (locker_no) {
+      await pool.query(
+        `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date)
+         VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           member_id = VALUES(member_id),
+           member_name = VALUES(member_name),
+           gender = VALUES(gender),
+           start_date = VALUES(start_date),
+           end_date = VALUES(end_date)`,
+        [branch_name, locker_no, memberId, name, gender || null, start_date || null, end_date || null]
+      );
+    }
+
     await pool.query(
       `
       INSERT INTO member_histories (
