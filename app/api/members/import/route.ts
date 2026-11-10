@@ -69,6 +69,7 @@ export async function POST(req: Request) {
 
     let successCount = 0;
     let skipCount = 0;
+    const skipReasons: string[] = [];
 
     for (const row of rows) {
       const name = String(getValue(row, ["회원명", "이름", "성명", "name"])).trim();
@@ -79,12 +80,15 @@ export async function POST(req: Request) {
 
       if (!name || !phone || !checkinCode) {
         skipCount++;
+        const missing = [!name && "회원명", !phone && "전화번호", !checkinCode && "출석번호"].filter(Boolean).join(", ");
+        skipReasons.push(`행 제외: ${name || "(이름없음)"} — 필수 항목 없음(${missing})`);
         continue;
       }
 
-      // 8자리 초과 코드: 임의로 자르지 않고 건너뜀 (별도 보고 필요)
+      // 출석번호 형식: 숫자 1~8자리만 허용 (9자리 이상은 임의로 자르지 않고 건너뜀)
       if (checkinCode.length > 8) {
         skipCount++;
+        skipReasons.push(`행 제외: ${name} — 출석번호 ${checkinCode.length}자리(최대 8자리 초과)`);
         continue;
       }
 
@@ -206,9 +210,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `회원 업로드 완료: ${successCount}명 등록, ${skipCount}명 제외`,
+      message: `회원 업로드 완료: ${successCount}명 처리, ${skipCount}명 제외`,
       successCount,
       skipCount,
+      ...(skipReasons.length > 0 ? { skipReasons } : {}),
     });
   } catch (error) {
     console.error(error);
