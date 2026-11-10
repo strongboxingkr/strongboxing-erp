@@ -206,9 +206,8 @@ export default function MemberDetailPage() {
   const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" });
   // 환불 모달: refundTarget에 원결제 행 저장
   const [refundTarget, setRefundTarget] = useState<any>(null);
-  const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "", terminate_pass: false, confirm_pass_identification: false });
+  const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "" });
   const [refundSubmitting, setRefundSubmitting] = useState(false);
-  const [refundNeedsConfirm, setRefundNeedsConfirm] = useState<any>(null); // 428 응답 저장
   const [products, setProducts] = useState<any[]>([]);
 
   const [uploading, setUploading] =
@@ -922,8 +921,7 @@ export default function MemberDetailPage() {
                               style={{ fontSize: 11, padding: "3px 8px", color: "#7c3aed" }}
                               onClick={() => {
                                 setRefundTarget(p);
-                                setRefundForm({ refund_amount: "", refund_reason: "", terminate_pass: false, confirm_pass_identification: false });
-                                setRefundNeedsConfirm(null);
+                                setRefundForm({ refund_amount: "", refund_reason: "" });
                               }}
                             >
                               환불
@@ -1319,7 +1317,7 @@ export default function MemberDetailPage() {
           <div className="card" style={{ width: 440, maxWidth: "95vw", borderRadius: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h2 style={{ margin: 0 }}>환불 처리</h2>
-              <button onClick={() => { setRefundTarget(null); setRefundNeedsConfirm(null); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+              <button onClick={() => setRefundTarget(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
             </div>
             <div style={{ background: "var(--panel2)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13 }}>
               <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>원결제</div>
@@ -1341,42 +1339,15 @@ export default function MemberDetailPage() {
                 onChange={e => setRefundForm({ ...refundForm, refund_reason: e.target.value })}
               />
               {refundTarget.pass_type && (
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={refundForm.terminate_pass}
-                    onChange={e => setRefundForm({ ...refundForm, terminate_pass: e.target.checked })}
-                  />
-                  회원권 해지 포함 (환불 시 이용권 종료)
-                </label>
-              )}
-              {refundForm.terminate_pass && (
-                <div style={{ background: "#fef3c7", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#92400e" }}>
-                  ⚠️ 회원권 해지는 상품명·시작일·종료일 3개 필드 일치로만 현재 회원권을 추정합니다.
-                  같은 상품을 같은 날짜로 재등록한 경우 오식별 가능성이 있습니다.
-                </div>
-              )}
-              {refundNeedsConfirm && (
-                <div style={{ background: "#fef3c7", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#92400e", border: "1px solid #f59e0b" }}>
-                  <div style={{ fontWeight: 700, marginBottom: 6 }}>회원권 연결 확인 필요</div>
-                  <div style={{ marginBottom: 6 }}>{refundNeedsConfirm.message}</div>
-                  <div style={{ color: "#78350f", marginBottom: 8 }}>
-                    추정 근거: {refundNeedsConfirm.identificationBasis?.product_name} ({refundNeedsConfirm.identificationBasis?.start_date} ~ {refundNeedsConfirm.identificationBasis?.end_date})
-                  </div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontWeight: 600 }}>
-                    <input
-                      type="checkbox"
-                      checked={refundForm.confirm_pass_identification}
-                      onChange={e => setRefundForm({ ...refundForm, confirm_pass_identification: e.target.checked })}
-                    />
-                    위 추정 근거를 인지했으며 회원권 해지를 진행합니다
-                  </label>
+                <div style={{ background: "#f0fdf4", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#166534" }}>
+                  회원권 해지는 금액 환불 후 회원 수정 화면에서 별도로 조정해 주세요.
+                  (원결제와 현재 회원권의 연결을 신뢰할 수 있게 확인할 수 없어 자동 해지를 지원하지 않습니다.)
                 </div>
               )}
               <button
                 className="btn"
                 style={{ fontSize: 15 }}
-                disabled={refundSubmitting || !refundForm.refund_amount || (!!refundNeedsConfirm && !refundForm.confirm_pass_identification)}
+                disabled={refundSubmitting || !refundForm.refund_amount}
                 onClick={async () => {
                   if (refundSubmitting) return;
                   if (!refundForm.refund_amount || Number(refundForm.refund_amount) <= 0) {
@@ -1392,20 +1363,14 @@ export default function MemberDetailPage() {
                         payment_id: refundTarget.payment_id,
                         refund_amount: Number(refundForm.refund_amount),
                         refund_reason: refundForm.refund_reason || undefined,
-                        terminate_pass: refundForm.terminate_pass,
-                        confirm_pass_identification: refundForm.confirm_pass_identification || undefined,
                       }),
                     });
                     const json = await res.json();
                     if (json.success) {
-                      setRefundNeedsConfirm(null);
                       alert(json.message || "환불 처리 완료");
                       setRefundTarget(null);
                       load();
                       loadPayments(String(data?.member?.member_id));
-                    } else if (res.status === 428 && json.needsConfirmation) {
-                      // 3-field 추정 식별 — 명시적 확인 요청
-                      setRefundNeedsConfirm(json);
                     } else {
                       alert(json.message || "환불 실패");
                     }

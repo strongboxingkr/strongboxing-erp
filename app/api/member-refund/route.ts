@@ -30,12 +30,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       member_id,
-      payment_id,                   // 원결제 ID (필수)
+      payment_id,      // 원결제 ID (필수)
       refund_amount,
       refund_reason,
       payment_method,
-      terminate_pass,               // true: 금액 환불 + 회원권 해지 요청. false/생략: 금액 환불만.
-      confirm_pass_identification,  // true: 3-field 추정 식별임을 인지하고 해지 명시 확인.
+      terminate_pass,  // 항상 거부: 현재 스키마로 신뢰할 수 있는 회원권 연결 불가
     } = body;
 
     if (!member_id || !payment_id || !refund_amount) {
@@ -43,6 +42,21 @@ export async function POST(req: Request) {
     }
     if (Number(refund_amount) <= 0) {
       return NextResponse.json({ success: false, message: "환불 금액은 0보다 커야 합니다." });
+    }
+
+    // ── terminate_pass: 현재 스키마로 신뢰할 수 있는 회원권 연결 확인 불가 → 항상 거부 ─
+    // 상품명·시작일·종료일 3-field 비교는 같은 상품 재등록 시 오식별 가능.
+    // 금액 환불 후 회원 수정 화면에서 회원권을 별도로 조정해야 한다.
+    if (terminate_pass) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "회원권 자동 해지는 현재 지원하지 않습니다. " +
+          "현재 스키마에서 원결제와 현재 회원권의 연결을 신뢰할 수 있게 확인할 수 없습니다 " +
+          "(상품명·시작일·종료일 3-field 비교는 재등록 케이스에서 오식별 위험). " +
+          "금액 환불 후 회원 수정 화면에서 회원권을 별도로 조정해 주세요.",
+        hint: "terminate_pass=false 로 금액 환불만 가능합니다.",
+      }, { status: 409 });
     }
 
     const { default: pool } = await import("@/lib/db");
@@ -71,63 +85,8 @@ export async function POST(req: Request) {
     const member = memberRows[0];
     const createdBy = user.login_id || "관리자";
 
-    const isPassPayment = !!(originalPayment.pass_type);
-
-    // ── terminate_pass 사전 검증 (INSERT 전에 거부) ──────────
-    // 이 블록에서 거부하면 DB에 아무것도 쓰지 않는다.
-    if (terminate_pass) {
-      if (!isPassPayment) {
-        return NextResponse.json({
-          success: false,
-          message: "GENERAL 결제(회원권 아님)는 terminate_pass를 사용할 수 없습니다. 금액 환불만 가능합니다.",
-        }, { status: 400 });
-      }
-
-      // 현재 회원권과의 연결 판단: 상품명 + 시작일 + 종료일 3-필드 일치 (best-effort)
-      // 이 방법으로 "확정"이 아닌 "최선 추정"만 가능.
-      // 같은 상품을 같은 날짜로 재등록한 경우 오식별 가능성 존재.
-      const isCurrentPass =
-        originalPayment.product_name === member.product_name &&
-        toDateStr(originalPayment.start_date) === toDateStr(member.start_date) &&
-        toDateStr(originalPayment.end_date) === toDateStr(member.end_date);
-
-      if (!isCurrentPass) {
-        return NextResponse.json({
-          success: false,
-          message:
-            "원결제와 현재 회원권의 연결을 확인할 수 없습니다. " +
-            "현재 회원권(상품명·기간)이 이 결제와 다릅니다. " +
-            "회원권 해지 없이 금액만 환불하려면 terminate_pass=false로 재요청해 주세요.",
-          hint: "terminate_pass=false 로 금액 환불만 가능합니다.",
-        }, { status: 409 });
-      }
-
-      // isCurrentPass=true이어도 3-field 추정 식별임.
-      // confirm_pass_identification=true 없이는 자동 해지하지 않는다.
-      // 호출자가 식별 근거(상품명+기간 일치)를 인지하고 명시적으로 확인해야 한다.
-      if (!confirm_pass_identification) {
-        return NextResponse.json({
-          success: false,
-          needsConfirmation: true,
-          message:
-            "회원권 해지는 상품명·시작일·종료일 3개 필드 일치로만 현재 회원권을 추정합니다. " +
-            "같은 상품을 같은 날짜로 재등록한 경우 오식별 가능성이 있습니다. " +
-            "confirm_pass_identification=true를 함께 보내면 해지가 진행됩니다. " +
-            "금액 환불만 처리하려면 terminate_pass=false로 재요청하세요.",
-          identificationBasis: {
-            product_name: originalPayment.product_name,
-            start_date: toDateStr(originalPayment.start_date),
-            end_date: toDateStr(originalPayment.end_date),
-          },
-          hint: "confirm_pass_identification=true 를 추가하거나, terminate_pass=false 로 금액만 환불하세요.",
-        }, { status: 428 }); // 428 Precondition Required
-      }
-      // confirm_pass_identification=true: 추정 식별임을 인지한 명시적 해지 요청
-    }
-
-    // ── 트랜잭션: 환불 INSERT + (terminate_pass=true이면) members EXPIRED ─
+    // ── 트랜잭션: 환불 누계 검증 + INSERT ─────────────────────
     let insertedPaymentId = 0;
-    let passUpdated = false;
 
     await withMemberChange(
       {
@@ -142,18 +101,61 @@ export async function POST(req: Request) {
           `SELECT final_amount FROM payments WHERE payment_id = ? FOR UPDATE`,
           [payment_id]
         );
-        // FOR UPDATE 이후의 non-locking SELECT는 스냅샷을 사용할 수 있으므로
-        // 기존 환불 누계 조회에 LOCK IN SHARE MODE 추가 — 최신 커밋 데이터 읽기.
-        // (MySQL InnoDB REPEATABLE READ에서 locking read는 최신 커밋 버전을 읽는다)
+
+        // 2. 출처 불명 환불 감지:
+        //    메모에 '[환불] 원결제 #' 패턴이 없고 member_histories에도 source_payment_id가 없는 기록.
+        //    이런 기록이 있으면 이 원결제의 환불 누계를 확정할 수 없으므로 거부한다.
+        //    (불확실한 금액을 0으로 간주하지 않음)
+        const [unlinkedRows]: any = await conn.query(
+          `SELECT COUNT(*) AS cnt, COALESCE(SUM(ABS(p.final_amount)), 0) AS unlinked_total
+           FROM payments p
+           WHERE p.member_id = ?
+             AND p.history_type = 'REFUND'
+             AND p.memo NOT LIKE '[환불] 원결제 #%'
+             AND NOT EXISTS (
+               SELECT 1 FROM member_histories h
+               WHERE h.member_id = p.member_id
+                 AND h.action_type = 'REFUND'
+                 AND JSON_UNQUOTE(JSON_EXTRACT(h.new_value, '$.payment_id')) = CAST(p.payment_id AS CHAR)
+                 AND JSON_EXTRACT(h.new_value, '$.source_payment_id') IS NOT NULL
+             )
+           LOCK IN SHARE MODE`,
+          [member_id]
+        );
+        if (Number(unlinkedRows[0].cnt) > 0) {
+          throw Object.assign(new Error("UNLINKED_REFUND_HISTORY"), {
+            unlinkedCount: Number(unlinkedRows[0].cnt),
+            unlinkedTotal: Number(unlinkedRows[0].unlinked_total),
+          });
+        }
+
+        // 3. 이 원결제에 연결된 환불 누계 계산 (두 경로 중복 없이 합산)
+        //    경로 A: 메모 패턴 (새 형식)
         const { sql: memoSql, params: memoParams } = refundMemoCondition(Number(payment_id));
-        const [prevRefunds]: any = await conn.query(
-          `SELECT COALESCE(SUM(ABS(final_amount)), 0) AS total_refunded
+        const [memoRefunds]: any = await conn.query(
+          `SELECT COALESCE(SUM(ABS(final_amount)), 0) AS total
            FROM payments
            WHERE member_id = ? AND history_type = 'REFUND' AND ${memoSql}
            LOCK IN SHARE MODE`,
           [member_id, ...memoParams]
         );
-        const alreadyRefunded = Number(prevRefunds[0].total_refunded);
+
+        //    경로 B: member_histories source_payment_id (메모 패턴 없는 구형 기록)
+        const [historyRefunds]: any = await conn.query(
+          `SELECT COALESCE(SUM(ABS(p.final_amount)), 0) AS total
+           FROM payments p
+           INNER JOIN member_histories h ON h.member_id = p.member_id
+             AND h.action_type = 'REFUND'
+             AND JSON_UNQUOTE(JSON_EXTRACT(h.new_value, '$.payment_id')) = CAST(p.payment_id AS CHAR)
+             AND JSON_EXTRACT(h.new_value, '$.source_payment_id') = ?
+           WHERE p.member_id = ?
+             AND p.history_type = 'REFUND'
+             AND NOT (${memoSql})
+           LOCK IN SHARE MODE`,
+          [Number(payment_id), member_id, ...memoParams]
+        );
+
+        const alreadyRefunded = Number(memoRefunds[0].total) + Number(historyRefunds[0].total);
         const originalFinalAmount = Number(originalPayment.final_amount);
         const remaining = originalFinalAmount - alreadyRefunded;
 
@@ -165,7 +167,7 @@ export async function POST(req: Request) {
           });
         }
 
-        // 2. 환불 결제 기록 — 메모에 원결제 ID 저장 (source_payment_id 컬럼 없으므로 메모 패턴 사용)
+        // 4. 환불 결제 기록 — 메모에 원결제 ID 저장 (source_payment_id 컬럼 없으므로 메모 패턴 사용)
         const memo = `[환불] 원결제 #${payment_id}${refund_reason ? ` — ${refund_reason}` : ""}`;
         const [paymentResult]: any = await conn.query(
           `INSERT INTO payments (
@@ -192,19 +194,7 @@ export async function POST(req: Request) {
           [insertedPaymentId]
         );
 
-        // 3. 회원권 해지 — terminate_pass=true이고 isCurrentPass 확인된 경우만 도달
-        if (terminate_pass) {
-          await conn.query(
-            `UPDATE members
-             SET status = 'EXPIRED', product_name = NULL, pass_type = NULL,
-                 remaining_count = 0, start_date = NULL, end_date = NULL
-             WHERE member_id = ?`,
-            [member_id]
-          );
-          passUpdated = true;
-        }
-
-        // 4. 이력 — source_payment_id와 식별 방법을 new_value에 기록
+        // 5. 이력 — source_payment_id를 new_value에 기록 (추후 member_histories 경로 B 조회에 사용)
         await conn.query(
           `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, new_value, created_by)
            VALUES (?, ?, 'REFUND', ?, ?, ?, ?)`,
@@ -218,10 +208,6 @@ export async function POST(req: Request) {
               refund_reason,
               payment_id: insertedPaymentId,
               source_payment_id: payment_id,
-              passUpdated,
-              passIdentificationBasis: passUpdated
-                ? "product_name+start_date+end_date 3-field match (best-effort)"
-                : null,
             }),
             createdBy,
           ]
@@ -231,12 +217,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: passUpdated ? "환불 및 회원권 해지 완료" : "환불 처리 완료",
+      message: "환불 처리 완료",
       payment_id: insertedPaymentId,
-      passUpdated,
-      ...(passUpdated
-        ? { passIdentificationWarning: "회원권 연결은 상품명·기간 일치 기반 추정입니다. 동일 상품 재등록 케이스에서 오식별 가능성이 있습니다." }
-        : {}),
     });
   } catch (error: any) {
     if (error?.message === "OVER_REFUND") {
@@ -244,6 +226,19 @@ export async function POST(req: Request) {
         {
           success: false,
           message: `환불 가능 금액을 초과했습니다. 남은 환불 가능액: ${error.remaining}원 (원결제: ${error.originalFinalAmount}원, 기환불: ${error.alreadyRefunded}원)`,
+        },
+        { status: 409 }
+      );
+    }
+    if (error?.message === "UNLINKED_REFUND_HISTORY") {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            `이 회원의 환불 이력 중 원결제를 확인할 수 없는 항목이 ${error.unlinkedCount}건 있어 환불 누계를 확정할 수 없습니다. ` +
+            `관리자가 해당 환불 기록을 직접 확인한 후 처리해 주세요.`,
+          unlinkedCount: error.unlinkedCount,
+          unlinkedTotal: error.unlinkedTotal,
         },
         { status: 409 }
       );
