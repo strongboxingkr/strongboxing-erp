@@ -346,27 +346,29 @@ members/page.tsx saveRereg() → POST /api/members/[id]/renew
 
 ### 확인된 문제 (코드에서 직접 확인)
 
-| # | 문제 | 위치 | 심각도 |
-|---|------|------|--------|
-| P1 | **회원 등록 시 라커 정보가 lockers 테이블에 저장되지 않음** | app/api/members/add/route.ts (locker_no 저장 없음), app/api/lockers/assign/route.ts | 높음 |
-| P2 | **락커 중복 배정 방지 없음** (새 배정 시 이전 사용자 locker_no 초기화 안 됨) | app/api/lockers/assign/route.ts:11-23 | 높음 |
-| P3 | **휴회 복귀 시 end_date 연장 없음** (체크인 시에만 자동 연장) | app/api/member-holds/release/route.ts | 중간 |
-| P4 | **/renewal 페이지가 SMS 발송만 하는 화면** (재등록 처리 UI 없음). 명칭 오해 가능 | app/renewal/page.tsx | 낮음 |
-| P5 | **회원 등록과 결제 등록이 비원자적** (members/add 성공 후 payments/add 실패 가능) | app/members/page.tsx:330-365 | 높음 |
-| P6 | **homepage-reservations가 naver-reservations와 동일 API 사용** (중복 화면) | app/homepage-reservations/page.tsx:86 | 낮음 |
-| P7 | **결제 취소가 memo 문자열로만 표시** (status 컬럼 없음) | app/api/payments/cancel/route.ts:18 | 중간 |
-| P8 | **members.status 자동 보정 로직이 프론트에 있음** (EXPIRED인데 end_date > today이면 ACTIVE로) | app/members/page.tsx:311-313 | 낮음 |
-| P9 | **users 초기 스키마 role ENUM과 실제 role 불일치** | docs/db-schema.sql:16, 실제 코드 | 중간 |
-| P10 | **members.total_count 초기 등록 시 계산 방식이 세 곳에 분산** | members/page.tsx:286-290, payments/add:71-74, members/[id]/renew | 중간 |
-| P11 | **관장(DIRECTOR)이 락커 배정 시 member_id 없이 member_name만 입력** → members.locker_no 연동 불가 | lockers/page.tsx:68-91 | 중간 |
+> 상태 기준 커밋: `f793e1c` (2026-11-10)
+
+| # | 문제 | 위치 | 심각도 | **상태** |
+|---|------|------|--------|---------|
+| P1 | **회원 등록 시 라커 정보가 lockers 테이블에 저장되지 않음** | app/api/members/add/route.ts (locker_no 저장 없음), app/api/lockers/assign/route.ts | 높음 | ✅ 완료 `b8d37ea` — lockers INSERT 같은 트랜잭션에서 처리 |
+| P2 | **락커 중복 배정 방지 없음** (새 배정 시 이전 사용자 locker_no 초기화 안 됨) | app/api/lockers/assign/route.ts:11-23 | 높음 | ✅ 완료 `038792b` — FOR UPDATE + 중복 거부. ⚠️ 단, 이전 배정자 members.locker_no 초기화는 lockers/release를 별도 호출해야 함 |
+| P3 | **휴회 복귀 시 end_date 연장 없음** (체크인 시에만 자동 연장) | app/api/member-holds/release/route.ts | 중간 | ✅ 완료 — `computeReleaseEnd()` 사용, 수동 복귀 시에도 잔여 기간 반영 |
+| P4 | **/renewal 페이지가 SMS 발송만 하는 화면** (재등록 처리 UI 없음). 명칭 오해 가능 | app/renewal/page.tsx | 낮음 | 🔍 미수정 — 기능 오류 없음, 명칭 문제만 |
+| P5 | **회원 등록과 결제 등록이 비원자적** (members/add 성공 후 payments/add 실패 가능) | app/members/page.tsx:330-365 | 높음 | ⚠️ 부분 완료 `b8d37ea` — members INSERT 자체는 트랜잭션. 그러나 화면에서 결제 API를 별도 호출하는 구조는 유지됨. 완전한 원자화는 미래 작업 |
+| P6 | **homepage-reservations가 naver-reservations와 동일 API 사용** (중복 화면) | app/homepage-reservations/page.tsx:86 | 낮음 | 🔍 미수정 — 의도적 중복 화면으로 판단, 기능 오류 없음 |
+| P7 | **결제 취소가 memo 문자열로만 표시** (status 컬럼 없음) | app/api/payments/cancel/route.ts:18 | 중간 | 🔍 미수정 — 스키마 변경 필요, 이번 배포 범위 외 |
+| P8 | **members.status 자동 보정 로직이 프론트에 있음** (EXPIRED인데 end_date > today이면 ACTIVE로) | app/members/page.tsx:311-313 | 낮음 | 🔍 미수정 — 화면 표시 보정용, DB 직접 오염 없음 |
+| P9 | **users 초기 스키마 role ENUM과 실제 role 불일치** | docs/db-schema.sql:16, 실제 코드 | 중간 | 🔍 미수정 — 스키마 문서 불일치, 운영 동작에 영향 없음 |
+| P10 | **members.total_count 초기 등록 시 계산 방식이 세 곳에 분산** | members/page.tsx:286-290, payments/add:71-74, members/[id]/renew | 중간 | 🔍 미수정 — 세 곳이 동일 공식 사용 중, 즉각 오류 없음 |
+| P11 | **관장(DIRECTOR)이 락커 배정 시 member_id 없이 member_name만 입력** → members.locker_no 연동 불가 | lockers/page.tsx:68-91 | 중간 | 🔍 미수정 — lockers/assign에서 member_id 없으면 members 업데이트 안 함(코드 L52 조건부) |
 
 ### 추정 문제 (추가 확인 필요)
 
-| # | 추정 | 근거 | 확인 방법 |
-|---|------|------|-----------|
-| A1 | settings_options.count_value가 0으로 세팅되어 있어 COUNT 타입 상품의 횟수가 0으로 등록될 수 있음 | 이전 대화에서 count_value=0 확인됨 | DB에서 SELECT * FROM settings_options WHERE option_type='PASS_PRODUCT' |
-| A2 | calendar_events와 naver_reservations가 통합되지 않아 예약 캘린더가 불완전 | 두 화면의 API 분석 | 화면 직접 확인 |
-| A3 | 초기 스키마 db-schema.sql과 실제 DB 테이블 구조 대폭 불일치 | db-schema.sql 분석 | 실제 DB SHOW CREATE TABLE 비교 |
+| # | 추정 | 근거 | 확인 방법 | **상태** |
+|---|------|------|-----------|---------|
+| A1 | settings_options.count_value가 0으로 세팅되어 있어 COUNT 타입 상품의 횟수가 0으로 등록될 수 있음 | 이전 대화에서 count_value=0 확인됨 | DB에서 SELECT * FROM settings_options WHERE option_type='PASS_PRODUCT' | ⚠️ 미확인 — 운영 DB 직접 확인 필요 |
+| A2 | calendar_events와 naver_reservations가 통합되지 않아 예약 캘린더가 불완전 | 두 화면의 API 분석 | 화면 직접 확인 | 🔍 의도적 분리 — 두 화면이 의도적으로 다른 용도 사용 중 |
+| A3 | 초기 스키마 db-schema.sql과 실제 DB 테이블 구조 대폭 불일치 | db-schema.sql 분석 | 실제 DB SHOW CREATE TABLE 비교 | ⚠️ 미확인 — 운영 DB 직접 확인 필요. 초기 스키마는 참고용으로만 사용할 것 |
 
 ---
 

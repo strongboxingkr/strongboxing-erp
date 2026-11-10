@@ -1,7 +1,7 @@
 # DB 진단 보고서 v2 (갱신)
 
 **원본 분석 커밋**: `2495cd3`  
-**최종 갱신 커밋**: `f30cc56` (2026-11-10)  
+**최종 갱신 커밋**: `f793e1c` (2026-11-10)  
 **작성 기준**: 코드 직접 판독 (실행 환경 접근 없음)
 
 ---
@@ -49,23 +49,28 @@
 ### P3 — 환불 비트랜잭션·상태 미변경 ✅ 수정 완료
 
 **문제**: 환불 후 members.status 무조건 EXPIRED, 원결제 연결 없음, 초과 환불 가능.  
-**수정 내용** (커밋 `f30cc56`):
+**수정 내용** (커밋 `f30cc56` → `f793e1c`로 완전 재작성):
 - `payment_id` (원결제) 필수 파라미터 — 연결 없이 환불 불가
-- `FOR UPDATE` 선점 잠금 + 누계 환불액 검증 → 초과 환불 차단
-- `terminate_pass` 파라미터로 회원권 해지 여부 명시적 선택
-- GENERAL 결제 환불: 회원권 불변
-- 부분 환불 + `terminate_pass` 없음: 자동 만료 없음
-- 과거 결제 환불(현재 회원권이 다른 결제로 갱신된 경우): 현재 회원권 불변, `requiresManualReview: true` + 409 반환
-- 현재 패스이고 `terminate_pass=true`: members EXPIRED 처리
+- `refundMemoCondition()`: `LIKE '#42%'` 대신 `(memo = ? OR memo LIKE '... — %')` — `#420/#421` 오포함 방지
+- `FOR UPDATE` 선점 잠금 + `LOCK IN SHARE MODE` 누계 쿼리 → 최신 커밋 환불액 읽기
+- `terminate_pass` 사전 거부 (INSERT 전): GENERAL 결제 or 현재 회원권 불일치 → 400/409 반환. DB에 아무것도 쓰지 않음.
+- `requiresManualReview` 경로 완전 제거 — 사전 거부 or 성공만 반환
+- 과거 결제 환불(`isCurrentPass=false`): `terminate_pass=false`만 허용, 금액 환불만 처리
+- `passIdentificationWarning`: best-effort 식별임을 응답에 명시
 - `canAccessBranch` 지점 권한 추가
 - 모든 처리 `withMemberChange` 단일 트랜잭션
+- **환불 모달 UI** (`f793e1c`): member-detail 화면에서 `payment_id` 직접 전달, 중복 제출 방지(submitting state), 성공 후 목록·매출 갱신
+
+**동시성 한계**:
+- `FOR UPDATE` 사용으로 같은 `payment_id` 동시 환불은 직렬화됨
+- 그러나 실제 운영 DB에서 동시성 테스트 미수행 — "운영 동작 보장" 표현 금지
 
 **스키마 한계 (운영 변경 금지)**:
 - 현재 payments 테이블에 `source_payment_id` 컬럼 없음 → 환불-원결제 연결을 memo 패턴(`[환불] 원결제 #{id}`)으로 처리
 - 완전한 추적성을 위해 `payments.source_payment_id` 컬럼 추가 권장 (미래 스키마 변경 사항)
 
-**테스트**: mock 19/19 통과, TypeScript exit 0, Build 206 pages 성공  
-**커밋**: `f30cc56`
+**테스트**: mock 19/19 통과 (`f30cc56`), TypeScript exit 0, Build 성공 (`f793e1c`)  
+**커밋**: `f30cc56` → 완전 재작성 `f793e1c`
 
 ---
 
@@ -121,8 +126,8 @@
 
 **발견**: COUNT권 출석에 `attendance.payment_id` 없어 차감 대상 증명 불가.  
 **수정**: COUNT 패스 출석 취소 시 조건 없이 409 (`requiresManualReview: true`).  
-**커밋**: `7d53fa7`  
-**잔여**: UI 안내 메시지 미반영 (API만 처리, 운영자 결정 필요).
+**커밋**: `7d53fa7` (API), `1df4837` (UI 안내)  
+**UI 안내**: "횟수권 출석 취소가 일시 제한됨" 경고 + requiresManualReview 메시지 표시 완료.
 
 ---
 
@@ -234,5 +239,5 @@ P1·P2·P3·P4·P5·P6·S1·S2·S3·S4·S5·S6 — 12개
 | integration-test-attendance-reregistration.ts | 5/5 통과 | `7d53fa7` |
 | test-locker.mjs (mock 라커 연동) | 24/24 통과 | `b8d37ea` |
 | test-refund-p3p5p6.mjs (mock P3·P5·P6) | 19/19 통과 | `f30cc56` |
-| TypeScript `tsc --noEmit` | exit 0 | `f30cc56` |
-| Next.js `next build` | 206 pages 성공 | `f30cc56` |
+| TypeScript `tsc --noEmit` | exit 0 | `f793e1c` |
+| Next.js `next build` | 성공 | `f793e1c` |
