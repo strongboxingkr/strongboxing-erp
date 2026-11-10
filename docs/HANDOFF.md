@@ -87,6 +87,8 @@ UPDATE settings_options SET option_value = 'DAILY' WHERE option_id IN (30, 31);
 
 ## 롤백 방법
 
+### 코드 롤백 (운영 DB 변경 없음)
+
 ```bash
 # 운영 서버에서
 cd /home/ubuntu/strongboxing-erp
@@ -95,11 +97,27 @@ npm run build
 pm2 restart strongboxing-erp
 ```
 
-DB 롤백 (필요 시):
+**코드 롤백 시 기존 DAILY 데이터 호환성:**
+- `payments` 테이블의 DAILY 행은 그대로 조회 가능 (ENUM에 DAILY가 남아 있음)
+- `day_passes` 테이블은 그대로 존재, 데이터 보존
+- 단, 5e116f00 코드에는 DAILY 처리 로직이 없으므로 **신규 일일권 판매는 불가**
+- 기존에 발급된 PENDING day_pass로 체크인 시 `EXPIRED` 또는 `NO_COUNT` 처리될 수 있음 → 현장 운영 중단 위험
+
+### 코드 롤백 후 복구 전략
+
+1. **신규 일일권 판매 중단**: ERP 상품 마스터에서 일일권 상품 `use_yn = 'N'` 처리
+2. **기존 DAILY 데이터 보존**: DB 변경 없이 그대로 유지 (day_passes, payments DAILY 행)
+3. **호환 코드 복구**: 최대한 빨리 `da724d5` 이후 커밋으로 재배포
+
+### DB는 롤백하지 않는다
+
+아래 명령은 **실행 금지** — 이미 생성된 일일권·결제·출석 기록이 삭제·손상된다:
+
 ```sql
-ALTER TABLE payments MODIFY COLUMN pass_type ENUM('COUNT','PERIOD') NULL;
-DROP TABLE IF EXISTS day_passes;
-UPDATE settings_options SET option_value = NULL WHERE option_id IN (30, 31);
+-- ❌ 실행 금지
+-- ALTER TABLE payments MODIFY COLUMN pass_type ENUM('COUNT','PERIOD') NULL;
+-- DROP TABLE day_passes;
+-- UPDATE settings_options SET option_value = NULL WHERE option_id IN (30, 31);
 ```
 
 ---

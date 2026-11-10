@@ -1,14 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const member_id = searchParams.get("member_id");
     const branch_name = searchParams.get("branch_name");
 
     if (!member_id && !branch_name) {
       return NextResponse.json({ success: false, message: "member_id 또는 branch_name이 필요합니다" });
+    }
+
+    if (branch_name && !canAccessBranch(user, branch_name)) {
+      return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
     }
 
     let sql = `
