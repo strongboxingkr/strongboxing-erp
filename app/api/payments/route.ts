@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
+import { lockPaymentForEdit, paymentGuardErrorResponse } from "@/lib/payment-guard";
 
 export async function GET(req: Request) {
   try {
@@ -65,9 +66,9 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const conn = await (pool as any).getConnection();
   try {
     const user = await getUserFromRequest(req);
-
     if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
 
     const body = await req.json();
@@ -77,27 +78,24 @@ export async function PUT(req: Request) {
     const allowed = ["ADMIN", "OWNER", "DIRECTOR"];
     if (!allowed.includes(user.role)) return NextResponse.json({ success: false, message: "권한 없음" }, { status: 403 });
 
-    // 취소(final_amount=0 & refund_amount>0) 또는 환불(history_type=REFUND) 결제는 수정 불가
-    const [rows]: any = await pool.query(
-      `SELECT final_amount, refund_amount, history_type FROM payments WHERE payment_id = ?`,
-      [payment_id]
-    );
-    if (!rows.length) return NextResponse.json({ success: false, message: "결제 없음" }, { status: 404 });
-    const p = rows[0];
-    if (Number(p.final_amount) === 0 && Number(p.refund_amount) > 0) {
-      return NextResponse.json({ success: false, message: "이미 취소된 결제는 수정할 수 없습니다." }, { status: 409 });
-    }
-    if (p.history_type === "REFUND") {
-      return NextResponse.json({ success: false, message: "환불 기록은 수정할 수 없습니다." }, { status: 409 });
-    }
+    await conn.beginTransaction();
 
-    await pool.query(
+    // FOR UPDATE 잠금 후 최신 상태 검증
+    await lockPaymentForEdit(conn, payment_id);
+
+    await conn.query(
       `UPDATE payments SET product_name=?, amount=?, final_amount=?, payment_method=?, payment_date=?, memo=? WHERE payment_id=?`,
       [product_name, final_amount, final_amount, payment_method, payment_date, memo || null, payment_id]
     );
 
+    await conn.commit();
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    await conn.rollback();
+    const guardRes = paymentGuardErrorResponse(error);
+    if (guardRes) return NextResponse.json(guardRes.body, { status: guardRes.status });
     return NextResponse.json({ success: false, message: "결제 수정 실패", error });
+  } finally {
+    conn.release();
   }
 }

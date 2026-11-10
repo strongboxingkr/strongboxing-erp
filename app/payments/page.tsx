@@ -27,6 +27,10 @@ export default function PaymentsPage() {
   const [guestForm, setGuestForm] = useState({ branch_name: "", product_name: "", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" });
   const [submitting, setSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  // 요청을 보냈으나 응답 유실 가능성이 있는 상태 (네트워크 오류 등)
+  // 이 상태에서 결제 내용을 변경하면 중복 등록 위험을 경고한다
+  const [possibleLostRequest, setPossibleLostRequest] = useState(false);
+  const [guestIdempotencyKey, setGuestIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const [branch, setBranch] = useState("전체");
   const [memberSearch, setMemberSearch] = useState("");
@@ -253,7 +257,7 @@ export default function PaymentsPage() {
             </select>
           )}
           <button onClick={loadPayments} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
-          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
+          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" }); setGuestIdempotencyKey(crypto.randomUUID()); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
           <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
         </div>
       </div>
@@ -389,11 +393,12 @@ export default function PaymentsPage() {
               <select className="input" value={guestForm.product_name} onChange={e => {
                 const p = products.find((p: any) => p.option_name === e.target.value);
                 setGuestForm({ ...guestForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : guestForm.final_amount });
+                setGuestIdempotencyKey(crypto.randomUUID());
               }}>
                 <option value="">상품 선택</option>
                 {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
               </select>
-              <input className="input" type="number" placeholder="결제금액" value={guestForm.final_amount} onChange={e => setGuestForm({ ...guestForm, final_amount: e.target.value })} />
+              <input className="input" type="number" placeholder="결제금액" value={guestForm.final_amount} onChange={e => { setGuestForm({ ...guestForm, final_amount: e.target.value }); setGuestIdempotencyKey(crypto.randomUUID()); }} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {(["CARD", "CASH", "TRANSFER"] as const).map(m => (
                   <button key={m} className={guestForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setGuestForm({ ...guestForm, payment_method: m })}>{METHOD_LABEL[m]}</button>
@@ -424,12 +429,14 @@ export default function PaymentsPage() {
                       ...guestForm,
                       branch_name: branchToUse,
                       final_amount: Number(guestForm.final_amount),
+                      idempotency_key: guestIdempotencyKey,
                       ...(guestIsDailyProduct ? { use_date: guestForm.use_date, guest_name: guestForm.guest_name, guest_phone: guestForm.guest_phone } : {}),
                     }),
                   });
                   const json = await res.json();
                   if (json.success) {
                     alert("결제 등록 완료");
+                    setGuestIdempotencyKey(crypto.randomUUID());
                     setGuestModal(false);
                     loadPayments();
                   } else alert(json.message || "결제 실패");

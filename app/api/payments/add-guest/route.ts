@@ -12,7 +12,34 @@ export async function POST(req: Request) {
       use_date: use_date_input, // 일일권 지정 이용일 (없으면 KST 오늘)
       guest_name,               // 비회원 성명 (일일권 추적용)
       guest_phone,              // 비회원 연락처
+      idempotency_key,
     } = body;
+
+    // idempotency_key 중복 확인
+    if (idempotency_key) {
+      const [existing]: any = await pool.query(
+        `SELECT payment_id, product_name, final_amount FROM payments WHERE idempotency_key = ? LIMIT 1`,
+        [idempotency_key]
+      );
+      if (existing.length > 0) {
+        const prev = existing[0];
+        const contentMismatch =
+          Number(prev.final_amount) !== Number(final_amount) ||
+          (prev.product_name || null) !== (product_name || null);
+        if (contentMismatch) {
+          return NextResponse.json({
+            success: false,
+            message: "동일한 idempotency_key로 다른 결제 내용이 이미 처리됐습니다. 새 키를 사용해주세요.",
+          }, { status: 409 });
+        }
+        return NextResponse.json({
+          success: true,
+          message: "결제 완료 (중복 요청 — 기존 결과 반환)",
+          payment_id: prev.payment_id,
+          idempotent: true,
+        });
+      }
+    }
 
     if (branch_name && !canAccessBranch(user.role, user.branch_name, branch_name)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -35,22 +62,22 @@ export async function POST(req: Request) {
 
     if (isDailyPass) {
       // 비회원 일일권: 결제 기록만 저장 (입장코드·출석 처리 없음)
-      await pool.query(
-        `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo)
-         VALUES (NULL, ?, ?, ?, ?, 'DAILY', 1, ?, NULL, ?, 0, 0, ?, ?)`,
-        [branch_name, payDate, payment_method || "CARD", product_name, useDate, final_amount, final_amount, memo || "비회원 일일권"]
+      const [result]: any = await pool.query(
+        `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
+         VALUES (NULL, ?, ?, ?, ?, 'DAILY', 1, ?, NULL, ?, 0, 0, ?, ?, ?)`,
+        [branch_name, payDate, payment_method || "CARD", product_name, useDate, final_amount, final_amount, memo || "비회원 일일권", idempotency_key || null]
       );
-      return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료" });
+      return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료", payment_id: result.insertId });
     }
 
     // 일반 비회원 결제 (non-DAILY)
-    await pool.query(
-      `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, amount, discount_amount, refund_amount, final_amount, memo)
-       VALUES (NULL, ?, ?, ?, ?, 'PERIOD', ?, 0, 0, ?, ?)`,
-      [branch_name, payDate, payment_method || "CARD", product_name, final_amount, final_amount, memo || "비회원"]
+    const [result]: any = await pool.query(
+      `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
+       VALUES (NULL, ?, ?, ?, ?, 'PERIOD', ?, 0, 0, ?, ?, ?)`,
+      [branch_name, payDate, payment_method || "CARD", product_name, final_amount, final_amount, memo || "비회원", idempotency_key || null]
     );
 
-    return NextResponse.json({ success: true, message: "비회원 결제 등록 완료" });
+    return NextResponse.json({ success: true, message: "비회원 결제 등록 완료", payment_id: result.insertId });
   } catch (error) {
     return NextResponse.json({ success: false, message: "결제 등록 실패", error });
   }

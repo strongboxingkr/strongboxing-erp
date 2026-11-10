@@ -66,6 +66,9 @@ export default function MembersPage() {
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [form, setForm] = useState(makeDefaultForm());
+  // 결제 호출용 idempotency key (등록/재등록 모달 오픈 시 갱신, 성공 시 갱신, 오류 재시도는 재사용)
+  const [memberPayKey, setMemberPayKey] = useState(() => crypto.randomUUID());
+  const [reregPayKey, setReregPayKey] = useState(() => crypto.randomUUID());
 
   const [showHoldForm, setShowHoldForm] = useState(false);
   const [holdMember, setHoldMember] = useState<any>(null);
@@ -216,6 +219,7 @@ export default function MembersPage() {
       pass_type: firstProduct?.option_value || "PERIOD",
     });
 
+    setMemberPayKey(crypto.randomUUID());
     setShowForm(true);
     setShowHoldForm(false);
     setShowExtendForm(false);
@@ -374,6 +378,7 @@ export default function MembersPage() {
               amount: payAmt,
               final_amount: payAmt,
               memo: "",
+              idempotency_key: memberPayKey,
               payment_purpose: "PASS",
             }),
           });
@@ -395,6 +400,7 @@ export default function MembersPage() {
         }
       }
       alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
+      setMemberPayKey(crypto.randomUUID());
       setShowForm(false);
       setIsEdit(false);
       setForm(makeDefaultForm());
@@ -423,6 +429,7 @@ export default function MembersPage() {
       extend_locker: false,
     });
 
+    setReregPayKey(crypto.randomUUID());
     setShowExtendForm(true);
     setShowForm(false);
     setShowHoldForm(false);
@@ -464,13 +471,14 @@ export default function MembersPage() {
     }
     const res = await apiFetch("/api/payments/add", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, idempotency_key: reregPayKey }),
     });
 
     const data = await res.json();
 
     if (data.success) {
       alert("재등록 완료!");
+      setReregPayKey(crypto.randomUUID());
       setShowExtendForm(false);
       setExtendMember(null);
       loadMembers(user);

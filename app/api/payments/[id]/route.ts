@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest } from "@/lib/auth";
+import { lockPaymentForEdit, paymentGuardErrorResponse } from "@/lib/payment-guard";
 
 export async function PATCH(req: Request, context: any) {
+  const conn = await (pool as any).getConnection();
   try {
     const user = await getUserFromRequest(req);
     if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
@@ -10,27 +12,24 @@ export async function PATCH(req: Request, context: any) {
     const body = await req.json();
     const { payment_date, payment_method, amount, final_amount } = body;
 
-    // 취소(final_amount=0 & refund_amount>0) 또는 환불(history_type=REFUND) 결제는 수정 불가
-    const [rows]: any = await pool.query(
-      `SELECT final_amount, refund_amount, history_type FROM payments WHERE payment_id = ?`,
-      [paymentId]
-    );
-    if (!rows.length) return NextResponse.json({ success: false, message: "결제 없음" }, { status: 404 });
-    const p = rows[0];
-    if (Number(p.final_amount) === 0 && Number(p.refund_amount) > 0) {
-      return NextResponse.json({ success: false, message: "이미 취소된 결제는 수정할 수 없습니다." }, { status: 409 });
-    }
-    if (p.history_type === "REFUND") {
-      return NextResponse.json({ success: false, message: "환불 기록은 수정할 수 없습니다." }, { status: 409 });
-    }
+    await conn.beginTransaction();
 
-    await pool.query(
+    // FOR UPDATE 잠금 후 최신 상태 검증 (cancel·delete·member-refund와 동일 잠금 순서)
+    await lockPaymentForEdit(conn, paymentId);
+
+    await conn.query(
       `UPDATE payments SET payment_date = ?, payment_method = ?, amount = ?, final_amount = ? WHERE payment_id = ?`,
       [payment_date, payment_method, amount, final_amount, paymentId]
     );
 
+    await conn.commit();
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    await conn.rollback();
+    const guardRes = paymentGuardErrorResponse(error);
+    if (guardRes) return NextResponse.json(guardRes.body, { status: guardRes.status });
     return NextResponse.json({ success: false, error });
+  } finally {
+    conn.release();
   }
 }
