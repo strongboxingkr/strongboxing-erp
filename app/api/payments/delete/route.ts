@@ -43,7 +43,24 @@ export async function DELETE(req: Request) {
       try {
         await conn.beginTransaction();
 
-        // 이미 연결된 환불 행이 있으면 취소 거부 (이중 차감 방지)
+        // 원결제 행 배타 잠금 + 최신 상태 재읽기
+        // 트랜잭션 밖 사전체크(alreadyCancelled)는 초기 필터용이며,
+        // 잠금 후 최신 값으로 취소 여부를 반드시 재검증한다
+        const [lockedPayment]: any = await conn.query(
+          `SELECT final_amount, refund_amount, member_id FROM payments WHERE payment_id = ? FOR UPDATE`,
+          [payment_id]
+        );
+        if (!lockedPayment.length) {
+          await conn.rollback();
+          return NextResponse.json({ success: false, message: "결제 내역 없음" });
+        }
+        const lp = lockedPayment[0];
+        if (Number(lp.final_amount) === 0 && Number(lp.refund_amount) > 0) {
+          await conn.rollback();
+          return NextResponse.json({ success: false, message: "이미 취소된 결제입니다." });
+        }
+
+        // 환불 행 존재 검사 (잠금 후, 같은 트랜잭션 최신 읽기)
         const exactMemo = `[환불] 원결제 #${payment_id}`;
         const likeMemo = `[환불] 원결제 #${payment_id} — %`;
         const [refundCheck]: any = await conn.query(
@@ -51,8 +68,8 @@ export async function DELETE(req: Request) {
            FROM payments
            WHERE member_id = ? AND history_type = 'REFUND'
              AND (memo = ? OR memo LIKE ?)
-           LOCK IN SHARE MODE`,
-          [payment.member_id, exactMemo, likeMemo]
+           FOR UPDATE`,
+          [lp.member_id, exactMemo, likeMemo]
         );
         if (Number(refundCheck[0].cnt) > 0) {
           await conn.rollback();

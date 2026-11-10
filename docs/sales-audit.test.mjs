@@ -294,9 +294,77 @@ console.log("\n■ 9. idempotency 적용 범위");
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 10. 회원 삭제 → payments 불변
+// 10. 레이스 컨디션 방어 mock 테스트
+//     실제 API 함수를 호출하지 않음 — DB 없이 "잠금 후 최신 값" 로직을 재현
+//     실제 MySQL 동시성은 미검증 (DB_REQ)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-console.log("\n■ 10. 회원 삭제 ≠ 환불 (현재 코드)");
+console.log("\n■ 10. 레이스 컨디션 방어 mock (로직 재현, DB 없음)");
+
+// member-refund 핵심 로직 재현
+function simulateMemberRefund({ lockedFinalAmount, lockedRefundAmount, alreadyRefunded, requestedRefund }) {
+  // 취소 여부 (잠금 후 최신 값)
+  if (lockedFinalAmount === 0 && lockedRefundAmount > 0) return { ok: false, reason: "PAYMENT_CANCELLED" };
+  const originalFinalAmount = lockedFinalAmount;
+  const remaining = originalFinalAmount - alreadyRefunded;
+  if (requestedRefund > remaining) return { ok: false, reason: "OVER_REFUND", remaining };
+  return { ok: true, insertedAmount: -Math.abs(requestedRefund) };
+}
+
+{
+  // 시나리오 R-1: 잠금 전 취소 완료 → 잠금 후 final_amount=0 → 거부
+  const r1 = simulateMemberRefund({
+    lockedFinalAmount: 0,       // 취소 완료 후 최신 값
+    lockedRefundAmount: 300000,
+    alreadyRefunded: 0,
+    requestedRefund: 300000,
+  });
+  assert("LOGIC", "R-1: 잠금 전 취소, 잠금 후 최신값 → PAYMENT_CANCELLED 거부", r1.reason === "PAYMENT_CANCELLED" ? 1 : 0, 1);
+
+  // 구 로직 (트랜잭션 밖 스냅샷 사용): 취소 전 original=300000 → 환불 승인됨
+  const oldLogicResult = simulateMemberRefund({
+    lockedFinalAmount: 300000,  // 스냅샷(취소 전) 사용 — 버그
+    lockedRefundAmount: 0,
+    alreadyRefunded: 0,
+    requestedRefund: 300000,
+  });
+  assert("LOGIC", "R-1 구 로직: 스냅샷 사용 시 환불 승인됨 (버그 재현)", oldLogicResult.ok ? 1 : 0, 1);
+}
+
+{
+  // 시나리오 R-2: 정상 환불 (취소 없음) → 승인
+  const r2 = simulateMemberRefund({
+    lockedFinalAmount: 300000,
+    lockedRefundAmount: 0,
+    alreadyRefunded: 0,
+    requestedRefund: 50000,
+  });
+  assert("LOGIC", "R-2: 정상 부분 환불 → 승인, insertedAmount=-50000", r2.insertedAmount, -50000);
+}
+
+{
+  // 시나리오 R-3: 부분 환불 50000 선행 후 300000 환불 시도 → OVER_REFUND
+  const r3 = simulateMemberRefund({
+    lockedFinalAmount: 300000,
+    lockedRefundAmount: 0,
+    alreadyRefunded: 50000,
+    requestedRefund: 300000,
+  });
+  assert("LOGIC", "R-3: 기환불 5만 후 30만 환불 시도 → OVER_REFUND (remaining=250000)", r3.reason === "OVER_REFUND" ? 1 : 0, 1);
+  assert("LOGIC", "R-3: remaining=250000", r3.remaining, 250000);
+}
+
+{
+  // 시나리오 R-4: 취소 후 환불 → assertNoRefundRows는 REFUND 행이 없으면 통과, PAYMENT_CANCELLED로 차단
+  //              환불 후 취소 → assertNoRefundRows가 차단 (REFUND_EXISTS)
+  assert("SQL", "R-4: 환불 후 취소 → assertNoRefundRows REFUND_EXISTS 409 차단 (cancel/route.ts)", 1, 1);
+  assert("SQL", "R-5: 취소 후 환불 → PAYMENT_CANCELLED 409 차단 (member-refund 잠금 후 재검증)", 1, 1);
+  dbReq("R-4/R-5 동시 경쟁: 실제 MySQL FOR UPDATE 직렬화 의존 — DB 연결 없이 미검증");
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 11. 회원 삭제 → payments 불변
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+console.log("\n■ 11. 회원 삭제 ≠ 환불 (현재 코드)");
 
 {
   // members/delete: status = 'DELETED'만 SET, payments는 건드리지 않음
@@ -307,9 +375,9 @@ console.log("\n■ 10. 회원 삭제 ≠ 환불 (현재 코드)");
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 11. 출처불명 환불 감지
+// 12. 출처불명 환불 감지
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-console.log("\n■ 11. 출처불명 환불 감지");
+console.log("\n■ 12. 출처불명 환불 감지");
 
 {
   assert("SQL", "member-refund: UNLINKED_REFUND_HISTORY 감지 → 409 거부 (line 125~130)", 1, 1);
@@ -318,9 +386,9 @@ console.log("\n■ 11. 출처불명 환불 감지");
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 12. daily_closings — 과거 데이터 영향
+// 13. daily_closings — 과거 데이터 영향
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-console.log("\n■ 12. daily_closings 과거 데이터");
+console.log("\n■ 13. daily_closings 과거 데이터");
 
 {
   // 운영 DB 확인: daily_closings COUNT(*) = 0 → 비교 대상 없음

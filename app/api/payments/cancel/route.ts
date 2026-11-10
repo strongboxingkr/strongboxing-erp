@@ -15,7 +15,7 @@ async function assertNoRefundRows(conn: any, paymentId: number, memberId: number
      FROM payments
      WHERE member_id = ? AND history_type = 'REFUND'
        AND (memo = ? OR memo LIKE ?)
-     LOCK IN SHARE MODE`,
+     FOR UPDATE`,
     [memberId, exact, withReason]
   );
   const cnt = Number(refundRows[0].cnt);
@@ -45,8 +45,10 @@ export async function POST(req: Request) {
         actor: user.name || user.login_id || "직원",
       },
       async (conn) => {
+        // 원결제 행 배타 잠금 + 최신 상태 읽기
+        // 트랜잭션 밖 조회 없이 잠금 후 최신 값으로 모든 검증 수행
         const [rows]: any = await conn.query(
-          "SELECT * FROM payments WHERE payment_id = ?",
+          "SELECT * FROM payments WHERE payment_id = ? FOR UPDATE",
           [payment_id]
         );
         if (rows.length === 0) {
@@ -63,7 +65,7 @@ export async function POST(req: Request) {
           return;
         }
 
-        // 이미 취소된 결제 재취소 방지
+        // 잠금 후 최신 값으로 재취소 방지
         if (Number(payment.final_amount) === 0 && Number(payment.refund_amount) > 0) {
           result = { success: false, message: "이미 취소된 결제입니다." };
           return;

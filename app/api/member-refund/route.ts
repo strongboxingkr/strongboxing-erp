@@ -61,20 +61,7 @@ export async function POST(req: Request) {
 
     const { default: pool } = await import("@/lib/db");
 
-    // ── 원결제 조회 (지점 권한·금액 확인, 트랜잭션 밖) ─────
-    const [payRows]: any = await pool.query(
-      `SELECT * FROM payments WHERE payment_id = ? AND member_id = ? LIMIT 1`,
-      [payment_id, member_id]
-    );
-    if (payRows.length === 0) {
-      return NextResponse.json({ success: false, message: "해당 회원의 결제 내역을 찾을 수 없습니다." });
-    }
-    const originalPayment = payRows[0];
-
-    if (!canAccessBranch(user.role, user.branch_name, originalPayment.branch_name)) {
-      return NextResponse.json({ success: false, message: "해당 지점에 대한 권한이 없습니다." }, { status: 403 });
-    }
-
+    // ── 회원 존재 확인 (트랜잭션 밖, 불변 필드) ─────────────
     const [memberRows]: any = await pool.query(
       `SELECT * FROM members WHERE member_id = ? LIMIT 1`,
       [member_id]
@@ -85,7 +72,11 @@ export async function POST(req: Request) {
     const member = memberRows[0];
     const createdBy = user.login_id || "관리자";
 
-    // ── 트랜잭션: 환불 누계 검증 + INSERT ─────────────────────
+    // ── 트랜잭션: 원결제 최신 상태 잠금 후 모든 검증 ──────────
+    // 주의: 원결제를 트랜잭션 밖에서 미리 읽지 않는다.
+    //       잠금 전 조회 → 잠금 후 취소 완료 → 취소 전 금액으로 환불 승인이 되는
+    //       레이스 컨디션을 차단하기 위해, 원결제의 모든 필드를 FOR UPDATE 직후
+    //       최신 값으로 읽어 검증한다.
     let insertedPaymentId = 0;
 
     await withMemberChange(
@@ -96,16 +87,30 @@ export async function POST(req: Request) {
         actor: createdBy,
       },
       async (conn) => {
-        // 1. 원결제 행 선점 잠금 — 같은 payment_id 동시 환불 직렬화
-        await conn.query(
-          `SELECT final_amount FROM payments WHERE payment_id = ? FOR UPDATE`,
-          [payment_id]
+        // 1. 원결제 행 배타 잠금 + 최신 필드 전체 읽기
+        //    이 시점 이후 같은 행의 취소·환불·DAILY 삭제는 대기함
+        const [lockedRows]: any = await conn.query(
+          `SELECT * FROM payments WHERE payment_id = ? AND member_id = ? FOR UPDATE`,
+          [payment_id, member_id]
         );
+        if (lockedRows.length === 0) {
+          throw Object.assign(new Error("PAYMENT_NOT_FOUND"), {});
+        }
+        // 트랜잭션 밖 스냅샷 사용 금지: 잠금 직후 최신값으로 모든 검증 수행
+        const lockedPayment = lockedRows[0];
 
-        // 2. 출처 불명 환불 감지:
-        //    메모에 '[환불] 원결제 #' 패턴이 없고 member_histories에도 source_payment_id가 없는 기록.
-        //    이런 기록이 있으면 이 원결제의 환불 누계를 확정할 수 없으므로 거부한다.
-        //    (불확실한 금액을 0으로 간주하지 않음)
+        // 2. 지점 권한 재검증 (잠금 후 최신 branch_name 기준)
+        if (!canAccessBranch(user.role, user.branch_name, lockedPayment.branch_name)) {
+          throw Object.assign(new Error("ACCESS_DENIED"), {});
+        }
+
+        // 3. 취소된 원결제 명시적 거부 (final_amount=0 & refund_amount>0)
+        //    취소 후 remaining = 0 → OVER_REFUND로도 걸리지만, 명확한 거부 메시지 제공
+        if (Number(lockedPayment.final_amount) === 0 && Number(lockedPayment.refund_amount) > 0) {
+          throw Object.assign(new Error("PAYMENT_CANCELLED"), {});
+        }
+
+        // 4. 출처 불명 환불 감지 (잠금 후 최신 읽기)
         const [unlinkedRows]: any = await conn.query(
           `SELECT COUNT(*) AS cnt, COALESCE(SUM(ABS(p.final_amount)), 0) AS unlinked_total
            FROM payments p
@@ -129,8 +134,7 @@ export async function POST(req: Request) {
           });
         }
 
-        // 3. 이 원결제에 연결된 환불 누계 계산 (두 경로 중복 없이 합산)
-        //    경로 A: 메모 패턴 (새 형식)
+        // 5. 이 원결제에 연결된 환불 누계 계산 (잠금 후 최신 읽기, 두 경로 중복 없이 합산)
         const { sql: memoSql, params: memoParams } = refundMemoCondition(Number(payment_id));
         const [memoRefunds]: any = await conn.query(
           `SELECT COALESCE(SUM(ABS(final_amount)), 0) AS total
@@ -140,7 +144,6 @@ export async function POST(req: Request) {
           [member_id, ...memoParams]
         );
 
-        //    경로 B: member_histories source_payment_id (메모 패턴 없는 구형 기록)
         const [historyRefunds]: any = await conn.query(
           `SELECT COALESCE(SUM(ABS(p.final_amount)), 0) AS total
            FROM payments p
@@ -156,7 +159,8 @@ export async function POST(req: Request) {
         );
 
         const alreadyRefunded = Number(memoRefunds[0].total) + Number(historyRefunds[0].total);
-        const originalFinalAmount = Number(originalPayment.final_amount);
+        // 잠금 후 최신 final_amount 사용 (트랜잭션 밖 스냅샷 금지)
+        const originalFinalAmount = Number(lockedPayment.final_amount);
         const remaining = originalFinalAmount - alreadyRefunded;
 
         if (Number(refund_amount) > remaining) {
@@ -167,7 +171,7 @@ export async function POST(req: Request) {
           });
         }
 
-        // 4. 환불 결제 기록 — 메모에 원결제 ID 저장 (source_payment_id 컬럼 없으므로 메모 패턴 사용)
+        // 6. 환불 결제 기록 — 메모에 원결제 ID 저장 (source_payment_id 컬럼 없으므로 메모 패턴 사용)
         const memo = `[환불] 원결제 #${payment_id}${refund_reason ? ` — ${refund_reason}` : ""}`;
         const [paymentResult]: any = await conn.query(
           `INSERT INTO payments (
@@ -177,10 +181,10 @@ export async function POST(req: Request) {
           ) VALUES (?, ?, CURDATE(), ?, ?, ?, 0, 0, ?, ?, ?, 'REFUND', ?)`,
           [
             member_id,
-            originalPayment.branch_name,
+            lockedPayment.branch_name,
             payment_method || "TRANSFER",
-            originalPayment.product_name,
-            originalPayment.pass_type,
+            lockedPayment.product_name,
+            lockedPayment.pass_type,
             Number(refund_amount),
             -Math.abs(Number(refund_amount)),
             createdBy,
@@ -221,6 +225,18 @@ export async function POST(req: Request) {
       payment_id: insertedPaymentId,
     });
   } catch (error: any) {
+    if (error?.message === "PAYMENT_NOT_FOUND") {
+      return NextResponse.json({ success: false, message: "해당 회원의 결제 내역을 찾을 수 없습니다." }, { status: 404 });
+    }
+    if (error?.message === "ACCESS_DENIED") {
+      return NextResponse.json({ success: false, message: "해당 지점에 대한 권한이 없습니다." }, { status: 403 });
+    }
+    if (error?.message === "PAYMENT_CANCELLED") {
+      return NextResponse.json({
+        success: false,
+        message: "이미 취소된 결제입니다. 취소된 결제는 환불할 수 없습니다.",
+      }, { status: 409 });
+    }
     if (error?.message === "OVER_REFUND") {
       return NextResponse.json(
         {
