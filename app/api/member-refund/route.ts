@@ -30,11 +30,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       member_id,
-      payment_id,      // 원결제 ID (필수)
+      payment_id,                   // 원결제 ID (필수)
       refund_amount,
       refund_reason,
       payment_method,
-      terminate_pass,  // true: 금액 환불 + 회원권 해지. false/생략: 금액 환불만.
+      terminate_pass,               // true: 금액 환불 + 회원권 해지 요청. false/생략: 금액 환불만.
+      confirm_pass_identification,  // true: 3-field 추정 식별임을 인지하고 해지 명시 확인.
     } = body;
 
     if (!member_id || !payment_id || !refund_amount) {
@@ -96,11 +97,32 @@ export async function POST(req: Request) {
           message:
             "원결제와 현재 회원권의 연결을 확인할 수 없습니다. " +
             "현재 회원권(상품명·기간)이 이 결제와 다릅니다. " +
-            "회원권 해지 없이 금액만 환불하려면 terminate_pass를 false로 재요청해 주세요.",
+            "회원권 해지 없이 금액만 환불하려면 terminate_pass=false로 재요청해 주세요.",
           hint: "terminate_pass=false 로 금액 환불만 가능합니다.",
         }, { status: 409 });
       }
-      // isCurrentPass=true 이어도 best-effort 식별임을 기록에 남김
+
+      // isCurrentPass=true이어도 3-field 추정 식별임.
+      // confirm_pass_identification=true 없이는 자동 해지하지 않는다.
+      // 호출자가 식별 근거(상품명+기간 일치)를 인지하고 명시적으로 확인해야 한다.
+      if (!confirm_pass_identification) {
+        return NextResponse.json({
+          success: false,
+          needsConfirmation: true,
+          message:
+            "회원권 해지는 상품명·시작일·종료일 3개 필드 일치로만 현재 회원권을 추정합니다. " +
+            "같은 상품을 같은 날짜로 재등록한 경우 오식별 가능성이 있습니다. " +
+            "confirm_pass_identification=true를 함께 보내면 해지가 진행됩니다. " +
+            "금액 환불만 처리하려면 terminate_pass=false로 재요청하세요.",
+          identificationBasis: {
+            product_name: originalPayment.product_name,
+            start_date: toDateStr(originalPayment.start_date),
+            end_date: toDateStr(originalPayment.end_date),
+          },
+          hint: "confirm_pass_identification=true 를 추가하거나, terminate_pass=false 로 금액만 환불하세요.",
+        }, { status: 428 }); // 428 Precondition Required
+      }
+      // confirm_pass_identification=true: 추정 식별임을 인지한 명시적 해지 요청
     }
 
     // ── 트랜잭션: 환불 INSERT + (terminate_pass=true이면) members EXPIRED ─

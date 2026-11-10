@@ -357,8 +357,8 @@ export default function MembersPage() {
             }),
           });
         } else {
-          // 신규 결제 등록
-          await apiFetch("/api/payments/add", {
+          // 신규 결제 등록 — 결제 실패 시 회원은 이미 생성됨, 별도 안내
+          const payRes = await apiFetch("/api/payments/add", {
             method: "POST",
             body: JSON.stringify({
               member_id: payMemberId,
@@ -373,6 +373,21 @@ export default function MembersPage() {
               payment_purpose: "PASS",
             }),
           });
+          const payJson = await payRes.json().catch(() => ({ success: false, message: "응답 파싱 실패" }));
+          if (!payJson.success) {
+            // 회원은 생성됐으나 결제만 실패 — 중복 등록 방지를 위해 폼 닫고 명시적으로 안내
+            alert(
+              `회원 등록은 완료됐습니다 (ID: ${payMemberId}).\n` +
+              `결제 등록 실패: ${payJson.message || "알 수 없는 오류"}\n\n` +
+              `회원 상세 화면에서 결제를 직접 추가해 주세요.\n` +
+              `(이 창을 닫지 않고 다시 저장하면 회원이 중복 생성될 수 있습니다.)`
+            );
+            setShowForm(false);
+            setIsEdit(false);
+            setForm(makeDefaultForm());
+            loadMembers(user);
+            return;
+          }
         }
       }
       alert(isEdit ? "회원 수정 완료!" : "회원 등록 완료!");
