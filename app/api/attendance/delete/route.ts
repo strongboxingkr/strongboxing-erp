@@ -48,76 +48,27 @@ export async function POST(req: Request) {
 
     const actor = user.login_id || "관리자";
 
-    // COUNT 패스 재등록 후 과거 출석 취소 차단
-    // attendance에 payment_id가 없어 "어느 패스의 차감인지" 직접 증명 불가
-    //
-    // 자동 복원 허용 조건(모두 충족 필요):
-    //   1. checkin > start_date (시작일 이후 — 같거나 이전은 차단)
-    //   2. checkin~start_date 사이 COUNT 중간 재등록 없음
-    //      (payments WHERE start_date > 현재start AND start_date <= checkin 카운트 = 0)
-    //
-    // 차단되는 정상 케이스(시스템 한계):
-    //   - 시작일 당일 출석(checkin == start_date): 수동 start_date 변경·데이터 누락으로
-    //     재등록 없음을 확인할 수 없어 항상 409 → 관리자 수동 처리 필요
-    //   - payments 데이터 누락 환경에서는 중간 재등록 미감지 가능
+    // COUNT 패스 출석 취소 — 자동 횟수 복원 전면 차단
+    // attendance에 payment_id가 없어 차감 대상 회원권을 직접 증명할 수 없음.
+    // 날짜·결제 건수 등 간접 추정으로는 연결 근거가 될 수 없으므로 조건 없이 거부.
+    // → 출석 삭제·잔여 횟수 변경·부분 저장 없이 그대로 반환.
+    // 향후 attendance.payment_id 연결 설계 후 재검토 필요.
     if (shouldRestore && member_id) {
       const [memberRows]: any = await pool.query(
-        "SELECT pass_type, start_date FROM members WHERE member_id = ?",
+        "SELECT pass_type FROM members WHERE member_id = ?",
         [member_id]
       );
       const member = memberRows[0];
-      const checkinRow = rows[0] as any;
 
       if (member && member.pass_type === "COUNT") {
-        const memberStartDate = member.start_date
-          ? String(member.start_date).slice(0, 10)
-          : null;
-        const checkinDate = checkinRow.checkin_time
-          ? String(checkinRow.checkin_time).slice(0, 10)
-          : null;
-
-        if (!memberStartDate || !checkinDate) {
-          return NextResponse.json(
-            {
-              success: false, requiresManualReview: true,
-              message: "현재 회원권의 시작일을 확인할 수 없어 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.",
-            },
-            { status: 409 }
-          );
-        }
-
-        if (checkinDate <= memberStartDate) {
-          // checkin < start_date: 명확히 이전 패스
-          // checkin == start_date: 수동 start_date 변경·데이터 누락으로 확인 불가
-          return NextResponse.json(
-            {
-              success: false, requiresManualReview: true,
-              message: checkinDate < memberStartDate
-                ? `현재 회원권(시작일: ${memberStartDate}) 시작 이전의 출석 기록입니다. 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`
-                : `시작일(${memberStartDate}) 당일 출석은 자동 복원이 불가합니다. 수동 start_date 변경 가능성을 배제할 수 없어 관리자가 직접 확인 후 처리해주세요.`,
-            },
-            { status: 409 }
-          );
-        }
-
-        // checkin > start_date: 중간 재등록 없는 경우에만 허용
-        const [interimRows]: any = await pool.query(
-          `SELECT COUNT(*) AS cnt FROM payments
-           WHERE member_id = ? AND pass_type = 'COUNT'
-             AND DATE(start_date) > ? AND DATE(start_date) <= ?`,
-          [member_id, memberStartDate, checkinDate]
+        return NextResponse.json(
+          {
+            success: false,
+            requiresManualReview: true,
+            message: "차감된 이용권을 확인할 수 없어 자동 취소할 수 없습니다. 관리자 확인이 필요합니다.",
+          },
+          { status: 409 }
         );
-        const interimCount = Number(interimRows[0]?.cnt ?? 0);
-        if (interimCount > 0) {
-          return NextResponse.json(
-            {
-              success: false, requiresManualReview: true,
-              message: `출석일(${checkinDate}) 이전에 재결제 이력(${interimCount}건)이 있어 어느 회원권의 출석인지 자동으로 확인할 수 없습니다. 관리자가 직접 확인 후 처리해주세요.`,
-            },
-            { status: 409 }
-          );
-        }
-        // 조건 모두 통과 → 현재 패스 범위 내 출석으로 판단, 복원 허용
       }
     }
 

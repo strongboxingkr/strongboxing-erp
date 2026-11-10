@@ -72,14 +72,15 @@ UPDATE settings_options SET option_value = 'DAILY' WHERE option_id IN (30, 31);
 | day-passes 취소 API (지점 권한 포함) | ✅ mock 통과 | DB 미검증 |
 | DAILY 출석 취소 → day_pass PENDING 복원 | ✅ mock 통과 | DB 미검증, 운영 테스트 미실시 |
 | DAILY 출석 취소 → 지난 날짜 CANCELLED 처리 | ✅ mock 통과 | DB 미검증 |
-| COUNT 출석 취소 (checkin > start, 중간 재등록 없음) | ✅ mock 통과 | DB 미검증 |
-| COUNT 출석 취소 (checkin > start, 중간 재등록 있음) | ✅ mock 통과 → BLOCK_409 | DB 미검증 |
-| COUNT 출석 취소 (checkin < start = 이전 패스) | ✅ mock 통과 → BLOCK_409 | DB 미검증 |
-| COUNT 출석 취소 (checkin == start = 시작일 당일) | ✅ mock 통과 → BLOCK_409 | 정상 케이스도 차단됨 (한계, 아래 참조) |
+| COUNT 출석 취소 (used_count > 0, 모든 케이스) | ✅ mock 통과 → 전면 BLOCK_409 | DB 미검증 |
+| COUNT 출석 취소 (used_count = 0, EXPIRED 등) | ✅ mock 통과 → DELETE_ONLY | DB 미검증 |
 
-**COUNT 출석 취소 시스템 한계 (운영 영향):**
-- 시작일 당일 첫 출석 취소 불가: `checkin == start_date` 케이스는 수동 start_date 변경·과거 결제 데이터 누락으로 재등록 여부를 확인할 수 없어 항상 409. 관리자가 `remaining_count` 직접 수정 필요.
-- payments 데이터 누락 시 중간 재등록 미감지 가능: 중간 재등록이 있지만 payments에 기록이 없으면 허용될 수 있음. DB 데이터 완전성에 의존.
+**COUNT 출석 취소 현재 제한 (운영 영향):**
+- `used_count > 0`인 COUNT 출석은 조건 없이 전면 409 거부. 출석 삭제·잔여 횟수 변경·부분 저장 없음.
+- 사유: `attendance` 테이블에 `payment_id`가 없어 차감 대상 회원권을 직접 증명할 수 없음.
+- 메시지: "차감된 이용권을 확인할 수 없어 자동 취소할 수 없습니다. 관리자 확인이 필요합니다."
+- 관리자 조치: 회원 관리 화면의 회원권 조정 기능(이력 기록 포함)으로 처리
+- 향후 과제: `attendance.payment_id` 연결 설계 완료 후 자동 복원 재활성화
 
 ---
 
@@ -230,18 +231,14 @@ pm2 restart strongboxing-erp
 
 ## 추가 수정 (main 브랜치, 배포 전)
 
-### COUNT 출석 취소 로직 개선 (커밋 `90909da`)
+### COUNT 출석 취소 로직 — 전면 차단 (커밋 `{최종}`)
 | 파일 | 변경 |
 |------|------|
-| `app/api/attendance/delete/route.ts` | 시작일 당일 케이스 세분화 |
+| `app/api/attendance/delete/route.ts` | COUNT + used_count>0 전면 409 |
 
-**기존 문제**: `checkinDate > memberStartDate` 조건이 시작일 당일 정상 출석까지 차단
-**개선 로직**:
-- `checkin > start_date`: 현재 패스 범위 내 → 허용
-- `checkin < start_date`: 명확히 이전 패스 → 409
-- `checkin == start_date`: payments WHERE pass_type='COUNT' AND start_date=checkin_date 조회
-  - 1건(재등록 없음): 허용
-  - 2건 이상(당일 재등록): 소속 패스 불명 → 409
+**정책**: `attendance.payment_id` 없어 차감 대상 증명 불가 → 조건 없이 모두 거부
+- 출석 삭제·잔여 횟수 변경·부분 저장 없음
+- 향후 과제: `attendance.payment_id` 연결 설계 후 재검토
 
 ### day-passes API 보안 강화 (커밋 `04177a6`)
 | 파일 | 변경 |
