@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { getErpUser, requireRole } from "@/lib/erp-session";
+import { getErpUser, requireRole, isHq } from "@/lib/erp-session";
 import { kstToday } from "@/lib/membership-ops";
 
 // GET /api/day-passes?branch_name=&use_date=&member_id=
@@ -19,7 +19,12 @@ export async function GET(req: Request) {
   const conditions: string[] = [];
   const params: any[] = [];
 
-  if (branch) { conditions.push("dp.branch_name = ?"); params.push(branch); }
+  // HQ(ADMIN/OWNER)가 아닌 경우: 지점 파라미터를 user.branch_name으로 고정
+  const effectiveBranch = branch && isHq(user)
+    ? branch
+    : (branch && branch === user.branch_name ? branch : (!isHq(user) ? user.branch_name : null));
+
+  if (effectiveBranch) { conditions.push("dp.branch_name = ?"); params.push(effectiveBranch); }
   if (useDate) { conditions.push("dp.use_date = ?"); params.push(useDate); }
   if (memberId) { conditions.push("dp.member_id = ?"); params.push(memberId); }
 

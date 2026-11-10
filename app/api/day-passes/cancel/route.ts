@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { getErpUser, requireRole } from "@/lib/erp-session";
+import { getErpUser, requireRole, canManageBranch } from "@/lib/erp-session";
 import { kstToday } from "@/lib/membership-ops";
 
 // POST /api/day-passes/cancel  { pass_id }
@@ -25,6 +25,11 @@ export async function POST(req: Request) {
   if (rows.length === 0) return NextResponse.json({ success: false, message: "일일권 없음" });
 
   const dp = rows[0];
+
+  // 지점 권한 검증: DIRECTOR는 자기 지점 일일권만 취소 가능
+  if (!canManageBranch(user, dp.branch_name)) {
+    return NextResponse.json({ success: false, message: "권한이 없습니다." }, { status: 403 });
+  }
 
   if (dp.status === "CANCELLED") {
     return NextResponse.json({ success: false, message: "이미 취소된 일일권입니다." });
