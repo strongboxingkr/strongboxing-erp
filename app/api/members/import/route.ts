@@ -71,24 +71,37 @@ export async function POST(req: Request) {
     let skipCount = 0;
     const skipReasons: string[] = [];
 
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+      const row = rows[rowIndex];
+      const rowNum = rowIndex + 2; // 1-based Excel row (header = row 1)
       const name = String(getValue(row, ["회원명", "이름", "성명", "name"])).trim();
       const phone = cleanPhone(getValue(row, ["전화번호", "휴대폰", "연락처", "phone"]));
-      const checkinCode = String(
-        getValue(row, ["회원번호", "출석번호", "출석코드", "checkin_code"])
-      ).replace(/[^0-9]/g, "");
 
-      if (!name || !phone || !checkinCode) {
-        skipCount++;
-        const missing = [!name && "회원명", !phone && "전화번호", !checkinCode && "출석번호"].filter(Boolean).join(", ");
-        skipReasons.push(`행 제외: ${name || "(이름없음)"} — 필수 항목 없음(${missing})`);
-        continue;
+      // 출석번호: trim 후 숫자 1~8자리인지 검사. 문자·기호 포함 시 변환 없이 오류 처리
+      const checkinCodeRaw = String(
+        getValue(row, ["회원번호", "출석번호", "출석코드", "checkin_code"])
+      ).trim();
+      let checkinCode = "";
+      let checkinCodeError = "";
+      if (!checkinCodeRaw) {
+        checkinCodeError = "출석번호 없음";
+      } else if (!/^\d{1,8}$/.test(checkinCodeRaw)) {
+        if (/\D/.test(checkinCodeRaw)) {
+          checkinCodeError = `출석번호에 숫자 외 문자 포함(입력값: "${checkinCodeRaw}")`;
+        } else {
+          checkinCodeError = `출석번호 ${checkinCodeRaw.length}자리(최대 8자리 초과)`;
+        }
+      } else {
+        checkinCode = checkinCodeRaw; // 앞자리 0 그대로 보존
       }
 
-      // 출석번호 형식: 숫자 1~8자리만 허용 (9자리 이상은 임의로 자르지 않고 건너뜀)
-      if (checkinCode.length > 8) {
+      if (!name || !phone || checkinCodeError) {
         skipCount++;
-        skipReasons.push(`행 제외: ${name} — 출석번호 ${checkinCode.length}자리(최대 8자리 초과)`);
+        const missing: string[] = [];
+        if (!name) missing.push("회원명");
+        if (!phone) missing.push("전화번호");
+        if (checkinCodeError) missing.push(checkinCodeError);
+        skipReasons.push(`${rowNum}행 제외: ${name || "(이름없음)"} — ${missing.join(", ")}`);
         continue;
       }
 
@@ -109,6 +122,7 @@ export async function POST(req: Request) {
         statusRaw === "정지" || statusRaw === "휴회" || statusRaw === "REST" ? "REST" :
         statusRaw === "만료" || statusRaw === "EXPIRED" ? "EXPIRED" : "ACTIVE";
 
+      // 중복 체크: 중복이면 업데이트, 없으면 신규 등록
       if (dupRows.length > 0) {
         // 이미 존재하는 회원 → 상품/날짜/횟수/상태 업데이트 (재등록 처리)
         const existingId = dupRows[0].member_id;
