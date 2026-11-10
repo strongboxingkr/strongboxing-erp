@@ -204,6 +204,10 @@ export default function MemberDetailPage() {
   const [editPayForm, setEditPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: "", memo: "" });
   const [addPayModal, setAddPayModal] = useState(false);
   const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" });
+  // 환불 모달: refundTarget에 원결제 행 저장
+  const [refundTarget, setRefundTarget] = useState<any>(null);
+  const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "", terminate_pass: false });
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
 
   const [uploading, setUploading] =
@@ -905,11 +909,24 @@ export default function MemberDetailPage() {
                               });
                               const json = await res.json();
                               if (json.success) load();
-                              else alert("취소 실패");
+                              else alert(json.message || "취소 실패");
                             }}
                           >
                             취소
                           </button>
+                          {/* 환불: pass_type 있는 결제(회원권)에만 표시 */}
+                          {p.pass_type && (
+                            <button
+                              className="btn secondary"
+                              style={{ fontSize: 11, padding: "3px 8px", color: "#7c3aed" }}
+                              onClick={() => {
+                                setRefundTarget(p);
+                                setRefundForm({ refund_amount: "", refund_reason: "", terminate_pass: false });
+                              }}
+                            >
+                              환불
+                            </button>
+                          )}
                           <button
                             className="btn"
                             style={{ fontSize: 11, padding: "3px 8px", background: "#ef4444" }}
@@ -1290,6 +1307,92 @@ export default function MemberDetailPage() {
                 if (json.success) { alert("수정 완료!"); setEditPayment(null); load(); }
                 else alert(json.message || "수정 실패");
               }}>저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 환불 모달 */}
+      {refundTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card" style={{ width: 440, maxWidth: "95vw", borderRadius: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0 }}>환불 처리</h2>
+              <button onClick={() => setRefundTarget(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
+            </div>
+            <div style={{ background: "var(--panel2)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13 }}>
+              <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>원결제</div>
+              <div><b>#{refundTarget.payment_id}</b> {refundTarget.product_name || "결제"}</div>
+              <div style={{ color: "#888", fontSize: 12 }}>결제금액: {Number(refundTarget.final_amount).toLocaleString()}원</div>
+            </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              <input
+                className="input"
+                type="number"
+                placeholder="환불 금액"
+                value={refundForm.refund_amount}
+                onChange={e => setRefundForm({ ...refundForm, refund_amount: e.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="환불 사유 (선택)"
+                value={refundForm.refund_reason}
+                onChange={e => setRefundForm({ ...refundForm, refund_reason: e.target.value })}
+              />
+              {refundTarget.pass_type && (
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={refundForm.terminate_pass}
+                    onChange={e => setRefundForm({ ...refundForm, terminate_pass: e.target.checked })}
+                  />
+                  회원권 해지 포함 (환불 시 이용권 종료)
+                </label>
+              )}
+              {refundForm.terminate_pass && (
+                <div style={{ background: "#fef3c7", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#92400e" }}>
+                  ⚠️ 회원권 해지를 선택했습니다. 현재 회원권과 원결제의 연결은 상품명·기간 일치로 추정됩니다. 동일 상품 재등록 케이스에서 오식별 가능성이 있습니다.
+                </div>
+              )}
+              <button
+                className="btn"
+                style={{ fontSize: 15 }}
+                disabled={refundSubmitting || !refundForm.refund_amount}
+                onClick={async () => {
+                  if (refundSubmitting) return;
+                  if (!refundForm.refund_amount || Number(refundForm.refund_amount) <= 0) {
+                    alert("환불 금액을 입력해주세요.");
+                    return;
+                  }
+                  setRefundSubmitting(true);
+                  try {
+                    const res = await apiFetch("/api/member-refund", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        member_id: data?.member?.member_id,
+                        payment_id: refundTarget.payment_id,
+                        refund_amount: Number(refundForm.refund_amount),
+                        refund_reason: refundForm.refund_reason || undefined,
+                        terminate_pass: refundForm.terminate_pass,
+                      }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                      alert(json.message || "환불 처리 완료");
+                      setRefundTarget(null);
+                      load();
+                      loadPayments(String(data?.member?.member_id));
+                    } else {
+                      alert(json.message || "환불 실패");
+                    }
+                  } catch {
+                    alert("환불 요청 중 오류가 발생했습니다.");
+                  } finally {
+                    setRefundSubmitting(false);
+                  }
+                }}
+              >
+                {refundSubmitting ? "처리 중..." : "환불 확인"}
+              </button>
             </div>
           </div>
         </div>
