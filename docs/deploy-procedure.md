@@ -1,13 +1,57 @@
-# ERP 배포 절차
+# ERP 배포 기록 및 절차
 
-## 개요
+## 2026-11-10 배포 기록
 
 | 항목 | 값 |
 |------|-----|
 | 운영 경로 | `/home/ubuntu/strongboxing-erp` |
-| PM2 프로세스 | `strongboxing-erp` |
-| 이전 운영 커밋 | `da724d5` |
-| 배포 목표 커밋 | (최종 커밋 확정 후 기재) |
+| PM2 프로세스 | `strongboxing-erp` (online 확인) |
+| 이전 커밋 | `da724d5` |
+| 배포 커밋 | `7a4f74a` (로컬/origin main HEAD) |
+| 릴리스 폴더 | `/home/ubuntu/erp-release-7a4f74a` |
+| 배포 방식 | 릴리스 폴더 빌드 → rsync 전환 |
+| 검증 | 로그인·회원 조회·키오스크 기본 동작 확인 |
+
+### 배포 중 추가 변경 (Git 미반영 → `deploy/post-7a4f74a` 브랜치에 커밋)
+
+| 파일 | 변경 내용 |
+|------|-----------|
+| `package.json` | `next: "latest"` → `"16.4.6"` 고정 |
+| `package-lock.json` | 릴리스 서버에서 npm install 결과 (로컬 미보유) |
+| `app/api/check-in/route.ts` | 비회원 pass_code 조회·충돌 검사·비회원 체크인 블록 제거 |
+
+### DB 변경
+
+| 항목 | 내용 |
+|------|------|
+| 신규 테이블 | `erp_sessions` (DDL: `migrations/001_erp_sessions.sql`) |
+| 기존 데이터 | 회원·결제·출석 행 수정/삭제 없음 |
+| 백업 위치 | `/home/ubuntu/erp-backups/` (최신: `latest-app-backup.txt`) |
+
+### 운영 환경 확인
+
+| 항목 | 확인 결과 |
+|------|-----------|
+| `member_files` | 존재, 사용 컬럼 확인 |
+| `payments.idempotency_key` | UNIQUE 확인 |
+| `payments.pass_type` | DAILY 포함 확인 |
+| `attendance.pass_type` | VARCHAR(20) |
+| `day_passes` | pass_code/guest_name/guest_phone **없음** (비회원 체크인 경로 제거 근거) |
+| `kiosk_devices` | **없음** (REQUIRE_KIOSK_TOKEN=UNSET, 토큰 미전송 시 미조회) |
+| `REQUIRE_KIOSK_TOKEN` | 운영 환경파일·PM2 모두 UNSET (활성화 금지) |
+
+### 잔여 문제
+
+| 항목 | 상태 |
+|------|------|
+| npm audit high 10건 | `npm audit --omit=dev` 확인, critical 0. 후속 작업으로 대응 |
+| `package-lock.json` | 릴리스 서버에서 복사 후 `deploy/post-7a4f74a`에 추가 커밋 필요 |
+| `next-env.d.ts` | 생성 파일이나 git 추적 중. 별도 정리 가능 (`.gitignore` 추가) |
+| 비회원 출석 누락 대응 | 정책·구현 미확정, 후속 작업 |
+
+---
+
+## 다음 배포 절차 (개요)
 
 ---
 
