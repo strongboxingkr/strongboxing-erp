@@ -89,7 +89,9 @@ export async function POST(req: Request) {
         if (dupeRows.length > 0) {
           const verdict = resolveGuestIdempotencyConflict(dupeRows[0], { final_amount, product_name, branch_name: branch_name || "" });
           if (verdict === "BRANCH_MISMATCH") {
-            return NextResponse.json({ success: false, message: "결제 등록 실패" }, { status: 500 });
+            // 500 반환 시 클라이언트가 uncertain으로 판정해 무한 재시도 → 409로 명확히 거부
+            // branch 정보 미노출: 메시지에 지점명·결제 내용 포함 금지
+            return NextResponse.json({ success: false, message: "결제 등록 실패" }, { status: 409 });
           }
           if (verdict === "CONFLICT") {
             return NextResponse.json({ success: false, message: "동일한 idempotency_key로 다른 결제 내용이 이미 처리됐습니다." }, { status: 409 });

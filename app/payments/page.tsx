@@ -461,24 +461,38 @@ export default function PaymentsPage() {
                     }),
                   });
                   if (res.status >= 500) {
-                    // 서버 오류: 처리 여부 불명확 → pending 유지
+                    // 5xx: 처리 여부 불명확 → pending 보관
                     setGuestPending({ key: submitKey, product_name: guestForm.product_name, final_amount: guestForm.final_amount, branch_name: submitBranch });
                     alert("서버 오류가 발생했습니다. 결제가 처리됐을 수 있으니 결제 내역을 확인하거나 같은 내용으로 재시도해 주세요.");
                     return;
                   }
-                  const json = await res.json();
+                  if (!res.ok) {
+                    // 4xx: 서버가 받아서 명확히 거부 → 확정 실패, pending 없음, 새 키 발급 금지
+                    try { const j = await res.json(); alert(j.message || "결제 처리에 실패했습니다."); }
+                    catch { alert("결제 처리에 실패했습니다."); }
+                    return;
+                  }
+                  // 2xx: 업무 성공·실패는 body의 success 필드로 판정
+                  let json: any;
+                  try { json = await res.json(); }
+                  catch {
+                    // 2xx인데 JSON 파싱 실패 → 처리 여부 불명확
+                    setGuestPending({ key: submitKey, product_name: guestForm.product_name, final_amount: guestForm.final_amount, branch_name: submitBranch });
+                    alert("응답 처리 중 오류가 발생했습니다. 결제 내역을 확인하거나 같은 내용으로 재시도해 주세요.");
+                    return;
+                  }
                   if (json.success) {
-                    setGuestPending(null); // 확정 성공 → 초기화
+                    setGuestPending(null); // 확정 성공(신규·idempotent 모두) → 초기화
                     alert("결제 등록 완료");
                     setGuestIdempotencyKey(crypto.randomUUID());
                     setGuestModal(false);
                     loadPayments();
                   } else {
-                    // 4xx: 서버가 명확히 거부 → 확정 실패, pending 불필요
+                    // 2xx + success:false → 업무 거부, 확정 실패
                     alert(json.message || "결제 실패");
                   }
                 } catch {
-                  // 네트워크 오류: 처리 여부 불명확 → pending 보관
+                  // fetch 자체 throw → 네트워크 오류, 처리 여부 불명확
                   setGuestPending({ key: submitKey, product_name: guestForm.product_name, final_amount: guestForm.final_amount, branch_name: submitBranch });
                   alert("네트워크 오류가 발생했습니다. 결제가 처리됐을 수 있으니 결제 내역을 확인하거나 같은 내용으로 재시도해 주세요.");
                 } finally {
