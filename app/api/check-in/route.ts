@@ -54,17 +54,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // ── 비회원 일일권 pass_code 조회 (회원 조회보다 먼저) ──────────
-    // pass_code는 4자리로 생성되어 members.checkin_code와 충돌하지 않도록 보장됨
-    // 단, 같은 코드를 회원과 비회원이 동시에 사용할 경우를 명시적으로 차단
-    const kstTodayForPassCode = kstToday();
-    let guestDpSql = `SELECT * FROM day_passes WHERE pass_code = ? AND use_date = ? AND status = 'PENDING'`;
-    const guestDpParams: any[] = [code, kstTodayForPassCode];
-    if (branch_name) { guestDpSql += ` AND branch_name = ?`; guestDpParams.push(branch_name); }
-    guestDpSql += ` LIMIT 1`;
-    const [guestDpRows]: any = await pool.query(guestDpSql, guestDpParams);
-    const guestDayPass = guestDpRows[0] || null;
-
     // branch_name: 클라이언트 제공 값 그대로 사용
     // 기기 인증 미구현으로 서버에서 지점을 확정할 수 없음 → branch_name 없으면 전 지점 조회
     // 같은 코드가 같은 지점 내 중복인 경우 여러 행이 존재할 수 있음 → LIMIT 1은 임의 선택 위험
@@ -86,52 +75,6 @@ export async function POST(req: Request) {
         success: false,
         result: "DUPLICATE_CODE",
         message: "같은 출석번호를 가진 회원이 여러 명입니다. 관리자에게 문의해주세요.",
-      });
-    }
-
-    // 회원 코드와 비회원 pass_code가 동일 → 충돌 (등록 시 방지했으나 방어 처리)
-    if (rows.length > 0 && guestDayPass) {
-      return NextResponse.json({
-        success: false,
-        result: "CODE_CONFLICT",
-        message: "입장코드 충돌이 감지됐습니다. 관리자에게 문의해주세요.",
-      });
-    }
-
-    // ── 비회원 일일권 체크인 ───────────────────────────────────────
-    if (rows.length === 0 && guestDayPass) {
-      const conn = await (pool as any).getConnection();
-      try {
-        await conn.beginTransaction();
-        const [dpCheck]: any = await conn.query(
-          `SELECT pass_id FROM day_passes WHERE pass_id = ? AND status = 'PENDING' FOR UPDATE`,
-          [guestDayPass.pass_id]
-        );
-        if (dpCheck.length === 0) {
-          await conn.rollback();
-          return NextResponse.json({ success: false, result: "DAY_PASS_USED", message: "이미 사용된 일일권입니다." });
-        }
-        const [attRes]: any = await conn.query(
-          `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, result, memo) VALUES (NULL,?,?,?,0,'SUCCESS',?)`,
-          [guestDayPass.branch_name, guestDayPass.guest_name || "비회원", "DAILY", memo || "비회원 일일권 출석"]
-        );
-        await conn.query(
-          `UPDATE day_passes SET status='USED', used_at=NOW(), attendance_id=? WHERE pass_id=?`,
-          [attRes.insertId, guestDayPass.pass_id]
-        );
-        await conn.commit();
-      } catch (e) {
-        await conn.rollback();
-        throw e;
-      } finally {
-        conn.release();
-      }
-      return NextResponse.json({
-        success: true,
-        result: "SUCCESS",
-        pass_type: "DAILY",
-        guest_name: guestDayPass.guest_name || "비회원",
-        message: `${guestDayPass.guest_name || "비회원"}님 일일권 입장 완료`,
       });
     }
 
