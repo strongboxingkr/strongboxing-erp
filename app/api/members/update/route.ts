@@ -152,23 +152,30 @@ export async function POST(req: Request) {
               );
             }
           }
-          // 새 락커 배정: locker_end_date 명시 여부에 따라 end_date 갱신 여부 결정
+          // 새 락커 배정: 기존 locker_zone 보존 (B구역 등 오배정 방지)
+          const [zoneRows]: any = await conn.query(
+            `SELECT locker_zone FROM lockers WHERE branch_name=? AND locker_no=? LIMIT 1`,
+            [finalBranch, finalLockerNo]
+          );
+          const lockerZone = zoneRows.length > 0 ? zoneRows[0].locker_zone : "A";
+
+          // locker_end_date 명시 여부에 따라 end_date 갱신 여부 결정
           if (hasLockerEndDate) {
             await conn.query(
               `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
-               VALUES (?,'A',?,?,?,?,?,?)
+               VALUES (?,?,?,?,?,?,?,?)
                ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
                  gender=VALUES(gender),start_date=VALUES(start_date),end_date=VALUES(end_date)`,
-              [finalBranch, finalLockerNo, member_id, finalName, finalGender, finalStartDate, locker_end_date || null]
+              [finalBranch, lockerZone, finalLockerNo, member_id, finalName, finalGender, finalStartDate, locker_end_date || null]
             );
           } else {
             // end_date 갱신 없이 식별 정보만 갱신 (기존 락커 종료일 유지)
             await conn.query(
               `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
-               VALUES (?,'A',?,?,?,?,?,NULL)
+               VALUES (?,?,?,?,?,?,?,NULL)
                ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
                  gender=VALUES(gender),start_date=VALUES(start_date)`,
-              [finalBranch, finalLockerNo, member_id, finalName, finalGender, finalStartDate]
+              [finalBranch, lockerZone, finalLockerNo, member_id, finalName, finalGender, finalStartDate]
             );
           }
         } else if (oldMember.locker_no && locker_no === null) {

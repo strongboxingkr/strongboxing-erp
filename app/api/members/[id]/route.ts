@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { taggedQuery } from "@/lib/membership-ops";
+import { taggedQuery, withMemberChange } from "@/lib/membership-ops";
 import { getUserFromRequest, isAdminOrOwner } from "@/lib/auth";
 
 export async function PUT(
@@ -242,31 +242,28 @@ export async function DELETE(
     );
     }
 
-    await pool.query(
-      `
-      INSERT INTO member_histories (
-        member_id,
-        member_name,
-        action_type,
-        action_memo,
-        old_value,
-        created_by
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
-      [
-        memberId,
-        oldMember.name,
-        "DELETE",
-        "회원 삭제",
-        JSON.stringify(oldMember),
-        "관리자",
-      ]
-    );
+    // histories INSERT → lockers 해제 → members DELETE를 단일 트랜잭션으로
+    // 결제·출석 이력은 삭제하지 않음 (감사 추적 보존)
+    await withMemberChange(
+      { type: "DELETE", reason: "회원 삭제", source: "members/[id]", actor: user.name || "관리자" },
+      async (conn) => {
+        await conn.query(
+          `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, created_by)
+           VALUES (?, ?, 'DELETE', '회원 삭제', ?, ?)`,
+          [memberId, oldMember.name, JSON.stringify(oldMember), user.name || "관리자"]
+        );
 
-    await pool.query(
-      "DELETE FROM members WHERE member_id = ?",
-      [memberId]
+        // 배정된 락커 해제 (lockers 행은 유지, 회원 연결만 해제)
+        if (oldMember.locker_no) {
+          await conn.query(
+            `UPDATE lockers SET member_id=NULL, member_name=NULL, gender=NULL, start_date=NULL, end_date=NULL
+             WHERE branch_name=? AND locker_no=? AND member_id=?`,
+            [oldMember.branch_name, oldMember.locker_no, memberId]
+          );
+        }
+
+        await conn.query("DELETE FROM members WHERE member_id = ?", [memberId]);
+      }
     );
 
     return NextResponse.json({
