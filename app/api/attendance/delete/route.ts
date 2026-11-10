@@ -50,7 +50,13 @@ export async function POST(req: Request) {
 
     // COUNT 패스 재등록 후 과거 출석 취소 차단
     // attendance에 payment_id가 없어 "어느 패스의 차감인지" 확실히 증명 불가
-    // 현재 패스 start_date와 비교해 소속 패스를 추정하되, 증명 불가 시 항상 409 반환
+    // 판단 기준:
+    //   checkin > start_date  → 현재 패스 범위 내, 안전하게 허용
+    //   checkin < start_date  → 명확히 이전 패스 출석 → 409
+    //   checkin == start_date → 같은 날 재등록 여부에 따라 분기:
+    //     payments에서 start_date가 동일한 COUNT 결제가 1건이면 → 재등록 없음, 허용
+    //     2건 이상이면 → 같은 날 재등록 발생, 어느 패스 차감인지 불명 → 409
+    //   start_date NULL       → 패스 식별 불가 → 409
     if (shouldRestore && member_id) {
       const [memberRows]: any = await pool.query(
         "SELECT pass_type, start_date FROM members WHERE member_id = ?",
@@ -67,24 +73,37 @@ export async function POST(req: Request) {
           ? String(checkinRow.checkin_time).slice(0, 10)
           : null;
 
-        // 차단 조건: start_date 없음(패스 식별 불가) 또는 출석일이 start_date와 같거나 이전
-        // - start_date NULL: 현재 패스가 어느 날 시작됐는지 알 수 없어 증명 불가 → 차단
-        // - checkin == start_date: 당일 재등록 가능 — 이전 패스 출석과 구분 불가 → 차단
-        // - checkin < start_date: 명확히 이전 패스 → 차단
-        // 허용은 checkin > start_date인 경우에만 (현재 패스 기간 내 출석임이 확실)
-        const isCurrentPass = memberStartDate && checkinDate && checkinDate > memberStartDate;
-        if (!isCurrentPass) {
+        if (!memberStartDate || !checkinDate) {
           return NextResponse.json(
-            {
-              success: false,
-              requiresManualReview: true,
-              message: memberStartDate
-                ? `현재 회원권(시작일: ${memberStartDate}) 범위를 벗어난 출석 기록입니다. 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.`
-                : "현재 회원권의 시작일을 확인할 수 없어 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.",
-            },
+            { success: false, requiresManualReview: true, message: "현재 회원권의 시작일을 확인할 수 없어 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요." },
             { status: 409 }
           );
         }
+
+        if (checkinDate < memberStartDate) {
+          // 출석일이 현재 패스 시작일보다 이전 → 명확히 이전 패스
+          return NextResponse.json(
+            { success: false, requiresManualReview: true, message: `현재 회원권(시작일: ${memberStartDate}) 범위를 벗어난 출석 기록입니다. 자동 횟수 복원이 차단됩니다. 관리자가 직접 확인 후 처리해주세요.` },
+            { status: 409 }
+          );
+        }
+
+        if (checkinDate === memberStartDate) {
+          // 시작일 당일: 같은 날 재등록이 있었으면 어느 패스 차감인지 불명
+          const [payCountRows]: any = await pool.query(
+            "SELECT COUNT(*) AS cnt FROM payments WHERE member_id = ? AND pass_type = 'COUNT' AND DATE(start_date) = ?",
+            [member_id, memberStartDate]
+          );
+          const sameStartCount = Number(payCountRows[0]?.cnt ?? 0);
+          if (sameStartCount >= 2) {
+            return NextResponse.json(
+              { success: false, requiresManualReview: true, message: `시작일(${memberStartDate}) 당일에 재결제 이력이 있어 어느 회원권의 출석인지 자동으로 확인할 수 없습니다. 관리자가 직접 확인 후 처리해주세요.` },
+              { status: 409 }
+            );
+          }
+          // sameStartCount === 1: 재등록 없음, 시작일 당일 정상 출석 → 허용
+        }
+        // checkinDate > memberStartDate 또는 시작일 당일 단일 패스 → 허용
       }
     }
 
