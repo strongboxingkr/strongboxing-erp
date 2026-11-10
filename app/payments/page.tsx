@@ -26,6 +26,7 @@ export default function PaymentsPage() {
   const [guestModal, setGuestModal] = useState(false);
   const [guestForm, setGuestForm] = useState({ branch_name: "", product_name: "", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const [branch, setBranch] = useState("전체");
   const [memberSearch, setMemberSearch] = useState("");
@@ -163,6 +164,7 @@ export default function PaymentsPage() {
           member_id: Number(form.member_id),
           amount: finalAmount,
           memo: autoMemo,
+          idempotency_key: idempotencyKey,
           payment_purpose: isDailyProduct ? "PASS" : (
             products.some((p: any) => p.option_name === form.product_name) ? "PASS" : "GENERAL"
           ),
@@ -174,6 +176,7 @@ export default function PaymentsPage() {
 
       if (data.success) {
         alert("결제 등록 완료!");
+        setIdempotencyKey(crypto.randomUUID());
 
         setForm({
           member_id: "",

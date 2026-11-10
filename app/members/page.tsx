@@ -263,8 +263,9 @@ export default function MembersPage() {
       // 최근 결제 채우기
       payment_amount: latestPayment ? String(latestPayment.final_amount) : "",
       payment_method_new: latestPayment?.payment_method || "CARD",
-      payment_date_new: latestPayment?.payment_date?.slice(0, 10) || today,
+      payment_date_new: latestPayment?.payment_date?.slice(0, 10) || "",
       latest_payment_id: latestPayment?.payment_id || null,
+      payment_changed: false,
     } as any);
 
     setReregForm({
@@ -344,18 +345,21 @@ export default function MembersPage() {
       const payAmt = Number((targetForm as any).payment_amount || 0);
       const payMemberId = isEdit ? targetForm.member_id : newMemberId;
       const latestPaymentId = (targetForm as any).latest_payment_id;
+      const paymentChanged = !!(targetForm as any).payment_changed;
       if (payMemberId && payAmt > 0) {
         if (isEdit && latestPaymentId) {
-          // 기존 결제 수정
-          await apiFetch(`/api/payments/${latestPaymentId}`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              payment_date: (targetForm as any).payment_date_new || today,
-              payment_method: (targetForm as any).payment_method_new || "CARD",
-              amount: payAmt,
-              final_amount: payAmt,
-            }),
-          });
+          // 결제 정보를 명시적으로 수정한 경우에만 PATCH 실행
+          if (paymentChanged) {
+            await apiFetch(`/api/payments/${latestPaymentId}`, {
+              method: "PATCH",
+              body: JSON.stringify({
+                payment_date: (targetForm as any).payment_date_new || today,
+                payment_method: (targetForm as any).payment_method_new || "CARD",
+                amount: payAmt,
+                final_amount: payAmt,
+              }),
+            });
+          }
         } else {
           // 신규 결제 등록 — 결제 실패 시 회원은 이미 생성됨, 별도 안내
           const payRes = await apiFetch("/api/payments/add", {
@@ -944,12 +948,12 @@ ${
                   placeholder="결제금액 (원)"
                   style={{ flex: "1 1 140px", maxWidth: 200 }}
                   value={(form as any).payment_amount || ""}
-                  onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
+                  onChange={(e) => setForm({ ...form, payment_amount: e.target.value, payment_changed: true } as any)}
                 />
                 <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
                   {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
                     <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ fontSize: 12, padding: "0 14px" }}
-                      onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
+                      onClick={() => setForm({ ...form, payment_method_new: v, payment_changed: true } as any)}>{l}</button>
                   ))}
                 </div>
                 <div style={{ flex: "0 0 auto" }}>
@@ -959,7 +963,7 @@ ${
                     type="date"
                     style={{ width: 148 }}
                     value={(form as any).payment_date_new || today}
-                    onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
+                    onChange={(e) => setForm({ ...form, payment_date_new: e.target.value, payment_changed: true } as any)}
                   />
                 </div>
               </div>

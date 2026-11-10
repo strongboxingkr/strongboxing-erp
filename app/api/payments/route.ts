@@ -77,6 +77,20 @@ export async function PUT(req: Request) {
     const allowed = ["ADMIN", "OWNER", "DIRECTOR"];
     if (!allowed.includes(user.role)) return NextResponse.json({ success: false, message: "권한 없음" }, { status: 403 });
 
+    // 취소(final_amount=0 & refund_amount>0) 또는 환불(history_type=REFUND) 결제는 수정 불가
+    const [rows]: any = await pool.query(
+      `SELECT final_amount, refund_amount, history_type FROM payments WHERE payment_id = ?`,
+      [payment_id]
+    );
+    if (!rows.length) return NextResponse.json({ success: false, message: "결제 없음" }, { status: 404 });
+    const p = rows[0];
+    if (Number(p.final_amount) === 0 && Number(p.refund_amount) > 0) {
+      return NextResponse.json({ success: false, message: "이미 취소된 결제는 수정할 수 없습니다." }, { status: 409 });
+    }
+    if (p.history_type === "REFUND") {
+      return NextResponse.json({ success: false, message: "환불 기록은 수정할 수 없습니다." }, { status: 409 });
+    }
+
     await pool.query(
       `UPDATE payments SET product_name=?, amount=?, final_amount=?, payment_method=?, payment_date=?, memo=? WHERE payment_id=?`,
       [product_name, final_amount, final_amount, payment_method, payment_date, memo || null, payment_id]

@@ -116,22 +116,51 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: true, message: "일일권 결제 취소 완료" });
     }
 
-    // 삭제할 결제가 PASS이고 현재 회원 패스와 일치하는지 확인
-    const isPass = payment.pass_type != null;
-    const [memberRows]: any = await pool.query(
-      `SELECT * FROM members WHERE member_id = ? LIMIT 1`,
-      [payment.member_id]
-    );
-    const member = memberRows[0] || null;
-    const isCurrentPass = isPass && member &&
-      member.product_name === payment.product_name &&
-      (member.end_date?.slice(0, 10) === payment.end_date?.slice(0, 10) || !member.end_date);
+    // PASS/PERIOD/COUNT 삭제: 트랜잭션 안에서 잠금 후 최신 상태 재검증
+    await withMemberChange(
+      { type: "DELETE", reason: "결제 삭제", source: "payments/delete", actor: user.login_id || "관리자" },
+      async (conn) => {
+        // 원결제 배타 잠금 + 최신 상태 재읽기 (취소/환불 여부 재검증)
+        const [lockedRows]: any = await conn.query(
+          `SELECT final_amount, refund_amount, history_type, member_id, product_name, end_date FROM payments WHERE payment_id = ? FOR UPDATE`,
+          [payment_id]
+        );
+        if (!lockedRows.length) throw Object.assign(new Error("NOT_FOUND"), {});
+        const lp = lockedRows[0];
+        if (Number(lp.final_amount) === 0 && Number(lp.refund_amount) > 0) {
+          throw Object.assign(new Error("ALREADY_CANCELLED"), {});
+        }
+        if (lp.history_type === "REFUND") {
+          throw Object.assign(new Error("IS_REFUND"), {});
+        }
 
-    if (isCurrentPass && member) {
-      await withMemberChange(
-        { type: "DELETE", reason: "결제 삭제", source: "payments/delete", actor: user.login_id || "관리자" },
-        async (conn) => {
-          await conn.query(`DELETE FROM payments WHERE payment_id = ?`, [payment_id]);
+        // 환불 행 존재 검사
+        const exactMemo = `[환불] 원결제 #${payment_id}`;
+        const likeMemo = `[환불] 원결제 #${payment_id} — %`;
+        const [refundCheck]: any = await conn.query(
+          `SELECT COUNT(*) AS cnt FROM payments
+           WHERE member_id = ? AND history_type = 'REFUND' AND (memo = ? OR memo LIKE ?)
+           FOR UPDATE`,
+          [lp.member_id, exactMemo, likeMemo]
+        );
+        if (Number(refundCheck[0].cnt) > 0) {
+          throw Object.assign(new Error("REFUND_EXISTS"), { cnt: refundCheck[0].cnt });
+        }
+
+        // 현재 회원권과 일치 여부 확인
+        const [memberRows]: any = await conn.query(
+          `SELECT * FROM members WHERE member_id = ? LIMIT 1`,
+          [lp.member_id]
+        );
+        const member = memberRows[0] || null;
+        const isPass = payment.pass_type != null;
+        const isCurrentPass = isPass && member &&
+          member.product_name === lp.product_name &&
+          (member.end_date?.slice(0, 10) === lp.end_date?.slice(0, 10) || !member.end_date);
+
+        await conn.query(`DELETE FROM payments WHERE payment_id = ?`, [payment_id]);
+
+        if (isCurrentPass && member) {
           await conn.query(
             `UPDATE members
              SET status = 'EXPIRED',
@@ -141,16 +170,29 @@ export async function DELETE(req: Request) {
                  start_date = NULL,
                  end_date = NULL
              WHERE member_id = ?`,
-            [payment.member_id]
+            [lp.member_id]
           );
         }
-      );
-    } else {
-      await pool.query(`DELETE FROM payments WHERE payment_id = ?`, [payment_id]);
-    }
+      }
+    );
 
     return NextResponse.json({ success: true, message: "결제 삭제 완료" });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.message === "NOT_FOUND") {
+      return NextResponse.json({ success: false, message: "결제 내역 없음" }, { status: 404 });
+    }
+    if (error?.message === "ALREADY_CANCELLED") {
+      return NextResponse.json({ success: false, message: "이미 취소된 결제입니다." }, { status: 409 });
+    }
+    if (error?.message === "IS_REFUND") {
+      return NextResponse.json({ success: false, message: "환불 기록은 삭제할 수 없습니다." }, { status: 409 });
+    }
+    if (error?.message === "REFUND_EXISTS") {
+      return NextResponse.json({
+        success: false,
+        message: `이 결제에 환불 기록 ${error.cnt}건이 연결되어 있습니다. 환불 기록을 먼저 확인해 주세요.`,
+      }, { status: 409 });
+    }
     return NextResponse.json({ success: false, message: "결제 삭제 실패", error });
   }
 }
