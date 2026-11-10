@@ -142,20 +142,32 @@ function AttendanceCalendar({
                     {c.result === "CHECK_OUT" ? "운동 종료" : c.result === "SUCCESS" ? "출석 완료" : c.result}
                   </div>
                 </div>
-                <button
-                  className="btn secondary"
-                  style={{ fontSize: 12, padding: "4px 10px", color: "#ef4444" }}
-                  onClick={async () => {
-                    if (!confirm("이 출석 기록을 삭제할까요?")) return;
-                    const res = await apiFetch("/api/attendance/delete", {
-                      method: "POST",
-                      body: JSON.stringify({ attendance_id: c.attendance_id, member_id: memberId, pass_type: passType }),
-                    });
-                    const json = await res.json();
-                    if (json.success) onDeleted();
-                    else alert("삭제 실패");
-                  }}
-                >삭제</button>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                  {passType === "COUNT" && (
+                    <div style={{ fontSize: 10, color: "#d97706", textAlign: "right", lineHeight: 1.3 }}>
+                      횟수권 출석 취소가 일시 제한됨
+                    </div>
+                  )}
+                  <button
+                    className="btn secondary"
+                    style={{ fontSize: 12, padding: "4px 10px", color: "#ef4444" }}
+                    onClick={async () => {
+                      if (!confirm("이 출석 기록을 삭제할까요?")) return;
+                      const res = await apiFetch("/api/attendance/delete", {
+                        method: "POST",
+                        body: JSON.stringify({ attendance_id: c.attendance_id, member_id: memberId, pass_type: passType }),
+                      });
+                      const json = await res.json();
+                      if (json.success) {
+                        onDeleted();
+                      } else if (json.requiresManualReview) {
+                        alert(json.message || "차감된 이용권을 확인할 수 없어 자동 취소할 수 없습니다. 관리자 확인이 필요합니다.");
+                      } else {
+                        alert(json.message || "삭제 실패");
+                      }
+                    }}
+                  >삭제</button>
+                </div>
               </div>
             ))}
           </div>
