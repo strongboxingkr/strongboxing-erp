@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
     const [todayRows]: any = await pool.query(
       `
-      SELECT IFNULL(SUM(amount),0) total
+      SELECT IFNULL(SUM(final_amount),0) total
       FROM payments
       WHERE DATE(payment_date)=?
       ${branchCondition}
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
     const [monthRows]: any = await pool.query(
       `
-      SELECT IFNULL(SUM(amount),0) total
+      SELECT IFNULL(SUM(final_amount),0) total
       FROM payments
       WHERE DATE_FORMAT(payment_date,'%Y-%m')
       = DATE_FORMAT(CURDATE(),'%Y-%m')
@@ -43,13 +43,15 @@ export async function GET(req: Request) {
       params
     );
 
+    // 수단별·지점별 집계는 이번달 기준 (today_sales·month_sales와 동일 기간)
     const [methodRows]: any = await pool.query(
       `
       SELECT
         payment_method,
-        IFNULL(SUM(amount),0) total
+        IFNULL(SUM(final_amount),0) total
       FROM payments
-      WHERE 1=1
+      WHERE DATE_FORMAT(payment_date,'%Y-%m')
+        = DATE_FORMAT(CURDATE(),'%Y-%m')
       ${branchCondition}
       GROUP BY payment_method
       `,
@@ -60,9 +62,10 @@ export async function GET(req: Request) {
       `
       SELECT
         branch_name,
-        IFNULL(SUM(amount),0) total
+        IFNULL(SUM(final_amount),0) total
       FROM payments
-      WHERE 1=1
+      WHERE DATE_FORMAT(payment_date,'%Y-%m')
+        = DATE_FORMAT(CURDATE(),'%Y-%m')
       ${branchCondition}
       GROUP BY branch_name
       ORDER BY total DESC

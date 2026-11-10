@@ -39,9 +39,12 @@ export async function GET(req: Request) {
       "지점",
       "회원명",
       "상품명",
-      "결제금액",
+      "실결제액",
+      "정가(할인전)",
+      "환불액",
       "결제수단",
       "결제일",
+      "구분",
       "메모",
     ];
 
@@ -52,10 +55,13 @@ export async function GET(req: Request) {
           r.branch_name,
           r.name,
           r.product_name,
+          r.final_amount,
           r.amount,
+          r.refund_amount || 0,
           r.payment_method,
           r.payment_date?.toISOString?.().slice(0, 10) ||
             r.payment_date,
+          r.history_type || "",
           r.memo,
         ]
           .map(csvEscape)

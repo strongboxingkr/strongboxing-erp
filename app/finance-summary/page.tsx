@@ -120,7 +120,7 @@ export default function FinanceSummaryPage() {
               <th>회원</th>
               <th>상품</th>
               <th>수단</th>
-              <th>금액</th>
+              <th>실결제액</th>
             </tr>
           </thead>
 
@@ -133,7 +133,7 @@ export default function FinanceSummaryPage() {
                 <td>{p.product_name}</td>
                 <td>{getMethodName(p.payment_method)}</td>
                 <td style={{ color: "#2ee59d", fontWeight: 900 }}>
-                  {Number(p.amount || 0).toLocaleString()}원
+                  {Number(p.final_amount || 0).toLocaleString()}원
                 </td>
               </tr>
             ))}

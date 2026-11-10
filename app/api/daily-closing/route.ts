@@ -33,10 +33,10 @@ export async function GET(req: Request) {
     const [salesRows]: any = await pool.query(
       `
       SELECT
-        IFNULL(SUM(amount),0) total,
-        IFNULL(SUM(CASE WHEN payment_method='CARD' THEN amount END),0) card_amount,
-        IFNULL(SUM(CASE WHEN payment_method='CASH' THEN amount END),0) cash_amount,
-        IFNULL(SUM(CASE WHEN payment_method='TRANSFER' THEN amount END),0) transfer_amount
+        IFNULL(SUM(final_amount),0) total,
+        IFNULL(SUM(CASE WHEN payment_method='CARD' THEN final_amount END),0) card_amount,
+        IFNULL(SUM(CASE WHEN payment_method='CASH' THEN final_amount END),0) cash_amount,
+        IFNULL(SUM(CASE WHEN payment_method='TRANSFER' THEN final_amount END),0) transfer_amount
       FROM payments
       WHERE branch_name = ?
       AND DATE(payment_date) = ?

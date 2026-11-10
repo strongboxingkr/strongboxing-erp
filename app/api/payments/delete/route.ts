@@ -54,8 +54,10 @@ export async function DELETE(req: Request) {
         }
 
         const cancelNote = `[결제취소 ${new Date(Date.now() + 9*3600000).toISOString().slice(0,10)}]`;
+        // refund_amount = final_amount 먼저 (MySQL SET 순서: 왼쪽부터 평가),
+        // 그 다음 final_amount = 0 → 집계에서 제외, 원금은 refund_amount에 보존
         await conn.query(
-          `UPDATE payments SET refund_amount = final_amount, memo = CONCAT(COALESCE(memo,''), ' ', ?) WHERE payment_id = ?`,
+          `UPDATE payments SET refund_amount = final_amount, final_amount = 0, memo = CONCAT(COALESCE(memo,''), ' ', ?) WHERE payment_id = ?`,
           [cancelNote, payment_id]
         );
 
