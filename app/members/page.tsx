@@ -86,9 +86,16 @@ export default function MembersPage() {
     customMonths: "",
     customCount: "",
     extend_locker: false,
+    customLockerEndDate: "",
   });
 
-  const [reregForm, setReregForm] = useState({
+  const [reregForm, setReregForm] = useState<{
+    product_name: string; payment_date: string; start_date: string;
+    payment_method: string; amount: string; discount_amount: string;
+    final_amount: string; memo: string;
+    extend_locker?: boolean; locker_end_date?: string;
+    use_date?: string; end_date?: string;
+  }>({
     product_name: "",
     payment_date: today,
     start_date: today,
@@ -431,6 +438,11 @@ export default function MembersPage() {
       payment_purpose: "PASS",
     };
     if (useDate) payload.use_date = useDate;
+    // 라커 기간 연장: payments/add와 같은 트랜잭션에서 처리 (별도 API 호출 불필요)
+    if ((reregForm as any).extend_locker && endDate && extendMember.locker_no) {
+      payload.extend_locker = true;
+      payload.locker_end_date = (reregForm as any).locker_end_date || endDate;
+    }
     const res = await apiFetch("/api/payments/add", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -439,13 +451,6 @@ export default function MembersPage() {
     const data = await res.json();
 
     if (data.success) {
-      // 라커 기간 함께 연장: 회원에게 라커가 있고 선택된 경우에만
-      if ((reregForm as any).extend_locker && endDate && extendMember.locker_no) {
-        await apiFetch(`/api/members/${extendMember.member_id}/renew`, {
-          method: "POST",
-          body: JSON.stringify({ extend_locker: true, end_date: endDate }),
-        });
-      }
       alert("재등록 완료!");
       setShowExtendForm(false);
       setExtendMember(null);
@@ -475,26 +480,26 @@ export default function MembersPage() {
       nextCount += addValue;
     }
 
+    const updatePayload: any = {
+      ...extendMember,
+      end_date: nextEndDate,
+      remaining_count: nextCount,
+      status: "ACTIVE",
+    };
+    // 라커 기간 연장: members/update와 같은 트랜잭션에서 처리
+    // locker_end_date를 명시한 경우에만 lockers.end_date 갱신 (기본 미선택: 기간 유지)
+    if (extendForm.extend_locker && nextEndDate && extendMember.locker_no) {
+      updatePayload.locker_end_date = extendForm.customLockerEndDate || nextEndDate;
+    }
+
     const res = await apiFetch("/api/members/update", {
       method: "POST",
-      body: JSON.stringify({
-        ...extendMember,
-        end_date: nextEndDate,
-        remaining_count: nextCount,
-        status: "ACTIVE",
-      }),
+      body: JSON.stringify(updatePayload),
     });
 
     const data = await res.json();
 
     if (data.success) {
-      // 기간 연장 시 라커 함께 연장: 회원에게 라커가 있고 선택한 경우에만
-      if (extendForm.extend_locker && nextEndDate && extendMember.locker_no) {
-        await apiFetch(`/api/members/${extendMember.member_id}/renew`, {
-          method: "POST",
-          body: JSON.stringify({ extend_locker: true, end_date: nextEndDate }),
-        });
-      }
       const extendedMonths = extendMember.pass_type === "PERIOD"
         ? (extendForm.customMonths ? Number(extendForm.customMonths) : extendForm.months)
         : null;
@@ -1080,7 +1085,12 @@ ${
             <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--card-bg, #1a1a2e)", borderRadius: 10, border: "1px solid var(--border)" }}>
               <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
                 현재 락커: <strong>{extendMember.locker_no}</strong>
-                {extendMember.end_date && <span style={{ marginLeft: 8, color: "var(--muted)" }}>종료일: {extendMember.end_date.slice(0, 10)}</span>}
+                {extendMember.locker_end_date
+                  ? <span style={{ marginLeft: 8 }}>락커 종료일: {String(extendMember.locker_end_date).slice(0, 10)}</span>
+                  : extendMember.end_date
+                    ? <span style={{ marginLeft: 8, color: "var(--muted)" }}>회원권 종료일: {extendMember.end_date.slice(0, 10)}</span>
+                    : null
+                }
               </div>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
                 <input
@@ -1088,8 +1098,28 @@ ${
                   checked={!!(reregForm as any).extend_locker}
                   onChange={(e) => setReregForm({ ...reregForm, extend_locker: e.target.checked } as any)}
                 />
-                락커 기간도 회원권 종료일에 맞춰 연장
+                락커 기간도 함께 연장
               </label>
+              {(reregForm as any).extend_locker && (() => {
+                const selProd = products.find((p: any) => p.option_name === reregForm.product_name);
+                const durationMonths = Number(selProd?.duration_months || 0);
+                const startDate = (reregForm as any).start_date || reregForm.payment_date;
+                const computedEnd = durationMonths > 0 ? addMonths(startDate, durationMonths) : (reregForm as any).end_date || "";
+                const displayEnd = (reregForm as any).locker_end_date || computedEnd;
+                return (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
+                      락커 종료일 <span style={{ color: "#f97316" }}>(변경 후: {displayEnd || "미정"})</span>
+                    </div>
+                    <input
+                      className="input"
+                      type="date"
+                      value={displayEnd}
+                      onChange={(e) => setReregForm({ ...reregForm, locker_end_date: e.target.value } as any)}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -15,8 +15,10 @@ export async function GET(req: Request) {
 
     let sql = `
       SELECT m.*,
-        (SELECT COUNT(*) FROM payments p WHERE p.member_id = m.member_id AND p.final_amount > 0) AS payment_count
+        (SELECT COUNT(*) FROM payments p WHERE p.member_id = m.member_id AND p.final_amount > 0) AS payment_count,
+        l.end_date AS locker_end_date
       FROM members m
+      LEFT JOIN lockers l ON l.branch_name = m.branch_name AND l.locker_no = m.locker_no AND l.member_id = m.member_id
       WHERE 1=1
     `;
 

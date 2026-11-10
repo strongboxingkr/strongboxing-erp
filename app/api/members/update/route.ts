@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       status,
       memo,
       locker_no,
+      locker_end_date, // 명시된 경우에만 lockers.end_date 갱신; 생략 시 기존 종료일 유지
       member_no,
       gender,
       birth_date,
@@ -37,6 +38,8 @@ export async function POST(req: Request) {
       has_uniform,
       has_locker,
     } = body;
+    // locker_end_date가 요청 body에 명시됐는지 여부 (undefined/null 구분)
+    const hasLockerEndDate = Object.prototype.hasOwnProperty.call(body, "locker_end_date");
 
     if (!member_id) {
       return NextResponse.json({
@@ -123,7 +126,8 @@ export async function POST(req: Request) {
           ]
         );
 
-        // 락커번호 변경 시 lockers 테이블 동기화 (동일 트랜잭션 — 원자성 보장)
+        // 락커 테이블 동기화 (동일 트랜잭션)
+        // locker_end_date를 명시한 경우에만 종료일 갱신 — 이름·메모 등 일반 정보 수정 시 락커 기간 유지
         if (finalLockerNo) {
           // 중복 배정 방지: 대상 락커가 다른 회원에게 배정돼 있으면 거부
           const [occupied]: any = await conn.query(
@@ -133,28 +137,54 @@ export async function POST(req: Request) {
           if (occupied.length > 0) {
             throw new Error("LOCKER_OCCUPIED");
           }
-          // 이전 락커 해제
+          // 이전 락커 해제: lockers.member_id가 현재 회원인 경우에만 해제
+          // 불일치(다른 회원 배정) 상태면 건드리지 않음
           if (oldMember.locker_no && oldMember.locker_no !== finalLockerNo) {
+            const [prevLock]: any = await conn.query(
+              `SELECT member_id FROM lockers WHERE branch_name=? AND locker_no=? FOR UPDATE`,
+              [finalBranch, oldMember.locker_no]
+            );
+            if (prevLock.length > 0 && String(prevLock[0].member_id) === String(member_id)) {
+              await conn.query(
+                `UPDATE lockers SET member_id=NULL,member_name=NULL,gender=NULL,start_date=NULL,end_date=NULL
+                 WHERE branch_name=? AND locker_no=? AND member_id=?`,
+                [finalBranch, oldMember.locker_no, member_id]
+              );
+            }
+          }
+          // 새 락커 배정: locker_end_date 명시 여부에 따라 end_date 갱신 여부 결정
+          if (hasLockerEndDate) {
+            await conn.query(
+              `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
+               VALUES (?,'A',?,?,?,?,?,?)
+               ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
+                 gender=VALUES(gender),start_date=VALUES(start_date),end_date=VALUES(end_date)`,
+              [finalBranch, finalLockerNo, member_id, finalName, finalGender, finalStartDate, locker_end_date || null]
+            );
+          } else {
+            // end_date 갱신 없이 식별 정보만 갱신 (기존 락커 종료일 유지)
+            await conn.query(
+              `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
+               VALUES (?,'A',?,?,?,?,?,NULL)
+               ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
+                 gender=VALUES(gender),start_date=VALUES(start_date)`,
+              [finalBranch, finalLockerNo, member_id, finalName, finalGender, finalStartDate]
+            );
+          }
+        } else if (oldMember.locker_no && locker_no === null) {
+          // 명시적 락커 반납: 불일치 가드 적용
+          const [prevLock]: any = await conn.query(
+            `SELECT member_id FROM lockers WHERE branch_name=? AND locker_no=? FOR UPDATE`,
+            [finalBranch, oldMember.locker_no]
+          );
+          if (prevLock.length > 0 && String(prevLock[0].member_id) === String(member_id)) {
             await conn.query(
               `UPDATE lockers SET member_id=NULL,member_name=NULL,gender=NULL,start_date=NULL,end_date=NULL
                WHERE branch_name=? AND locker_no=? AND member_id=?`,
               [finalBranch, oldMember.locker_no, member_id]
             );
           }
-          // 새 락커 배정
-          await conn.query(
-            `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
-             VALUES (?,'A',?,?,?,?,?,?)
-             ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
-               gender=VALUES(gender),start_date=VALUES(start_date),end_date=VALUES(end_date)`,
-            [finalBranch, finalLockerNo, member_id, finalName, finalGender, finalStartDate, finalEndDate]
-          );
-        } else if (oldMember.locker_no && locker_no === null) {
-          await conn.query(
-            `UPDATE lockers SET member_id=NULL,member_name=NULL,gender=NULL,start_date=NULL,end_date=NULL
-             WHERE branch_name=? AND locker_no=? AND member_id=?`,
-            [finalBranch, oldMember.locker_no, member_id]
-          );
+          // 불일치(lockers.member_id != member_id): lockers는 그대로, members.locker_no만 null로 변경됨
         }
 
         await conn.query(

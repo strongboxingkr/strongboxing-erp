@@ -82,79 +82,55 @@ export async function POST(req: Request) {
 
     const finalMemberNo = member_no || String(noRows[0].next_member_no);
 
-    const [result]: any = await pool.query(
-      `
-      INSERT INTO members (
-        branch_name,
-        name,
-        phone,
-        emergency_contact,
-        checkin_code,
-        product_name,
-        pass_type,
-        remaining_count,
-        start_date,
-        end_date,
-        status,
-        memo,
-        locker_no,
-        member_no,
-        gender,
-        birth_date,
-        address,
-        join_date,
-        staff_name,
-        checkin_sms_enabled,
-        checkout_sms_enabled,
-        has_uniform,
-        has_locker
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        branch_name,
-        name,
-        phone,
-        emergency_contact || null,
-        checkin_code,
-        product_name || null,
-        pass_type || "PERIOD",
-        remaining_count || 0,
-        start_date || null,
-        end_date || null,
-        memo || "",
-        locker_no || null,
-        finalMemberNo,
-        gender || null,
-        birth_date || null,
-        address || null,
-        join_date || start_date || null,
-        staff_name || null,
-        checkin_sms_enabled || 0,
-        checkout_sms_enabled || 0,
-        has_uniform || 0,
-        has_locker || 0,
-      ]
-    );
+    const conn = await (pool as any).getConnection();
+    let memberId: number;
 
-    const memberId = result.insertId;
+    try {
+      await conn.beginTransaction();
 
-    // 라커 배정: locker_no 있으면 lockers 테이블도 동기화 (members 테이블과 일치 보장)
-    if (locker_no) {
-      await pool.query(
-        `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date)
-         VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-           member_id = VALUES(member_id),
-           member_name = VALUES(member_name),
-           gender = VALUES(gender),
-           start_date = VALUES(start_date),
-           end_date = VALUES(end_date)`,
-        [branch_name, locker_no, memberId, name, gender || null, start_date || null, end_date || null]
+      // 라커 중복 배정 방지: 대상 라커가 다른 회원에게 배정돼 있으면 거부
+      if (locker_no) {
+        const [occupied]: any = await conn.query(
+          `SELECT member_id FROM lockers WHERE branch_name=? AND locker_no=? AND member_id IS NOT NULL FOR UPDATE`,
+          [branch_name, locker_no]
+        );
+        if (occupied.length > 0) {
+          await conn.rollback();
+          return NextResponse.json({ success: false, message: "해당 락커는 이미 다른 회원에게 배정되어 있습니다." });
+        }
+      }
+
+      const [result]: any = await conn.query(
+        `INSERT INTO members (
+          branch_name, name, phone, emergency_contact, checkin_code, product_name, pass_type,
+          remaining_count, start_date, end_date, status, memo, locker_no, member_no, gender,
+          birth_date, address, join_date, staff_name, checkin_sms_enabled, checkout_sms_enabled,
+          has_uniform, has_locker
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          branch_name, name, phone, emergency_contact || null, checkin_code,
+          product_name || null, pass_type || "PERIOD", remaining_count || 0,
+          start_date || null, end_date || null, memo || "", locker_no || null,
+          finalMemberNo, gender || null, birth_date || null, address || null,
+          join_date || start_date || null, staff_name || null,
+          checkin_sms_enabled || 0, checkout_sms_enabled || 0, has_uniform || 0, has_locker || 0,
+        ]
       );
-    }
 
-    await pool.query(
+      memberId = result.insertId;
+
+      // 라커 배정: lockers 테이블도 같은 트랜잭션에서 동기화
+      if (locker_no) {
+        await conn.query(
+          `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date)
+           VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE member_id=VALUES(member_id), member_name=VALUES(member_name),
+             gender=VALUES(gender), start_date=VALUES(start_date), end_date=VALUES(end_date)`,
+          [branch_name, locker_no, memberId, name, gender || null, start_date || null, end_date || null]
+        );
+      }
+
+      await conn.query(
       `
       INSERT INTO member_histories (
         member_id,
@@ -182,13 +158,21 @@ export async function POST(req: Request) {
       ]
     );
 
+      await conn.commit();
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
+
     return NextResponse.json({
       success: true,
       message: "회원 등록 완료",
-      member_id: memberId,
+      member_id: memberId!,
       member_no: finalMemberNo,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
 
     return NextResponse.json({

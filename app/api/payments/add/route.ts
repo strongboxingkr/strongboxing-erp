@@ -36,6 +36,8 @@ export async function POST(req: Request) {
       final_amount,
       memo,
       idempotency_key, // 클라이언트 발급 UUID (선택)
+      extend_locker,   // true: 라커 종료일을 회원권 종료일에 맞춰 갱신 (회원에게 라커가 있을 때만)
+      locker_end_date, // 별도 라커 종료일 지정 시 사용; 없으면 계산된 end_date 사용
     } = body;
 
     if (!member_id) {
@@ -313,6 +315,27 @@ export async function POST(req: Request) {
            WHERE member_id = ?`,
           [product_name, pass_type, remaining_count, start_date, end_date, member_id]
         );
+
+        // 라커 기간 연장: extend_locker=true 이고 회원에게 라커가 있을 때만
+        // 임의 배정·이용료 임의 생성 없음; 종료일만 갱신
+        if (extend_locker && memberRows[0].locker_no) {
+          const targetLockerEndDate = locker_end_date || end_date;
+          await conn.query(
+            `UPDATE lockers SET end_date = ?
+             WHERE branch_name = ? AND member_id = ? AND locker_no = ?`,
+            [targetLockerEndDate, memberRows[0].branch_name || branch_name, member_id, memberRows[0].locker_no]
+          );
+          await conn.query(
+            `INSERT INTO member_histories (member_id, member_name, action_type, action_memo, old_value, new_value, created_by)
+             VALUES (?, ?, 'LOCKER_EXTEND', ?, ?, ?, ?)`,
+            [
+              member_id, memberRows[0].name, "라커 기간 연장(재등록)",
+              JSON.stringify({ locker_no: memberRows[0].locker_no, old_end_date: memberRows[0].end_date }),
+              JSON.stringify({ locker_no: memberRows[0].locker_no, new_end_date: targetLockerEndDate }),
+              "직원",
+            ]
+          );
+        }
       }
     );
 
