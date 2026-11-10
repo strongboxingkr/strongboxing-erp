@@ -32,6 +32,8 @@ export async function GET(req: Request) {
       FROM payments p
       WHERE YEAR(p.payment_date) = ?
         AND MONTH(p.payment_date) = ?
+        AND p.final_amount > 0
+        AND (p.status IS NULL OR p.status != 'CANCELLED')
         ${branchWhere}
       GROUP BY sale_date
       ORDER BY sale_date DESC
