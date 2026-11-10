@@ -330,17 +330,25 @@ console.log("\n■ 12. daily_closings 과거 데이터");
   console.log("  ℹ️  아래 SQL로 미래 불일치 모니터링 가능 (읽기 전용):");
   console.log(`
     -- mysql -u root -p strongboxing
+    -- payments를 먼저 집계(서브쿼리) 후 daily_closings에 LEFT JOIN
+    -- → ONLY_FULL_GROUP_BY 오류 없음
     SELECT
       dc.branch_name,
       dc.closing_date,
       dc.sales_amount AS saved_amount,
-      IFNULL(SUM(p.final_amount), 0) AS actual_final,
-      dc.sales_amount - IFNULL(SUM(p.final_amount), 0) AS diff
+      IFNULL(p_agg.actual_final, 0) AS actual_final,
+      dc.sales_amount - IFNULL(p_agg.actual_final, 0) AS diff
     FROM daily_closings dc
-    LEFT JOIN payments p
-      ON p.branch_name = dc.branch_name
-      AND DATE(p.payment_date) = dc.closing_date
-    GROUP BY dc.branch_name, dc.closing_date
+    LEFT JOIN (
+      SELECT
+        branch_name,
+        DATE(payment_date) AS pay_date,
+        SUM(final_amount) AS actual_final
+      FROM payments
+      GROUP BY branch_name, DATE(payment_date)
+    ) p_agg
+      ON p_agg.branch_name = dc.branch_name
+      AND p_agg.pay_date = dc.closing_date
     HAVING diff != 0
     ORDER BY dc.closing_date DESC;
   `);
