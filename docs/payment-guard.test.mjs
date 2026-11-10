@@ -44,7 +44,7 @@ try {
 }
 
 const req = createRequire(import.meta.url);
-const { lockPaymentForEdit, paymentGuardErrorResponse } = req(
+const { lockPaymentForEdit, paymentGuardErrorResponse, resolveGuestIdempotencyConflict } = req(
   path.join(tmpDir, "payment-guard.js")
 );
 
@@ -235,6 +235,67 @@ assert("GUARD", "키 없음 → NO_KEY",
 assert("GUARD", "키 있고 기존 없음 → NEW",
   checkIdempotency(null, { member_id: 10, amount: 50000, product_name: "3개월권", idempotency_key: "k1" }),
   "NEW");
+
+// ── 섹션 8: resolveGuestIdempotencyConflict (UNIQUE 충돌 처리) ─────────────
+console.log("\n── 섹션 8: resolveGuestIdempotencyConflict (UNIQUE 충돌 처리) ──");
+
+{
+  const existing = { payment_id: 101, final_amount: 30000, product_name: "일일권", branch_name: "강남" };
+
+  assert("IDEM", "동일 지점·동일 내용 → IDEMPOTENT",
+    resolveGuestIdempotencyConflict(existing, { final_amount: 30000, product_name: "일일권", branch_name: "강남" }),
+    "IDEMPOTENT");
+
+  assert("IDEM", "동일 지점·다른 금액 → CONFLICT",
+    resolveGuestIdempotencyConflict(existing, { final_amount: 50000, product_name: "일일권", branch_name: "강남" }),
+    "CONFLICT");
+
+  assert("IDEM", "동일 지점·다른 상품 → CONFLICT",
+    resolveGuestIdempotencyConflict(existing, { final_amount: 30000, product_name: "3개월권", branch_name: "강남" }),
+    "CONFLICT");
+
+  assert("IDEM", "다른 지점 → BRANCH_MISMATCH (다른 지점 결제 노출 금지)",
+    resolveGuestIdempotencyConflict(existing, { final_amount: 30000, product_name: "일일권", branch_name: "서초" }),
+    "BRANCH_MISMATCH");
+
+  assert("IDEM", "null 상품 동일하면 IDEMPOTENT",
+    resolveGuestIdempotencyConflict({ ...existing, product_name: null }, { final_amount: 30000, product_name: null, branch_name: "강남" }),
+    "IDEMPOTENT");
+
+  assert("IDEM", "null vs 빈 문자열 → 둘 다 null 처리로 IDEMPOTENT",
+    resolveGuestIdempotencyConflict({ ...existing, product_name: null }, { final_amount: 30000, product_name: "", branch_name: "강남" }),
+    "IDEMPOTENT");
+}
+
+// ── 섹션 9: 응답 유실 상태 머신 (guestPending 로직) ────────────────────────
+console.log("\n── 섹션 9: 응답 유실 상태 머신 ──");
+
+function simulateGuestSubmit({ httpStatus, throws }) {
+  // payments/page.tsx submit 로직과 동일한 상태 판정:
+  // throws → "uncertain", status >= 500 → "uncertain", 2xx → "success", 4xx → "failure"
+  if (throws) return "uncertain";
+  if (httpStatus >= 500) return "uncertain";
+  if (httpStatus >= 200 && httpStatus < 300) return "success";
+  return "failure";
+}
+
+assert("LOST", "네트워크 오류(throws) → uncertain",
+  simulateGuestSubmit({ httpStatus: 0, throws: true }), "uncertain");
+
+assert("LOST", "5xx 서버 오류 → uncertain",
+  simulateGuestSubmit({ httpStatus: 500, throws: false }), "uncertain");
+
+assert("LOST", "503 서버 오류 → uncertain",
+  simulateGuestSubmit({ httpStatus: 503, throws: false }), "uncertain");
+
+assert("LOST", "2xx 성공 → success (pending 초기화)",
+  simulateGuestSubmit({ httpStatus: 200, throws: false }), "success");
+
+assert("LOST", "409 충돌 → failure (서버가 명확히 거부, pending 불필요)",
+  simulateGuestSubmit({ httpStatus: 409, throws: false }), "failure");
+
+assert("LOST", "400 잘못된 요청 → failure",
+  simulateGuestSubmit({ httpStatus: 400, throws: false }), "failure");
 
 // ── 최종 결과 ─────────────────────────────────────────────────────────────
 console.log(`\n──────────────────────────────────────────`);

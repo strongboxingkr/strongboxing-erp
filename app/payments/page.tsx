@@ -27,10 +27,17 @@ export default function PaymentsPage() {
   const [guestForm, setGuestForm] = useState({ branch_name: "", product_name: "", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" });
   const [submitting, setSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
-  // 요청을 보냈으나 응답 유실 가능성이 있는 상태 (네트워크 오류 등)
-  // 이 상태에서 결제 내용을 변경하면 중복 등록 위험을 경고한다
-  const [possibleLostRequest, setPossibleLostRequest] = useState(false);
   const [guestIdempotencyKey, setGuestIdempotencyKey] = useState(() => crypto.randomUUID());
+  // 응답 유실 가드: 전송했으나 처리 여부 불명확한 비회원 결제 (네트워크 오류 / 5xx)
+  // sessionStorage로 모달 닫아도 유지; 성공·4xx 확정 시 null로 초기화
+  const GUEST_PENDING_SK = "sbxg_guest_pending";
+  const [guestPending, setGuestPendingRaw] = useState<{ key: string; product_name: string; final_amount: string; branch_name: string } | null>(() => {
+    try { const s = sessionStorage.getItem("sbxg_guest_pending"); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const setGuestPending = (val: { key: string; product_name: string; final_amount: string; branch_name: string } | null) => {
+    setGuestPendingRaw(val);
+    try { if (val) sessionStorage.setItem(GUEST_PENDING_SK, JSON.stringify(val)); else sessionStorage.removeItem(GUEST_PENDING_SK); } catch {}
+  };
 
   const [branch, setBranch] = useState("전체");
   const [memberSearch, setMemberSearch] = useState("");
@@ -257,7 +264,17 @@ export default function PaymentsPage() {
             </select>
           )}
           <button onClick={loadPayments} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
-          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" }); setGuestIdempotencyKey(crypto.randomUUID()); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
+          <button onClick={() => {
+            const initForm = { branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" };
+            if (guestPending) {
+              setGuestForm({ ...initForm, branch_name: guestPending.branch_name, product_name: guestPending.product_name, final_amount: guestPending.final_amount });
+              setGuestIdempotencyKey(guestPending.key);
+            } else {
+              setGuestForm(initForm);
+              setGuestIdempotencyKey(crypto.randomUUID());
+            }
+            setGuestModal(true);
+          }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: guestPending ? "#D97706" : "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>{guestPending ? "⚠ 비회원 결제" : "비회원 결제"}</button>
           <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
         </div>
       </div>
@@ -384,21 +401,29 @@ export default function PaymentsPage() {
               <button onClick={() => setGuestModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
             </div>
             <div style={{ display: "grid", gap: 12 }}>
+              {guestPending && (
+                <div style={{ background: "#FEF3C7", border: "1px solid #F59E0B", borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontWeight: 700, color: "#92400E", marginBottom: 4 }}>⚠ 이전 요청 결과가 불명확합니다</div>
+                  <div style={{ fontSize: 13, color: "#78350F", marginBottom: 10 }}>처리 여부를 확인할 수 없습니다. 결제 내역에서 직접 확인하거나 같은 내용으로 재시도하세요. 상품·금액 변경은 먼저 &ldquo;새 결제&rdquo;를 눌러주세요.</div>
+                  <button className="btn secondary" style={{ fontSize: 13, width: "100%" }} onClick={() => { setGuestPending(null); setGuestIdempotencyKey(crypto.randomUUID()); }}>새 결제로 시작 (이전 요청 포기)</button>
+                </div>
+              )}
               {isAdminOrOwner && (
-                <select className="input" value={guestForm.branch_name} onChange={e => setGuestForm({ ...guestForm, branch_name: e.target.value })}>
+                <select className="input" value={guestForm.branch_name} onChange={e => setGuestForm({ ...guestForm, branch_name: e.target.value })} disabled={!!guestPending}>
                   <option value="">지점 선택</option>
                   {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
                 </select>
               )}
               <select className="input" value={guestForm.product_name} onChange={e => {
+                if (guestPending) return;
                 const p = products.find((p: any) => p.option_name === e.target.value);
                 setGuestForm({ ...guestForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : guestForm.final_amount });
                 setGuestIdempotencyKey(crypto.randomUUID());
-              }}>
+              }} disabled={!!guestPending}>
                 <option value="">상품 선택</option>
                 {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
               </select>
-              <input className="input" type="number" placeholder="결제금액" value={guestForm.final_amount} onChange={e => { setGuestForm({ ...guestForm, final_amount: e.target.value }); setGuestIdempotencyKey(crypto.randomUUID()); }} />
+              <input className="input" type="number" placeholder="결제금액" value={guestForm.final_amount} onChange={e => { if (guestPending) return; setGuestForm({ ...guestForm, final_amount: e.target.value }); setGuestIdempotencyKey(crypto.randomUUID()); }} disabled={!!guestPending} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {(["CARD", "CASH", "TRANSFER"] as const).map(m => (
                   <button key={m} className={guestForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setGuestForm({ ...guestForm, payment_method: m })}>{METHOD_LABEL[m]}</button>
@@ -421,6 +446,8 @@ export default function PaymentsPage() {
                 if (!branchToUse) return alert("지점을 선택해주세요.");
                 if (!guestForm.product_name) return alert("상품을 선택해주세요.");
                 if (!guestForm.final_amount) return alert("금액을 입력해주세요.");
+                const submitKey = guestIdempotencyKey;
+                const submitBranch = branchToUse;
                 setSubmitting(true);
                 try {
                   const res = await apiFetch("/api/payments/add-guest", {
@@ -429,21 +456,35 @@ export default function PaymentsPage() {
                       ...guestForm,
                       branch_name: branchToUse,
                       final_amount: Number(guestForm.final_amount),
-                      idempotency_key: guestIdempotencyKey,
+                      idempotency_key: submitKey,
                       ...(guestIsDailyProduct ? { use_date: guestForm.use_date, guest_name: guestForm.guest_name, guest_phone: guestForm.guest_phone } : {}),
                     }),
                   });
+                  if (res.status >= 500) {
+                    // 서버 오류: 처리 여부 불명확 → pending 유지
+                    setGuestPending({ key: submitKey, product_name: guestForm.product_name, final_amount: guestForm.final_amount, branch_name: submitBranch });
+                    alert("서버 오류가 발생했습니다. 결제가 처리됐을 수 있으니 결제 내역을 확인하거나 같은 내용으로 재시도해 주세요.");
+                    return;
+                  }
                   const json = await res.json();
                   if (json.success) {
+                    setGuestPending(null); // 확정 성공 → 초기화
                     alert("결제 등록 완료");
                     setGuestIdempotencyKey(crypto.randomUUID());
                     setGuestModal(false);
                     loadPayments();
-                  } else alert(json.message || "결제 실패");
+                  } else {
+                    // 4xx: 서버가 명확히 거부 → 확정 실패, pending 불필요
+                    alert(json.message || "결제 실패");
+                  }
+                } catch {
+                  // 네트워크 오류: 처리 여부 불명확 → pending 보관
+                  setGuestPending({ key: submitKey, product_name: guestForm.product_name, final_amount: guestForm.final_amount, branch_name: submitBranch });
+                  alert("네트워크 오류가 발생했습니다. 결제가 처리됐을 수 있으니 결제 내역을 확인하거나 같은 내용으로 재시도해 주세요.");
                 } finally {
                   setSubmitting(false);
                 }
-              }}>{submitting ? "처리 중..." : "결제 등록"}</button>
+              }}>{submitting ? "처리 중..." : guestPending ? "같은 내용으로 재시도" : "결제 등록"}</button>
             </div>
           </div>
         </div>

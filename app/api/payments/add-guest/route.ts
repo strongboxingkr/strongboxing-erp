@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
+import { resolveGuestIdempotencyConflict } from "@/lib/payment-guard";
 
 export async function POST(req: Request) {
   const user = await getUserFromRequest(req);
@@ -60,24 +61,44 @@ export async function POST(req: Request) {
     const payDate = payment_date || kstToday;
     const useDate = use_date_input ? String(use_date_input).slice(0, 10) : kstToday;
 
-    if (isDailyPass) {
-      // 비회원 일일권: 결제 기록만 저장 (입장코드·출석 처리 없음)
+    try {
+      if (isDailyPass) {
+        // 비회원 일일권: 결제 기록만 저장 (입장코드·출석 처리 없음)
+        const [result]: any = await pool.query(
+          `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
+           VALUES (NULL, ?, ?, ?, ?, 'DAILY', 1, ?, NULL, ?, 0, 0, ?, ?, ?)`,
+          [branch_name, payDate, payment_method || "CARD", product_name, useDate, final_amount, final_amount, memo || "비회원 일일권", idempotency_key || null]
+        );
+        return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료", payment_id: result.insertId });
+      }
+
+      // 일반 비회원 결제 (non-DAILY)
       const [result]: any = await pool.query(
-        `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
-         VALUES (NULL, ?, ?, ?, ?, 'DAILY', 1, ?, NULL, ?, 0, 0, ?, ?, ?)`,
-        [branch_name, payDate, payment_method || "CARD", product_name, useDate, final_amount, final_amount, memo || "비회원 일일권", idempotency_key || null]
+        `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
+         VALUES (NULL, ?, ?, ?, ?, 'PERIOD', ?, 0, 0, ?, ?, ?)`,
+        [branch_name, payDate, payment_method || "CARD", product_name, final_amount, final_amount, memo || "비회원", idempotency_key || null]
       );
-      return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료", payment_id: result.insertId });
+      return NextResponse.json({ success: true, message: "비회원 결제 등록 완료", payment_id: result.insertId });
+    } catch (insertError: any) {
+      // UNIQUE 충돌(동시 요청 경쟁): idempotency_key로 기존 결과 조회
+      if ((insertError.code === "ER_DUP_ENTRY" || insertError.errno === 1062) && idempotency_key) {
+        const [dupeRows]: any = await pool.query(
+          `SELECT payment_id, final_amount, product_name, branch_name FROM payments WHERE idempotency_key = ? LIMIT 1`,
+          [idempotency_key]
+        );
+        if (dupeRows.length > 0) {
+          const verdict = resolveGuestIdempotencyConflict(dupeRows[0], { final_amount, product_name, branch_name: branch_name || "" });
+          if (verdict === "BRANCH_MISMATCH") {
+            return NextResponse.json({ success: false, message: "결제 등록 실패" }, { status: 500 });
+          }
+          if (verdict === "CONFLICT") {
+            return NextResponse.json({ success: false, message: "동일한 idempotency_key로 다른 결제 내용이 이미 처리됐습니다." }, { status: 409 });
+          }
+          return NextResponse.json({ success: true, message: "결제 완료 (중복 요청 — 기존 결과 반환)", payment_id: dupeRows[0].payment_id, idempotent: true });
+        }
+      }
+      throw insertError;
     }
-
-    // 일반 비회원 결제 (non-DAILY)
-    const [result]: any = await pool.query(
-      `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
-       VALUES (NULL, ?, ?, ?, ?, 'PERIOD', ?, 0, 0, ?, ?, ?)`,
-      [branch_name, payDate, payment_method || "CARD", product_name, final_amount, final_amount, memo || "비회원", idempotency_key || null]
-    );
-
-    return NextResponse.json({ success: true, message: "비회원 결제 등록 완료", payment_id: result.insertId });
   } catch (error) {
     return NextResponse.json({ success: false, message: "결제 등록 실패", error });
   }

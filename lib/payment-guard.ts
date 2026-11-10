@@ -27,6 +27,21 @@ export async function lockPaymentForEdit(conn: any, paymentId: number | string) 
   return p;
 }
 
+/**
+ * add-guest INSERT UNIQUE 충돌(ER_DUP_ENTRY) 발생 시 기존 행과 현재 요청 비교.
+ * 반환: "IDEMPOTENT" | "CONFLICT" | "BRANCH_MISMATCH"
+ */
+export function resolveGuestIdempotencyConflict(
+  existing: { payment_id: number; final_amount: number | string; product_name: string | null; branch_name: string },
+  incoming: { final_amount: number | string; product_name: string | null; branch_name: string }
+): "IDEMPOTENT" | "CONFLICT" | "BRANCH_MISMATCH" {
+  if (existing.branch_name !== incoming.branch_name) return "BRANCH_MISMATCH";
+  const contentMismatch =
+    Number(existing.final_amount) !== Number(incoming.final_amount) ||
+    (existing.product_name || null) !== (incoming.product_name || null);
+  return contentMismatch ? "CONFLICT" : "IDEMPOTENT";
+}
+
 export function paymentGuardErrorResponse(error: any): { status: number; body: object } | null {
   if (error?.message === "PAYMENT_NOT_FOUND") {
     return { status: 404, body: { success: false, message: "결제 없음" } };
