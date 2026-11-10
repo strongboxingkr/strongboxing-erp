@@ -95,15 +95,30 @@ echo "빌드 종료 코드: $?"
 ```bash
 # .next 디렉토리가 생성됐는지 확인
 ls -la $RELEASE_DIR/.next/BUILD_ID
+```
 
-# 운영 폴더에 새 코드 적용 (서비스 중단 없이 파일 덮어쓰기)
-rsync -a --exclude='.env.local' --exclude='node_modules/.cache' \
+> **rsync는 무중단이 아니다.** 파일 전환 중 요청이 들어오면 일부 파일은 구버전, 일부는 신버전인 혼재 상태가 생긴다. `pm2 restart`로 재시작하면 짧은 중단(수 초)이 발생한다. 트래픽이 적은 시간에 진행할 것.
+
+```bash
+# 보존해야 할 경로를 절대 덮어쓰지 않도록 --exclude 명시
+rsync -a \
+  --exclude='.env.local' \
+  --exclude='public/uploads/' \
+  --exclude='node_modules/.cache' \
   $RELEASE_DIR/ /home/ubuntu/strongboxing-erp/
 
-# 재시작
+# 재시작 (짧은 중단 발생)
 pm2 restart strongboxing-erp
 pm2 save
 ```
+
+**rsync --exclude 항목 설명:**
+
+| 경로 | 이유 |
+|------|------|
+| `.env.local` | DB 접속 정보·API 키 등 운영 환경 변수. 릴리스 폴더에는 존재하지 않으므로 덮어쓰기 위험은 없으나 명시적으로 보호. |
+| `public/uploads/` | `/api/member-files/upload`가 운영 중 `public/uploads/member-files/`에 파일을 저장함. 릴리스 폴더에는 이 파일들이 없으므로 rsync 시 삭제·초기화됨. **반드시 제외.** |
+| `node_modules/.cache` | 빌드 캐시. 불필요하게 덮어쓰지 않음. |
 
 ### Step 4 — 동작 확인
 
@@ -132,7 +147,10 @@ if [ ! -d $PREV_DIR ]; then
   npm ci && npm run build
 fi
 
-rsync -a --exclude='.env.local' --exclude='node_modules/.cache' \
+rsync -a \
+  --exclude='.env.local' \
+  --exclude='public/uploads/' \
+  --exclude='node_modules/.cache' \
   $PREV_DIR/ /home/ubuntu/strongboxing-erp/
 
 pm2 restart strongboxing-erp && pm2 save
@@ -159,5 +177,40 @@ pm2 restart strongboxing-erp && pm2 save
 
 ## 남은 배포 차단 사유
 
-1. **빌드 성공 여부 미확인** — 로컬(Node 24, Windows)에서 `NODE_OPTIONS` 싱글쿼트 문제로 빌드 불가. 운영 서버(Ubuntu bash)에서는 정상 동작 예상이나 실제 빌드 실행으로 확인 필요.
-2. **DB 컬럼·테이블 확인** — 위 사전 확인 절차의 `SHOW COLUMNS/TABLES` 실행 결과 확인.
+### 1. 빌드
+
+`package.json scripts.build`에 `--webpack` 고정 완료.  
+로컬(Windows) webpack 빌드 **성공 확인**. 운영 서버에서도 `npm run build`가 성공하는지 확인:
+
+```bash
+ssh ubuntu@<서버>
+cd /home/ubuntu
+git clone strongboxing-erp erp-release-test && cd erp-release-test
+npm ci && npm run build
+# 성공하면 삭제
+cd .. && rm -rf erp-release-test
+```
+
+### 2. DB 컬럼·테이블 확인 (직접 실행)
+
+```bash
+mysql -u root -p strongboxing -e "
+  SHOW COLUMNS FROM members LIKE 'checkin_code';
+  SHOW COLUMNS FROM members LIKE 'pass_type';
+  SHOW COLUMNS FROM payments LIKE 'pass_type';
+  SHOW COLUMNS FROM payments LIKE 'history_type';
+  SHOW TABLES LIKE 'day_passes';
+  SHOW TABLES LIKE 'kiosk_devices';
+  SHOW TABLES LIKE 'member_holds';
+  SHOW TABLES LIKE 'member_histories';
+  SHOW TABLES LIKE 'member_files';
+"
+```
+
+모든 항목이 행을 반환해야 한다. 비어 있는 항목이 있으면 해당 기능이 오류를 낸다.
+
+### 3. PM2 프로세스명 확인
+
+```bash
+pm2 describe strongboxing-erp
+```
