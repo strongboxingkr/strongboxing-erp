@@ -62,6 +62,21 @@ UPDATE settings_options SET option_value = 'DAILY' WHERE option_id IN (30, 31);
 
 ---
 
+## 일일권 흐름 검증 현황
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| 일일권 저장(payments + day_passes INSERT) | ✅ 운영 확인 | 운영에서 직접 확인 |
+| 일일권 체크인(PENDING → USED) | ✅ 운영 확인 | 운영에서 직접 확인 |
+| day-passes 조회 API | ✅ mock 통과 | DB 미검증 |
+| day-passes 취소 API(지점 권한 포함) | ✅ mock 통과 | DB 미검증 |
+| DAILY 출석 취소 → day_pass PENDING 복원 | ✅ mock 통과 | DB 미검증, 운영 테스트 미실시 |
+| DAILY 출석 취소 → 지난 날짜 CANCELLED 처리 | ✅ mock 통과 | DB 미검증 |
+| COUNT 출석 취소 (시작일 당일, 단일 패스) | ✅ mock 통과 | DB 미검증 |
+| COUNT 출석 취소 (시작일 당일, 당일 재결제) | ✅ mock 통과 | DB 미검증 |
+
+---
+
 ## 확인하지 않은 항목
 
 - DAILY 체크인 후 출석 취소 → day_pass PENDING 복원 흐름 (attendance/delete DAILY 복원 로직은 배포됐으나 실제 케이스 테스트 미완)
@@ -85,7 +100,34 @@ UPDATE settings_options SET option_value = 'DAILY' WHERE option_id IN (30, 31);
 
 ---
 
-## 롤백 방법
+## 배포·롤백 절차
+
+### 배포 (최종 검증 커밋 고정)
+
+```bash
+# 운영 서버에서 — 반드시 커밋 해시를 지정해 git pull로 후속 커밋이 포함되지 않도록 함
+cd /home/ubuntu/strongboxing-erp
+git fetch origin
+git checkout 90909da        # 최종 검증 커밋 (fix: COUNT 출석 취소 — 시작일 당일 케이스 허용)
+npm run build
+pm2 restart strongboxing-erp
+```
+
+> **왜 커밋 해시를 고정하는가**: `git pull`은 그 시점의 최신 커밋까지 모두 가져오므로
+> 검증되지 않은 후속 커밋이 배포될 수 있음. 커밋 해시 checkout은 정확히 검증한 상태만 배포.
+
+### 배포 전 필수 확인 (운영 서버 접근 필요)
+
+```bash
+# 운영 .env REQUIRE_KIOSK_TOKEN 설정 여부 확인 (읽기 전용)
+grep REQUIRE_KIOSK_TOKEN /home/ubuntu/strongboxing-erp/.env
+
+# kiosk_devices 등록 여부 확인 (읽기 전용)
+# mysql -u root -p strongboxing -e "SELECT device_id, branch_name, revoked_at FROM kiosk_devices LIMIT 10;"
+```
+
+- REQUIRE_KIOSK_TOKEN이 "true"로 설정돼 있으면 → 운영 키오스크가 등록됐는지 확인 후 배포
+- 미설정이면 → 기존 키오스크 차단 없음, 안전
 
 ### 코드 롤백 (운영 DB 변경 없음)
 
@@ -122,9 +164,32 @@ pm2 restart strongboxing-erp
 
 ---
 
+## 추가 수정 (main 브랜치, 배포 전)
+
+### COUNT 출석 취소 로직 개선 (커밋 `90909da`)
+| 파일 | 변경 |
+|------|------|
+| `app/api/attendance/delete/route.ts` | 시작일 당일 케이스 세분화 |
+
+**기존 문제**: `checkinDate > memberStartDate` 조건이 시작일 당일 정상 출석까지 차단
+**개선 로직**:
+- `checkin > start_date`: 현재 패스 범위 내 → 허용
+- `checkin < start_date`: 명확히 이전 패스 → 409
+- `checkin == start_date`: payments WHERE pass_type='COUNT' AND start_date=checkin_date 조회
+  - 1건(재등록 없음): 허용
+  - 2건 이상(당일 재등록): 소속 패스 불명 → 409
+
+### day-passes API 보안 강화 (커밋 `04177a6`)
+| 파일 | 변경 |
+|------|------|
+| `app/api/day-passes/cancel/route.ts` | `canManageBranch` 추가 — DIRECTOR 타 지점 취소 차단 |
+| `app/api/day-passes/route.ts` | `isHq` 기반 필터링 — 비HQ 타 지점 조회 차단 |
+
+---
+
 ## 다음 진행 순서
 
-1. **`hotfix/minimal-fix` → `main` 머지**: 이번 수정을 main에 반영
+1. **운영 배포**: 최종 커밋 `90909da` 기준 (아래 배포·롤백 절차 참조)
 2. **DAILY 체크인 취소 흐름 운영 테스트**: 출석 취소 시 day_pass 복원 확인
 3. **일일권 UI 완성**: `/day-passes` API를 활용한 회원 상세 페이지 일일권 현황 표시
 4. **나머지 개선 작업 순차 배포**: 비회원 결제 → 직원 권한 → 키오스크 인증 순서 권장
