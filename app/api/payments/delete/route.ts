@@ -32,14 +32,39 @@ export async function DELETE(req: Request) {
     // ── DAILY 결제 취소: payments 행 보존 + refund 기록, day_pass CANCELLED ──
     // PERIOD/COUNT는 기존 행 삭제 방식 유지; DAILY만 상태 변경 방식
     if (payment.pass_type === "DAILY") {
-      // 이미 취소된 결제인지 확인 (refund_amount == final_amount)
-      if (Number(payment.refund_amount) >= Number(payment.final_amount) && Number(payment.final_amount) > 0) {
+      // 이미 취소된 결제인지 확인: bb7dc74 이후 final_amount=0으로 판별
+      const alreadyCancelled =
+        Number(payment.final_amount) === 0 && Number(payment.refund_amount) > 0;
+      if (alreadyCancelled) {
         return NextResponse.json({ success: false, message: "이미 취소된 결제입니다." });
       }
 
       const conn = await (pool as any).getConnection();
       try {
         await conn.beginTransaction();
+
+        // 이미 연결된 환불 행이 있으면 취소 거부 (이중 차감 방지)
+        const exactMemo = `[환불] 원결제 #${payment_id}`;
+        const likeMemo = `[환불] 원결제 #${payment_id} — %`;
+        const [refundCheck]: any = await conn.query(
+          `SELECT COALESCE(SUM(ABS(final_amount)),0) AS total_refunded, COUNT(*) AS cnt
+           FROM payments
+           WHERE member_id = ? AND history_type = 'REFUND'
+             AND (memo = ? OR memo LIKE ?)
+           LOCK IN SHARE MODE`,
+          [payment.member_id, exactMemo, likeMemo]
+        );
+        if (Number(refundCheck[0].cnt) > 0) {
+          await conn.rollback();
+          return NextResponse.json({
+            success: false,
+            message: `이 결제에 이미 환불 기록 ${refundCheck[0].cnt}건(합계 ${refundCheck[0].total_refunded}원)이 있습니다. ` +
+              `취소 시 이중 차감 위험 — 환불 기록을 먼저 확인해 주세요.`,
+            refund_count: refundCheck[0].cnt,
+            refund_total: refundCheck[0].total_refunded,
+          }, { status: 409 });
+        }
+
         const [dpRows]: any = await conn.query(
           "SELECT pass_id, status, attendance_id FROM day_passes WHERE payment_id = ? FOR UPDATE",
           [payment_id]
