@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { getUserFromRequest, canAccessBranch } from "@/lib/auth";
+import { getUserFromRequest, isAdminOrOwner, canAccessBranch } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const user = await getUserFromRequest(req);
@@ -15,6 +15,15 @@ export async function GET(req: NextRequest) {
     const start_date = searchParams.get("start_date");
     const end_date = searchParams.get("end_date");
 
+    // DIRECTOR/COACH는 세션 지점으로 강제 고정, ADMIN/OWNER는 파라미터 사용
+    const effectiveBranch = isAdminOrOwner(user.role)
+      ? (branch_name && branch_name !== "전체" ? branch_name : null)
+      : user.branch_name;
+
+    if (!effectiveBranch && !isAdminOrOwner(user.role)) {
+      return NextResponse.json({ success: false, message: "지점 정보가 없습니다." }, { status: 403 });
+    }
+
     let sql = `
       SELECT *
       FROM calendar_events
@@ -23,9 +32,9 @@ export async function GET(req: NextRequest) {
 
     const params: any[] = [];
 
-    if (branch_name && branch_name !== "전체") {
+    if (effectiveBranch) {
       sql += ` AND branch_name = ?`;
-      params.push(branch_name);
+      params.push(effectiveBranch);
     }
 
     if (start_date) {
