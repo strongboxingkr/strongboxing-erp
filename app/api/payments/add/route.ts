@@ -121,8 +121,9 @@ export async function POST(req: Request) {
         `INSERT INTO payments
          (member_id, branch_name, payment_date, payment_method, product_name,
           pass_type, total_count, start_date, end_date,
-          amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
-         VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?)`,
+          amount, discount_amount, refund_amount, final_amount, memo, idempotency_key,
+          payment_purpose)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?, 'GENERAL')`,
         [
           member_id,
           branch_name,
@@ -198,8 +199,8 @@ export async function POST(req: Request) {
         await conn.beginTransaction();
 
         const pSql = idempotency_key
-          ? `INSERT IGNORE INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,?)`
-          : `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?)`;
+          ? `INSERT IGNORE INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key, payment_purpose) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,?,'DAILY')`
+          : `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, payment_purpose) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,'DAILY')`;
         const pParams = idempotency_key
           ? [member_id, branch_name, payment_date, payment_method, product_name, useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || "", idempotency_key]
           : [member_id, branch_name, payment_date, payment_method, product_name, useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || ""];
@@ -272,13 +273,15 @@ export async function POST(req: Request) {
           ? `INSERT IGNORE INTO payments
              (member_id, branch_name, payment_date, payment_method, product_name,
               pass_type, total_count, start_date, end_date,
-              amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+              amount, discount_amount, refund_amount, final_amount, memo, idempotency_key,
+              payment_purpose)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PASS')`
           : `INSERT INTO payments
              (member_id, branch_name, payment_date, payment_method, product_name,
               pass_type, total_count, start_date, end_date,
-              amount, discount_amount, refund_amount, final_amount, memo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              amount, discount_amount, refund_amount, final_amount, memo,
+              payment_purpose)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PASS')`;
 
         const insertParams = idempotency_key
           ? [

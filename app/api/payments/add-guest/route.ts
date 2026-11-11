@@ -65,8 +65,8 @@ export async function POST(req: Request) {
       if (isDailyPass) {
         // 비회원 일일권: 결제 기록만 저장 (입장코드·출석 처리 없음)
         const [result]: any = await pool.query(
-          `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
-           VALUES (NULL, ?, ?, ?, ?, 'DAILY', 1, ?, NULL, ?, 0, 0, ?, ?, ?)`,
+          `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key, payment_purpose)
+           VALUES (NULL, ?, ?, ?, ?, 'DAILY', 1, ?, NULL, ?, 0, 0, ?, ?, ?, 'DAILY')`,
           [branch_name, payDate, payment_method || "CARD", product_name, useDate, final_amount, final_amount, memo || "비회원 일일권", idempotency_key || null]
         );
         return NextResponse.json({ success: true, message: "비회원 일일권 등록 완료", payment_id: result.insertId });
@@ -74,8 +74,8 @@ export async function POST(req: Request) {
 
       // 일반 비회원 결제 (non-DAILY)
       const [result]: any = await pool.query(
-        `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key)
-         VALUES (NULL, ?, ?, ?, ?, 'PERIOD', ?, 0, 0, ?, ?, ?)`,
+        `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key, payment_purpose)
+         VALUES (NULL, ?, ?, ?, ?, 'PERIOD', ?, 0, 0, ?, ?, ?, 'GENERAL')`,
         [branch_name, payDate, payment_method || "CARD", product_name, final_amount, final_amount, memo || "비회원", idempotency_key || null]
       );
       return NextResponse.json({ success: true, message: "비회원 결제 등록 완료", payment_id: result.insertId });

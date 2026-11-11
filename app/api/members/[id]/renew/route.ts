@@ -38,8 +38,9 @@ export async function POST(req: Request, context: any) {
           `INSERT INTO payments (
             member_id, branch_name, payment_date, payment_method, product_name, pass_type,
             start_date, end_date, total_count, amount, discount_amount, refund_amount,
-            final_amount, unpaid_amount, operator_name, history_type, memo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            final_amount, unpaid_amount, operator_name, history_type, memo,
+            payment_purpose
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PASS')`,
           [
             memberId, member.branch_name,
             payment_date || new Date(), payment_method, product_name, pass_type,

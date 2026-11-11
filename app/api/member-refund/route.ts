@@ -177,8 +177,9 @@ export async function POST(req: Request) {
           `INSERT INTO payments (
             member_id, branch_name, payment_date, payment_method,
             product_name, pass_type, amount, discount_amount,
-            refund_amount, final_amount, operator_name, history_type, memo
-          ) VALUES (?, ?, CURDATE(), ?, ?, ?, 0, 0, ?, ?, ?, 'REFUND', ?)`,
+            refund_amount, final_amount, operator_name, history_type, memo,
+            payment_purpose
+          ) VALUES (?, ?, CURDATE(), ?, ?, ?, 0, 0, ?, ?, ?, 'REFUND', ?, 'REFUND')`,
           [
             member_id,
             lockedPayment.branch_name,
