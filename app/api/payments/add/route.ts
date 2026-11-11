@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         if (contentMismatch) {
           return NextResponse.json({
             success: false,
-            message: "동일한 idempotency_key로 다른 결제 내용이 이미 처리됐습니다. 새 키를 사용해주세요.",
+            message: "동일한 idempotency_key로 다른 결제 내용이 이미 처리됐습니다. 이미 처리된 결제가 있을 수 있습니다. 결제 내역을 먼저 확인해 주세요. 확인 전 다시 등록하지 마세요.",
           });
         }
         // 같은 키 + 같은 내용 → 멱등 성공 반환
