@@ -72,7 +72,8 @@ export async function POST(req: Request) {
         const contentMismatch =
           String(prev.member_id) !== String(member_id) ||
           Number(prev.amount) !== Number(amount) ||
-          (prev.product_name || null) !== (product_name || null);
+          (prev.product_name || null) !== (product_name || null) ||
+          (prev.payment_purpose || "GENERAL") !== (purpose);
         if (contentMismatch) {
           return NextResponse.json({
             success: false,
@@ -199,8 +200,8 @@ export async function POST(req: Request) {
         await conn.beginTransaction();
 
         const pSql = idempotency_key
-          ? `INSERT IGNORE INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key, payment_purpose) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,?,'DAILY')`
-          : `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, payment_purpose) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,'DAILY')`;
+          ? `INSERT IGNORE INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, idempotency_key, payment_purpose) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,?,'PASS')`
+          : `INSERT INTO payments (member_id, branch_name, payment_date, payment_method, product_name, pass_type, total_count, start_date, end_date, amount, discount_amount, refund_amount, final_amount, memo, payment_purpose) VALUES (?,?,?,?,?,'DAILY',1,?,NULL,?,?,?,?,?,'PASS')`;
         const pParams = idempotency_key
           ? [member_id, branch_name, payment_date, payment_method, product_name, useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || "", idempotency_key]
           : [member_id, branch_name, payment_date, payment_method, product_name, useDate, amount, discount_amount || 0, refund_amount || 0, final_amount ?? amount, memo || ""];

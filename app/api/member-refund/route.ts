@@ -179,7 +179,7 @@ export async function POST(req: Request) {
             product_name, pass_type, amount, discount_amount,
             refund_amount, final_amount, operator_name, history_type, memo,
             payment_purpose
-          ) VALUES (?, ?, CURDATE(), ?, ?, ?, 0, 0, ?, ?, ?, 'REFUND', ?, 'REFUND')`,
+          ) VALUES (?, ?, CURDATE(), ?, ?, ?, 0, 0, ?, ?, ?, 'REFUND', ?, 'GENERAL')`,
           [
             member_id,
             lockedPayment.branch_name,
