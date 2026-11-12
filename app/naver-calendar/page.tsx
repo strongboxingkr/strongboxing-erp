@@ -810,19 +810,21 @@ const getTypeInfo = (r: any) => {
           >
             <h2 style={{ marginTop: 0 }}>{selected.customer_name || "-"}</h2>
 
-            {/* 예약 정보 요약 */}
-            {(selected.reservation_product || selected.reservation_time) && (
-              <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
-                {selected.reservation_product && (
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>{selected.reservation_product}</div>
-                )}
-                {selected.reservation_time && (
-                  <div style={{ fontSize: 13, color: "#64748b" }}>
-                    {selected.reservation_date} {selected.reservation_time}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* 예약 정보 요약 (네이버 예약 메모에서 파싱) */}
+            {(() => {
+              const memo = selected.memo || "";
+              const productMatch = memo.match(/예약상품\s*[\n\r]+?\s*(.+)/);
+              const product = productMatch ? productMatch[1].trim() : "";
+              const visitMatch = memo.match(/이용일시원문:\s*(.+)/);
+              const visit = visitMatch ? visitMatch[1].trim() : "";
+              if (!product && !visit) return null;
+              return (
+                <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+                  {product && <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>{product}</div>}
+                  {visit && <div style={{ fontSize: 13, color: "#64748b" }}>{visit}</div>}
+                </div>
+              );
+            })()}
 
             <input className="input" value={selected.customer_name || ""} onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })} placeholder="이름" style={{ marginBottom: 10 }} />
             <input className="input" value={selected.phone || ""} onChange={(e) => setSelected({ ...selected, phone: e.target.value })} placeholder="전화번호" style={{ marginBottom: 10 }} />
