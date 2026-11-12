@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
+import Link from "next/link";
 
 const money = (v: any) => `${Number(v || 0).toLocaleString()}원`;
 const today = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
@@ -15,6 +16,7 @@ export default function DirectorDashboardPage() {
   const [expiring, setExpiring] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showExpiring, setShowExpiring] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -71,7 +73,7 @@ export default function DirectorDashboardPage() {
     <AppShell title="대시보드">
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 13, color: "var(--muted)" }}>{today}</div>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>{user?.branch_name} 현황</div>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>전체 현황</div>
       </div>
 
       {error && <div className="card" style={{ color: "#ef4444", marginBottom: 16 }}>{error}</div>}
@@ -79,16 +81,16 @@ export default function DirectorDashboardPage() {
       {/* 요약 카드 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "오늘 매출", value: loading ? "-" : money(summary?.today_sales), color: "#2563eb" },
-          { label: "이번달 매출", value: loading ? "-" : money(summary?.month_sales), color: "#7c3aed" },
-          { label: "활성 회원", value: loading ? "-" : `${summary?.active_members || 0}명`, color: "#059669" },
-          { label: "오늘 출석", value: loading ? "-" : `${summary?.today_attendance || 0}명`, color: "#d97706" },
-          { label: "오늘 신규 등록", value: loading ? "-" : `${summary?.today_new || 0}명`, color: "#0891b2" },
-          { label: "이번달 신규 등록", value: loading ? "-" : `${summary?.month_new || 0}명`, color: "#be185d" },
+          { label: "오늘 매출", value: loading ? "-" : money(summary?.today_sales), accent: true },
+          { label: "이번달 매출", value: loading ? "-" : money(summary?.month_sales), accent: true },
+          { label: "활성 회원", value: loading ? "-" : `${summary?.active_members || 0}명`, accent: false },
+          { label: "오늘 출석", value: loading ? "-" : `${summary?.today_attendance || 0}명`, accent: false },
+          { label: "오늘 신규 등록", value: loading ? "-" : `${summary?.today_new || 0}명`, accent: false },
+          { label: "이번달 신규 등록", value: loading ? "-" : `${summary?.month_new || 0}명`, accent: false },
         ].map((s) => (
           <div key={s.label} className="card" style={{ textAlign: "center" }}>
             <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{s.label}</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: s.accent ? "var(--accent)" : "var(--text)" }}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -128,13 +130,12 @@ export default function DirectorDashboardPage() {
                 <div key={b.branch_name} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                   padding: "8px 12px", borderRadius: 8,
-                  background: b.branch_name === user?.branch_name ? "var(--accent)" : "var(--panel2)",
+                  background: "var(--panel2)",
                 }}>
-                  <span style={{ fontWeight: 700, color: b.branch_name === user?.branch_name ? "#fff" : "var(--text)", fontSize: 14 }}>
+                  <span style={{ fontWeight: 700, color: "var(--text)", fontSize: 14 }}>
                     {b.branch_name}
-                    {b.branch_name === user?.branch_name && <span style={{ fontSize: 11, marginLeft: 4, opacity: 0.8 }}>내 지점</span>}
                   </span>
-                  <span style={{ fontWeight: 900, color: b.branch_name === user?.branch_name ? "#fff" : "var(--accent)" }}>{b.count}명</span>
+                  <span style={{ fontWeight: 900, color: "var(--accent)" }}>{b.count}명</span>
                 </div>
               ))}
             </div>
@@ -142,27 +143,40 @@ export default function DirectorDashboardPage() {
         </div>
       </div>
 
-      {/* 만료 임박 회원 */}
+      {/* 만료 임박 회원 (접기/펼치기) */}
       <div className="card">
-        <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 14 }}>
-          만료 임박 회원 <span style={{ color: "#ef4444", fontSize: 13 }}>3일 이내</span>
-        </div>
-        {loading ? (
-          <div style={{ color: "var(--muted)", fontSize: 13 }}>로딩 중...</div>
-        ) : expiring.length === 0 ? (
-          <div style={{ color: "var(--muted)", fontSize: 13 }}>만료 임박 회원 없음</div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
-            {expiring.map((m: any) => (
-              <div key={m.member_id} style={{ padding: "10px 14px", background: "var(--panel2)", borderRadius: 10, borderLeft: "3px solid #ef4444" }}>
-                <div style={{ fontWeight: 800, fontSize: 14 }}>{m.name}</div>
-                <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>{m.product_name}</div>
-                <div style={{ color: "#ef4444", fontSize: 12, fontWeight: 700, marginTop: 2 }}>
-                  만료: {String(m.end_date || "").slice(0, 10)}
-                </div>
-              </div>
-            ))}
-          </div>
+        <button
+          onClick={() => setShowExpiring((v) => !v)}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+        >
+          <span style={{ fontWeight: 800, fontSize: 15 }}>
+            만료 임박 회원 <span style={{ color: "#ef4444", fontSize: 13 }}>3일 이내</span>
+            {!loading && expiring.length > 0 && (
+              <span style={{ marginLeft: 6, background: "#fee2e2", color: "#ef4444", borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "1px 7px" }}>{expiring.length}</span>
+            )}
+          </span>
+          <span style={{ color: "var(--muted)", fontSize: 14 }}>{showExpiring ? "▲" : "▼"}</span>
+        </button>
+        {showExpiring && (
+          loading ? (
+            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 14 }}>로딩 중...</div>
+          ) : expiring.length === 0 ? (
+            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 14 }}>만료 임박 회원 없음</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10, marginTop: 14 }}>
+              {expiring.map((m: any) => (
+                <Link key={m.member_id} href={`/members?search=${encodeURIComponent(m.name)}`} style={{ textDecoration: "none" }}>
+                  <div style={{ padding: "10px 14px", background: "var(--panel2)", borderRadius: 10, borderLeft: "3px solid #ef4444" }}>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: "var(--text)" }}>{m.name}</div>
+                    <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>{m.product_name}</div>
+                    <div style={{ color: "#ef4444", fontSize: 12, fontWeight: 700, marginTop: 2 }}>
+                      만료: {String(m.end_date || "").slice(0, 10)}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
         )}
       </div>
     </AppShell>

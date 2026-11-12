@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
@@ -68,11 +69,15 @@ function MobileMonthlySalesPageInner() {
   const totalTransfer = rows.reduce((s, r) => s + Number(r.transfer_amount || 0), 0);
   const totalAmount = rows.reduce((s, r) => s + Number(r.total_amount || 0), 0);
 
+  const ownerNav = isAdminOrOwner;
+
   return (
-    <div style={{ minHeight: "100vh", background: "#f1f5f9", paddingBottom: 32 }}>
+    <div style={{ minHeight: "100vh", background: "#f1f5f9", paddingBottom: ownerNav ? "calc(56px + env(safe-area-inset-bottom, 0px))" : 32 }}>
       {/* 헤더 */}
       <div style={{ background: "#1e293b", padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        <button onClick={() => history.back()} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 20, cursor: "pointer", padding: 0 }}>←</button>
+        {!ownerNav && (
+          <button onClick={() => history.back()} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 20, cursor: "pointer", padding: 0 }}>←</button>
+        )}
         <div style={{ color: "#fff", fontWeight: 700, fontSize: 17 }}>월별 매출</div>
       </div>
 
@@ -204,6 +209,33 @@ function MobileMonthlySalesPageInner() {
           );
         })}
       </div>
+
+      {/* 대표 바텀 탭 */}
+      {ownerNav && (
+        <nav style={{
+          position: "fixed", bottom: 0, left: 0, right: 0,
+          background: "#fff", borderTop: "1px solid #e2e8f0",
+          display: "grid", gridTemplateColumns: "repeat(5, 1fr)",
+          paddingBottom: "env(safe-area-inset-bottom, 6px)", zIndex: 999,
+        }}>
+          {[
+            { label: "홈", href: "/mobile-owner" },
+            { label: "지점현황", href: "/owner-branch" },
+            { label: "매출", href: "/mobile-monthly-sales", active: true },
+            { label: "회원", href: "/mobile-members" },
+            { label: "더보기", href: "/mobile-owner" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} style={{
+              display: "flex", flexDirection: "column", alignItems: "center",
+              justifyContent: "center", padding: "8px 0",
+              fontSize: 11, fontWeight: 600, textDecoration: "none",
+              color: item.active ? "#2563eb" : "#94a3b8",
+            }}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

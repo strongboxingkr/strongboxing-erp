@@ -500,18 +500,24 @@ export default function MobileMembersPage() {
         paddingBottom: "env(safe-area-inset-bottom, 6px)",
         zIndex: 999,
       }}>
-        {[
+        {(isAdminOrOwner ? [
+          { label: "홈", href: "/mobile-owner" },
+          { label: "지점현황", href: "/owner-branch" },
+          { label: "매출", href: "/mobile-monthly-sales" },
+          { label: "회원", href: "/mobile-members", active: true },
+          { label: "더보기", href: "/mobile-owner" },
+        ] : [
           { label: "홈", href: "/mobile-branch" },
           { label: "회원", href: "/mobile-members", active: true },
           { label: "출석", href: "/mobile-attendance" },
           { label: "결제", href: "/mobile-payments" },
           { label: "상담", href: "/mobile-crm" },
-        ].map((item) => (
+        ]).map((item) => (
           <Link key={item.label} href={item.href} style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             justifyContent: "center", padding: "8px 0",
             fontSize: 11, fontWeight: 600, textDecoration: "none",
-            color: item.active ? "#2563eb" : "#94a3b8",
+            color: (item as any).active ? "#2563eb" : "#94a3b8",
           }}>
             {item.label}
           </Link>
