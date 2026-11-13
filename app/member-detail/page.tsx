@@ -1157,15 +1157,17 @@ export default function MemberDetailPage() {
                 {histories.map((h) => {
                   const type = h.history_type || h.action_type || "";
                   const typeLabel: Record<string, string> = {
-                    HOLD: "휴회 등록", HOLD_RELEASE: "휴회 해제",
+                    HOLD: "휴회", HOLD_RELEASE: "휴회 해제",
+                    PAYMENT: "회원권 결제", DAILY_PASS: "일일권 결제",
                     REGISTER: "회원권 등록", RENEW: "회원권 재등록",
                     EXTEND: "기간 연장", BULK_EXTEND: "일괄 연장",
                     CANCEL: "결제 취소", CORRECTION: "수동 수정",
-                    UPDATE: "회원정보 수정", IMPORT: "데이터 가져오기",
+                    UPDATE: "정보 수정", IMPORT: "데이터 가져오기",
                     LOCKER_EXTEND: "라커 기간 연장",
                   };
                   const typeColor: Record<string, string> = {
                     HOLD: "#f59e0b", HOLD_RELEASE: "#10b981",
+                    PAYMENT: "#3b82f6", DAILY_PASS: "#6366f1",
                     REGISTER: "#3b82f6", RENEW: "#3b82f6",
                     CANCEL: "#ef4444",
                   };
