@@ -26,12 +26,28 @@ export async function GET(req: NextRequest) {
 
     const [rows]: any = await pool.query(
       `
-      SELECT *
+      SELECT
+        history_id, member_id, action_type, action_memo, old_value, new_value, created_at, created_by
       FROM member_histories
+      WHERE member_id = ?
+      UNION ALL
+      SELECT
+        hold_id,
+        member_id,
+        'HOLD' AS action_type,
+        CONCAT(
+          '휴회 ', hold_start, ' ~ ', hold_end, ' (', hold_days, '일)',
+          ' | 만료일 ', old_end_date, ' → ', new_end_date,
+          IF(reason IS NOT NULL AND reason != '', CONCAT(' / ', reason), '')
+        ) AS action_memo,
+        NULL, NULL,
+        created_at,
+        created_by
+      FROM member_holds
       WHERE member_id = ?
       ORDER BY created_at DESC
       `,
-      [memberId]
+      [memberId, memberId]
     );
 
     return NextResponse.json({

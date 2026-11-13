@@ -1172,11 +1172,12 @@ export default function MemberDetailPage() {
                       style={{
                         fontWeight: 900,
                         fontSize: 15,
+                        color: (h.history_type || h.action_type) === "HOLD" ? "var(--warning, #f59e0b)" : undefined,
                       }}
                     >
-                      {h.history_type ||
-                        h.action_type ||
-                        "변경"}
+                      {(h.history_type || h.action_type) === "HOLD" ? "휴회 등록" :
+                       (h.history_type || h.action_type) === "HOLD_RELEASE" ? "휴회 해제" :
+                       (h.history_type || h.action_type) || "변경"}
                     </div>
 
                     <div
