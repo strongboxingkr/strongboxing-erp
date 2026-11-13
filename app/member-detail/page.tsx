@@ -203,7 +203,7 @@ export default function MemberDetailPage() {
   const [editPayment, setEditPayment] = useState<any>(null);
   const [editPayForm, setEditPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: "", memo: "" });
   const [addPayModal, setAddPayModal] = useState(false);
-  const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" });
+  const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "", payment_purpose: "PASS" as "PASS" | "GENERAL" });
   // 환불 모달: refundTarget에 원결제 행 저장
   const [refundTarget, setRefundTarget] = useState<any>(null);
   const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "" });
@@ -1233,13 +1233,25 @@ export default function MemberDetailPage() {
               <button onClick={() => setAddPayModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
             </div>
             <div style={{ display: "grid", gap: 12 }}>
-              <select className="input" value={addPayForm.product_name} onChange={e => {
-                const p = products.find((p: any) => p.option_name === e.target.value);
-                setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : addPayForm.final_amount });
-              }}>
-                <option value="">상품 선택</option>
-                {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
-              </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {(["PASS", "GENERAL"] as const).map((p) => (
+                  <button key={p} className={addPayForm.payment_purpose === p ? "btn" : "btn secondary"}
+                    onClick={() => setAddPayForm({ ...addPayForm, payment_purpose: p, product_name: "" })}>
+                    {p === "PASS" ? "회원권" : "일반결제"}
+                  </button>
+                ))}
+              </div>
+              {addPayForm.payment_purpose === "PASS" ? (
+                <select className="input" value={addPayForm.product_name} onChange={e => {
+                  const p = products.find((p: any) => p.option_name === e.target.value);
+                  setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : addPayForm.final_amount });
+                }}>
+                  <option value="">상품 선택</option>
+                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                </select>
+              ) : (
+                <input className="input" placeholder="항목명 (예: 락커 이용료, 운동복 이용료)" value={addPayForm.product_name} onChange={e => setAddPayForm({ ...addPayForm, product_name: e.target.value })} />
+              )}
               <input className="input" type="number" placeholder="결제금액" value={addPayForm.final_amount} onChange={e => setAddPayForm({ ...addPayForm, final_amount: e.target.value })} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {([["CARD","카드"],["CASH","현금"],["TRANSFER","계좌이체"]] as const).map(([m, l]) => (
@@ -1249,7 +1261,7 @@ export default function MemberDetailPage() {
               <input className="input" type="date" value={addPayForm.payment_date} onChange={e => setAddPayForm({ ...addPayForm, payment_date: e.target.value })} />
               <textarea className="input" placeholder="메모" value={addPayForm.memo} onChange={e => setAddPayForm({ ...addPayForm, memo: e.target.value })} style={{ minHeight: 60 }} />
               <button className="btn" style={{ fontSize: 16 }} onClick={async (e) => {
-                if (!addPayForm.product_name) return alert("상품을 선택해주세요.");
+                if (!addPayForm.product_name) return alert(addPayForm.payment_purpose === "PASS" ? "상품을 선택해주세요." : "항목명을 입력해주세요.");
                 if (!addPayForm.final_amount) return alert("결제금액을 입력해주세요.");
                 const btn = e.currentTarget;
                 btn.disabled = true;
@@ -1266,7 +1278,7 @@ export default function MemberDetailPage() {
                       payment_method: addPayForm.payment_method,
                       payment_date: addPayForm.payment_date,
                       memo: addPayForm.memo,
-                      payment_purpose: "PASS",
+                      payment_purpose: addPayForm.payment_purpose,
                     }),
                   });
                   const json = await res.json();

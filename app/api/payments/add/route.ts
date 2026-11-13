@@ -10,8 +10,10 @@ function addDays(dateString: string, days: number) {
 }
 
 function addMonths(dateString: string, months: number) {
-  // 시작일 포함 30일 × 개월수 (이지스포 동일: 11/2 등록 → 12/1 만료)
-  return addDays(dateString, months * 30 - 1);
+  // 달력 기준: 시작일 + N개월 - 1일 (예: 11/13 + 3개월 = 2/13 - 1일 = 2/12)
+  const [y, m, d] = dateString.split("-").map(Number);
+  const end = new Date(Date.UTC(y, m - 1 + months, d));
+  return new Date(end.getTime() - 86400000).toISOString().slice(0, 10);
 }
 
 export async function POST(req: Request) {
