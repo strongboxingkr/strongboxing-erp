@@ -1153,61 +1153,74 @@ export default function MemberDetailPage() {
                 변경이력
               </h2>
 
-              <div
-                style={{
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                {histories.map((h) => (
-                  <div
-                    key={h.history_id}
-                    style={{
-                      background: "var(--panel2)",
-                      borderRadius: 14,
-                      padding: 14,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 900,
-                        fontSize: 15,
-                        color: (h.history_type || h.action_type) === "HOLD" ? "var(--warning, #f59e0b)" : undefined,
-                      }}
-                    >
-                      {(h.history_type || h.action_type) === "HOLD" ? "휴회 등록" :
-                       (h.history_type || h.action_type) === "HOLD_RELEASE" ? "휴회 해제" :
-                       (h.history_type || h.action_type) || "변경"}
-                    </div>
+              <div style={{ display: "grid", gap: 10 }}>
+                {histories.map((h) => {
+                  const type = h.history_type || h.action_type || "";
+                  const typeLabel: Record<string, string> = {
+                    HOLD: "휴회 등록", HOLD_RELEASE: "휴회 해제",
+                    REGISTER: "회원권 등록", RENEW: "회원권 재등록",
+                    EXTEND: "기간 연장", BULK_EXTEND: "일괄 연장",
+                    CANCEL: "결제 취소", CORRECTION: "수동 수정",
+                    UPDATE: "회원정보 수정", IMPORT: "데이터 가져오기",
+                    LOCKER_EXTEND: "라커 기간 연장",
+                  };
+                  const typeColor: Record<string, string> = {
+                    HOLD: "#f59e0b", HOLD_RELEASE: "#10b981",
+                    REGISTER: "#3b82f6", RENEW: "#3b82f6",
+                    CANCEL: "#ef4444",
+                  };
 
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#aaa",
-                        whiteSpace:
-                          "pre-wrap",
-                      }}
-                    >
-                      {h.memo ||
-                        h.action_memo ||
-                        "-"}
-                    </div>
+                  // UPDATE 타입: old/new JSON diff로 변경 필드 추출
+                  let diffLines: string[] = [];
+                  if (type === "UPDATE" && h.old_value && h.new_value) {
+                    try {
+                      const oldJ = typeof h.old_value === "string" ? JSON.parse(h.old_value) : h.old_value;
+                      const newJ = typeof h.new_value === "string" ? JSON.parse(h.new_value) : h.new_value;
+                      const fieldLabel: Record<string, string> = {
+                        end_date: "만료일", start_date: "시작일", product_name: "회원권",
+                        remaining_count: "잔여횟수", status: "상태",
+                        name: "이름", phone: "전화번호", birth_date: "생년월일",
+                        gender: "성별", address: "주소", staff_name: "담당자",
+                      };
+                      const statusLabel: Record<string, string> = {
+                        ACTIVE: "정상", REST: "휴회중", EXPIRED: "만료", DELETED: "삭제",
+                      };
+                      for (const [k, label] of Object.entries(fieldLabel)) {
+                        const ov = oldJ[k] ?? "";
+                        const nv = newJ[k] ?? "";
+                        const ovStr = String(ov).slice(0, 10);
+                        const nvStr = String(nv).slice(0, 10);
+                        if (ovStr !== nvStr && nvStr !== "") {
+                          const fmt = (v: string) => k === "status" ? (statusLabel[v] || v) : v;
+                          diffLines.push(`${label}: ${fmt(ovStr) || "없음"} → ${fmt(nvStr)}`);
+                        }
+                      }
+                    } catch {}
+                  }
 
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#666",
-                        fontSize: 12,
-                      }}
-                    >
-                      {h.created_at
-                        ? new Date(
-                            h.created_at
-                          ).toLocaleString()
-                        : ""}
+                  return (
+                    <div key={h.history_id} style={{ background: "var(--panel2)", borderRadius: 14, padding: 14, borderLeft: `3px solid ${typeColor[type] || "var(--border, #e5e7eb)"}` }}>
+                      <div style={{ fontWeight: 900, fontSize: 15, color: typeColor[type] || undefined }}>
+                        {typeLabel[type] || type || "변경"}
+                      </div>
+                      {type === "HOLD" || type === "HOLD_RELEASE" ? (
+                        <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted, #888)", whiteSpace: "pre-wrap" }}>
+                          {h.action_memo || "-"}
+                        </div>
+                      ) : diffLines.length > 0 ? (
+                        <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted, #888)" }}>
+                          {diffLines.map((l, i) => <div key={i}>{l}</div>)}
+                        </div>
+                      ) : (h.action_memo && h.action_memo !== "회원정보 수정") ? (
+                        <div style={{ marginTop: 6, fontSize: 13, color: "var(--muted, #888)" }}>{h.action_memo}</div>
+                      ) : null}
+                      <div style={{ marginTop: 8, color: "#999", fontSize: 12 }}>
+                        {h.created_at ? new Date(h.created_at).toLocaleString("ko-KR") : ""}
+                        {h.created_by ? ` · ${h.created_by}` : ""}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {histories.length ===
                   0 && (
