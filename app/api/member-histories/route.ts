@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         history_id, member_id, action_type, action_memo, old_value, new_value, created_at, created_by
       FROM member_histories
       WHERE member_id = ?
+        AND action_type NOT IN ('ATTENDANCE', 'ATTENDANCE_UNDO')
       UNION ALL
       SELECT
         hold_id,
