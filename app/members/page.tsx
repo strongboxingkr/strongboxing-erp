@@ -810,7 +810,16 @@ ${
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex", alignItems: "flex-start", justifyContent: "center",
+            overflowY: "auto", padding: "40px 16px 40px",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}
+        >
+        <div className="card" style={{ width: "100%", maxWidth: 860, borderRadius: 24, margin: "auto" }}>
           <h2 style={{ marginTop: 0 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
 
           <div
@@ -1003,6 +1012,7 @@ ${
             )}
           </div>
 
+        </div>
         </div>
       )}
 

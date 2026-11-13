@@ -828,8 +828,8 @@ export default function MemberDetailPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "120px 1fr 120px 120px",
-                  gap: 12,
+                    "100px 1fr 100px 90px 180px",
+                  gap: 8,
                   padding: "10px 12px",
                   color: "#888",
                   fontWeight: 700,
@@ -841,6 +841,7 @@ export default function MemberDetailPage() {
                 <div>상품</div>
                 <div>금액</div>
                 <div>수단</div>
+                <div>관리</div>
               </div>
 
               <div
@@ -857,8 +858,7 @@ export default function MemberDetailPage() {
                     key={p.payment_id}
                     style={{
                       display: "grid",
-                      display: "flex",
-                      flexWrap: "wrap",
+                      gridTemplateColumns: "100px 1fr 100px 90px 180px",
                       gap: 8,
                       background: isCancelled ? "rgba(239,68,68,0.07)" : "var(--panel2)",
                       borderRadius: 12,
@@ -870,7 +870,7 @@ export default function MemberDetailPage() {
                     <div style={{ fontSize: 13 }}>
                       {p.payment_date?.slice(0, 10)}
                     </div>
-                    <div style={{ fontSize: 13 }}>
+                    <div style={{ fontSize: 13, minWidth: 0, wordBreak: "break-word" }}>
                       {p.product_name || "-"}
                       {isCancelled && <span style={{ marginLeft: 6, color: "#ef4444", fontWeight: 700, fontSize: 11 }}>취소됨</span>}
                     </div>
@@ -880,7 +880,7 @@ export default function MemberDetailPage() {
                     <div style={{ fontSize: 13 }}>
                       {p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method}
                     </div>
-                    <div style={{ display: "flex", gap: 4 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
                       {!isCancelled && (
                         <>
                           <button
@@ -930,7 +930,7 @@ export default function MemberDetailPage() {
                           )}
                           <button
                             className="btn"
-                            style={{ fontSize: 11, padding: "3px 8px", background: "#ef4444" }}
+                            style={{ fontSize: 11, padding: "3px 8px", background: "#ef4444", marginLeft: 8 }}
                             onClick={async () => {
                               if (!confirm(`${p.product_name} 결제를 완전 삭제할까요?\n삭제 후 복구 불가합니다.`)) return;
                               const res = await apiFetch(`/api/payments/delete?payment_id=${p.payment_id}`, { method: "DELETE" });
