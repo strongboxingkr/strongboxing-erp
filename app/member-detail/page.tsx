@@ -1250,25 +1250,31 @@ export default function MemberDetailPage() {
               <button onClick={() => setAddPayModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
             </div>
             <div style={{ display: "grid", gap: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {(["PASS", "GENERAL"] as const).map((p) => (
-                  <button key={p} className={addPayForm.payment_purpose === p ? "btn" : "btn secondary"}
-                    onClick={() => setAddPayForm({ ...addPayForm, payment_purpose: p, product_name: "" })}>
-                    {p === "PASS" ? "회원권" : "일반결제"}
-                  </button>
-                ))}
-              </div>
-              {addPayForm.payment_purpose === "PASS" ? (
-                <select className="input" value={addPayForm.product_name} onChange={e => {
-                  const p = products.find((p: any) => p.option_name === e.target.value);
-                  setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : addPayForm.final_amount });
-                }}>
-                  <option value="">상품 선택</option>
-                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
-                </select>
-              ) : (
-                <input className="input" placeholder="항목명 (예: 락커 이용료, 운동복 이용료)" value={addPayForm.product_name} onChange={e => setAddPayForm({ ...addPayForm, product_name: e.target.value })} />
-              )}
+              <select className="input" value={addPayForm.product_name} onChange={e => {
+                const val = e.target.value;
+                const passProduct = products.find((p: any) => p.option_name === val);
+                const generalItems = ["락커 이용료", "운동복 이용료", "수건 이용료"];
+                const isGeneral = generalItems.includes(val);
+                setAddPayForm({
+                  ...addPayForm,
+                  product_name: val,
+                  payment_purpose: isGeneral ? "GENERAL" : "PASS",
+                  final_amount: passProduct?.amount ? String(passProduct.amount) : addPayForm.final_amount,
+                });
+              }}>
+                <option value="">상품 선택</option>
+                <optgroup label="회원권">
+                  {products.filter((p: any) => p.option_name !== "일일권").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                </optgroup>
+                <optgroup label="일일권">
+                  {products.filter((p: any) => p.option_name === "일일권").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                </optgroup>
+                <optgroup label="기타">
+                  <option value="락커 이용료">락커 이용료</option>
+                  <option value="운동복 이용료">운동복 이용료</option>
+                  <option value="수건 이용료">수건 이용료</option>
+                </optgroup>
+              </select>
               <input className="input" type="number" placeholder="결제금액" value={addPayForm.final_amount} onChange={e => setAddPayForm({ ...addPayForm, final_amount: e.target.value })} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {([["CARD","카드"],["CASH","현금"],["TRANSFER","계좌이체"]] as const).map(([m, l]) => (
@@ -1280,7 +1286,7 @@ export default function MemberDetailPage() {
                   <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제일</div>
                   <input className="input" type="date" value={addPayForm.payment_date} onChange={e => setAddPayForm({ ...addPayForm, payment_date: e.target.value })} />
                 </div>
-                {addPayForm.payment_purpose === "PASS" && (
+                {addPayForm.payment_purpose === "PASS" && addPayForm.product_name !== "일일권" && (
                   <div>
                     <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>시작일</div>
                     <input className="input" type="date" value={addPayForm.start_date} onChange={e => setAddPayForm({ ...addPayForm, start_date: e.target.value })} />
