@@ -203,7 +203,7 @@ export default function MemberDetailPage() {
   const [editPayment, setEditPayment] = useState<any>(null);
   const [editPayForm, setEditPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: "", memo: "" });
   const [addPayModal, setAddPayModal] = useState(false);
-  const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "", payment_purpose: "PASS" as "PASS" | "GENERAL" });
+  const [addPayForm, setAddPayForm] = useState({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), start_date: "", memo: "", payment_purpose: "PASS" as "PASS" | "GENERAL" });
   // 환불 모달: refundTarget에 원결제 행 저장
   const [refundTarget, setRefundTarget] = useState<any>(null);
   const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "" });
@@ -821,7 +821,7 @@ export default function MemberDetailPage() {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h2 style={{ margin: 0 }}>결제내역</h2>
-                <button className="btn" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "", payment_purpose: "PASS" }); setAddPayModal(true); }}>+ 결제 추가</button>
+                <button className="btn" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => { const nextDay = data?.member?.end_date ? data.member.end_date.slice(0,10) : new Date().toISOString().slice(0,10); setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), start_date: nextDay, memo: "", payment_purpose: "PASS" }); setAddPayModal(true); }}>+ 결제 추가</button>
               </div>
 
               <div
@@ -1275,7 +1275,18 @@ export default function MemberDetailPage() {
                   <button key={m} className={addPayForm.payment_method === m ? "btn" : "btn secondary"} onClick={() => setAddPayForm({ ...addPayForm, payment_method: m })}>{l}</button>
                 ))}
               </div>
-              <input className="input" type="date" value={addPayForm.payment_date} onChange={e => setAddPayForm({ ...addPayForm, payment_date: e.target.value })} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제일</div>
+                  <input className="input" type="date" value={addPayForm.payment_date} onChange={e => setAddPayForm({ ...addPayForm, payment_date: e.target.value })} />
+                </div>
+                {addPayForm.payment_purpose === "PASS" && (
+                  <div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>시작일</div>
+                    <input className="input" type="date" value={addPayForm.start_date} onChange={e => setAddPayForm({ ...addPayForm, start_date: e.target.value })} />
+                  </div>
+                )}
+              </div>
               <textarea className="input" placeholder="메모" value={addPayForm.memo} onChange={e => setAddPayForm({ ...addPayForm, memo: e.target.value })} style={{ minHeight: 60 }} />
               <button className="btn" style={{ fontSize: 16 }} onClick={async (e) => {
                 if (!addPayForm.product_name) return alert(addPayForm.payment_purpose === "PASS" ? "상품을 선택해주세요." : "항목명을 입력해주세요.");
@@ -1294,6 +1305,7 @@ export default function MemberDetailPage() {
                       discount_amount: 0,
                       payment_method: addPayForm.payment_method,
                       payment_date: addPayForm.payment_date,
+                      start_date: addPayForm.payment_purpose === "PASS" && addPayForm.start_date ? addPayForm.start_date : undefined,
                       memo: addPayForm.memo,
                       payment_purpose: addPayForm.payment_purpose,
                     }),
