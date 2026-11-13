@@ -278,7 +278,7 @@ export default function MemberDetailPage() {
   };
 
   useEffect(() => {
-    apiFetch("/api/settings?option_type=PRODUCT").then(r => r.json()).then(d => setProducts(d.rows || []));
+    apiFetch("/api/settings?option_type=PASS_PRODUCT").then(r => r.json()).then(d => setProducts(d.rows || []));
   }, []);
 
   const uploadFile = async (
@@ -821,7 +821,7 @@ export default function MemberDetailPage() {
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h2 style={{ margin: 0 }}>결제내역</h2>
-                <button className="btn" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" }); setAddPayModal(true); }}>+ 결제 추가</button>
+                <button className="btn" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "", payment_purpose: "PASS" }); setAddPayModal(true); }}>+ 결제 추가</button>
               </div>
 
               <div
@@ -857,8 +857,9 @@ export default function MemberDetailPage() {
                     key={p.payment_id}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "110px 1fr 110px 100px 120px",
-                      gap: 10,
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 8,
                       background: isCancelled ? "rgba(239,68,68,0.07)" : "var(--panel2)",
                       borderRadius: 12,
                       padding: 12,
