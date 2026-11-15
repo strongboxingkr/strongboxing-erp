@@ -230,16 +230,13 @@ export default function PaymentsPage() {
 
   return (
     <AppShell title="결제관리">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>결제관리</div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>회원권 + 추가상품 결제 등록</div>
-        </div>
+      {/* 필터 + 액션 바 */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {isAdminOrOwner && (
             <select
               className="input"
-              style={{ width: 150, height: 38, padding: "0 10px", fontSize: 13 }}
+              style={{ width: 140, height: 36, padding: "0 10px", fontSize: 13 }}
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
             >
@@ -249,74 +246,67 @@ export default function PaymentsPage() {
               ))}
             </select>
           )}
-          <button onClick={loadPayments} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
-          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" }); setGuestModal(true); }} style={{ height: 38, padding: "0 18px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
-          <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 38, padding: "0 16px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
+          <div style={{ fontSize: 13, color: "#6B7280" }}>
+            오늘 매출 <strong style={{ color: "#111827" }}>{money(todaySales)}</strong>
+            <span style={{ marginLeft: 8, color: "#9CA3AF" }}>총 {rows.length}건</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <button onClick={() => { window.location.href = "/api/export/payments"; }} style={{ height: 36, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>CSV</button>
+          <button onClick={loadPayments} style={{ height: 36, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>새로고침</button>
+          <button onClick={() => { setReviewForm({ member_id: "", member_name: "", payment_method: "CARD", payment_date: today, memo: "" }); setReviewMemberSearch(""); setReviewModal(true); }} style={{ height: 36, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>리뷰환급</button>
+          <button onClick={() => { setGuestForm({ branch_name: branches[0]?.option_name || "", product_name: "일일권", final_amount: "30000", payment_method: "CARD", payment_date: today, memo: "", use_date: today, guest_name: "", guest_phone: "" }); setGuestModal(true); }} style={{ height: 36, padding: "0 16px", fontSize: 13, fontWeight: 700, background: "#2563eb", border: "none", borderRadius: 7, color: "#fff", cursor: "pointer" }}>비회원 결제</button>
         </div>
       </div>
 
-      <div>
-        <div>
-          {/* 오늘 매출 */}
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 11, padding: "18px 22px", marginBottom: 14, minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ color: "#6B7280", fontSize: 14 }}>오늘 매출</div>
-            <div style={{ marginTop: 8, fontSize: 32, fontWeight: 600, color: "#111827" }}>
-              {money(todaySales)}
-            </div>
-          </div>
-
-          {/* 최근 결제 */}
-          <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 11, padding: "18px 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>최근 결제</span>
-              <button onClick={() => { window.location.href = "/api/export/payments"; }} style={{ height: 34, padding: "0 14px", fontSize: 13, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 7, color: "#374151", cursor: "pointer" }}>CSV</button>
-            </div>
-
-            <div style={{ display: "grid", gap: 10, maxHeight: 760, overflow: "auto" }}>
-              {rows.map((r) => (
-                <div key={r.payment_id} style={{ background: "#F7F8FA", border: "1px solid #E5E7EB", borderRadius: 10, padding: "14px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>{r.name || "비회원"}</div>
-                      <div style={{ color: "#6B7280", marginTop: 4, fontSize: 13 }}>{r.branch_name}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 18, fontWeight: 600, color: "#111827" }}>{money(r.amount)}</div>
-                      <div style={{ color: "#6B7280", marginTop: 4, fontSize: 13 }}>{r.payment_date?.slice(0, 10)}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, padding: "3px 10px", fontSize: 13, color: "#6B7280" }}>{r.product_name}</span>
-                    <span style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, padding: "3px 10px", fontSize: 13, color: "#6B7280" }}>
-                      {r.payment_method === "CARD" ? "카드" : r.payment_method === "CASH" ? "현금" : "계좌이체"}
-                    </span>
-                  </div>
-
-                  {r.memo && <div style={{ marginTop: 8, color: "#6B7280", fontSize: 13, whiteSpace: "pre-wrap" }}>{r.memo}</div>}
-
-                  {canEditPayment && (
-                    <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end", gap: 6 }}>
-                      <button onClick={() => openEdit(r)} style={{ height: 30, padding: "0 12px", fontSize: 12, fontWeight: 500, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, color: "#374151", cursor: "pointer" }}>수정</button>
-                      <button
-                        onClick={async () => {
-                          if (!confirm(`${r.name || "비회원"} - ${r.product_name} (${money(r.amount)}) 결제를 삭제하시겠습니까?`)) return;
-                          const res = await apiFetch(`/api/payments/delete?payment_id=${r.payment_id}`, { method: "DELETE" });
-                          const json = await res.json();
-                          if (json.success) { alert("삭제 완료"); loadPayments(); }
-                          else alert(json.message || "삭제 실패");
-                        }}
-                        style={{ height: 30, padding: "0 12px", fontSize: 12, fontWeight: 500, background: "none", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}
-                      >삭제</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {rows.length === 0 && <div style={{ color: "#6B7280", textAlign: "center", padding: 20 }}>결제 내역이 없습니다.</div>}
-            </div>
-          </div>
-        </div>
+      {/* 결제 목록 테이블 */}
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 100 }}>날짜</th>
+              {isAdminOrOwner && <th style={{ width: 90 }}>지점</th>}
+              <th>이름</th>
+              <th>상품</th>
+              <th style={{ width: 80 }}>결제방식</th>
+              <th style={{ width: 110, textAlign: "right" }}>금액</th>
+              {canEditPayment && <th style={{ width: 80 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td colSpan={canEditPayment ? (isAdminOrOwner ? 7 : 6) : (isAdminOrOwner ? 6 : 5)} style={{ textAlign: "center", color: "#9CA3AF", padding: 32 }}>결제 내역이 없습니다.</td></tr>
+            )}
+            {rows.map((r) => (
+              <tr key={r.payment_id}>
+                <td style={{ color: "#6B7280", fontSize: 13 }}>{r.payment_date?.slice(0, 10)}</td>
+                {isAdminOrOwner && <td style={{ color: "#6B7280", fontSize: 13 }}>{r.branch_name}</td>}
+                <td>
+                  <span style={{ fontWeight: 600 }}>{r.name || "비회원"}</span>
+                  {r.memo && <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{r.memo}</div>}
+                </td>
+                <td style={{ color: "#374151", fontSize: 13 }}>{r.product_name || "-"}</td>
+                <td style={{ fontSize: 13, color: "#6B7280" }}>{METHOD_LABEL[r.payment_method] || r.payment_method}</td>
+                <td style={{ textAlign: "right", fontWeight: 600, color: Number(r.amount) < 0 ? "#ef4444" : "#111827" }}>{money(r.amount)}</td>
+                {canEditPayment && (
+                  <td style={{ textAlign: "right" }}>
+                    <button onClick={() => openEdit(r)} style={{ height: 28, padding: "0 10px", fontSize: 12, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 5, color: "#374151", cursor: "pointer", marginRight: 4 }}>수정</button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`${r.name || "비회원"} - ${r.product_name} (${money(r.amount)}) 결제를 삭제하시겠습니까?`)) return;
+                        const res = await apiFetch(`/api/payments/delete?payment_id=${r.payment_id}`, { method: "DELETE" });
+                        const json = await res.json();
+                        if (json.success) { alert("삭제 완료"); loadPayments(); }
+                        else alert(json.message || "삭제 실패");
+                      }}
+                      style={{ height: 28, padding: "0 10px", fontSize: 12, background: "none", border: "none", borderRadius: 5, color: "#ef4444", cursor: "pointer" }}
+                    >삭제</button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       {/* 리뷰환급 모달 */}
       {reviewModal && (
