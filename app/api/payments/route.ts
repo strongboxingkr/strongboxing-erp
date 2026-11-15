@@ -47,7 +47,7 @@ export async function GET(req: Request) {
       params.push(user.branch_name);
     }
 
-    sql += ` ORDER BY p.payment_id DESC `;
+    sql += ` ORDER BY p.payment_date DESC, p.payment_id DESC `;
 
     const [rows]: any = await pool.query(sql, params);
 
