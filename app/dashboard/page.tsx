@@ -87,7 +87,6 @@ export default function DashboardPage() {
   const totalSales = Number(data.sales || 0);
   const pm = data.payment_methods || {};
 
-  // 선택 기간 재등록 합산 (branch_sales에만 있음)
   const totalRereg = branch === "전체"
     ? branchSales.reduce((s: number, b: any) => s + Number(b.rereg_count || 0), 0)
     : Number(branchSales[0]?.rereg_count || 0);
@@ -97,163 +96,184 @@ export default function DashboardPage() {
   return (
     <AppShell title="대표 대시보드">
       <style>{`
-        .db-section { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:18px 20px; margin-bottom:14px; }
-        .db-section-title { font-size:13px; font-weight:700; color:#374151; margin-bottom:14px; letter-spacing:.02em; text-transform:uppercase; }
-        .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:#e5e7eb; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden; }
-        @media(max-width:900px){ .kpi-grid { grid-template-columns:1fr 1fr; } }
-        .kpi-cell { background:#fff; padding:16px 20px; }
-        .kpi-num { font-size:26px; font-weight:800; color:#111827; line-height:1.1; margin-bottom:4px; }
-        .kpi-label { font-size:12px; color:#6b7280; font-weight:500; }
-        .kpi-sub { font-size:11px; color:#9ca3af; margin-top:2px; }
-        .branch-table { width:100%; border-collapse:collapse; font-size:13px; }
-        .branch-table th { padding:9px 14px; text-align:right; font-size:11px; font-weight:600; color:#6b7280; border-bottom:2px solid #e5e7eb; white-space:nowrap; }
+        /* ── 공통 ── */
+        .db-card { background:#fff; border:1px solid #e2e5eb; border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06); margin-bottom:14px; }
+        .db-card-header { padding:13px 20px; border-bottom:1px solid #e2e5eb; display:flex; align-items:center; gap:8px; }
+        .db-card-header-dot { width:6px; height:6px; border-radius:50%; background:#0f2044; flex-shrink:0; }
+        .db-card-title { font-size:13px; font-weight:700; color:#111827; }
+        .db-card-sub { font-size:11px; color:#9ca3af; margin-left:4px; }
+
+        /* ── 필터 ── */
+        .filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:11px 16px; }
+        .range-btn { height:32px; padding:0 12px; border-radius:6px; border:1px solid #e2e5eb; background:#fff; font-size:13px; font-weight:500; cursor:pointer; color:#374151; }
+        .range-btn:hover { background:#f4f5f7; }
+        .range-btn.active { background:#0f2044; color:#fff; border-color:#0f2044; }
+
+        /* ── KPI ── */
+        .kpi-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; margin-bottom:14px; }
+        @media(max-width:900px){ .kpi-row { grid-template-columns:1fr 1fr; } }
+        .kpi-main { background:#fff; border:1px solid #e2e5eb; border-radius:10px; border-top:3px solid #0f2044; padding:18px 22px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+        .kpi-main-label { font-size:11px; font-weight:700; color:#9ca3af; letter-spacing:.07em; text-transform:uppercase; margin-bottom:6px; }
+        .kpi-main-num { font-size:34px; font-weight:800; color:#0f2044; letter-spacing:-.02em; line-height:1.1; font-variant-numeric:tabular-nums; }
+        .kpi-main-period { font-size:12px; color:#9ca3af; margin-top:5px; }
+        .kpi-side { background:#fff; border:1px solid #e2e5eb; border-radius:10px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.06); display:flex; flex-direction:column; gap:5px; }
+        .kpi-side-label { font-size:11px; font-weight:700; color:#9ca3af; letter-spacing:.06em; text-transform:uppercase; }
+        .kpi-side-num { font-size:26px; font-weight:800; color:#111827; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+        .kpi-side-sub { font-size:11px; color:#9ca3af; }
+        .growth-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; margin-top:6px; }
+        .growth-up { background:#dcfce7; color:#166534; }
+        .growth-dn { background:#fee2e2; color:#991b1b; }
+
+        /* ── 지점표 ── */
+        .branch-table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+        .branch-table th { padding:9px 16px; text-align:right; font-size:11px; font-weight:700; color:#9ca3af; border-bottom:1px solid #e2e5eb; letter-spacing:.04em; white-space:nowrap; }
         .branch-table th:first-child { text-align:left; }
-        .branch-table td { padding:11px 14px; text-align:right; color:#111827; border-bottom:1px solid #f3f4f6; }
-        .branch-table td:first-child { text-align:left; font-weight:600; }
+        .branch-table td { padding:12px 16px; text-align:right; font-size:14px; color:#111827; border-bottom:1px solid #f3f4f6; }
+        .branch-table td:first-child { text-align:left; }
         .branch-table tr:last-child td { border-bottom:none; }
-        .branch-table tr:hover td { background:#f9fafb; }
-        .ops-item { display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid #f3f4f6; }
-        .ops-item:last-child { border-bottom:none; }
-        .ops-label { font-size:14px; color:#374151; }
-        .ops-count { font-size:20px; font-weight:800; }
-        .filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-        .range-btn { height:34px; padding:0 12px; border-radius:6px; border:1px solid #e5e7eb; background:#fff; font-size:13px; font-weight:500; cursor:pointer; color:#374151; }
-        .range-btn:hover { background:#f9fafb; }
+        .branch-table tr:hover td { background:#f8f9fb; }
+        .rank-badge { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:4px; font-size:10px; font-weight:800; margin-right:7px; }
+        .rank-1 { background:#0f2044; color:#fff; }
+        .rank-other { background:#f3f4f6; color:#6b7280; }
+        .expire-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+        .expire-warn { background:#fee2e2; color:#991b1b; }
+        .expire-mid { background:#fef3c7; color:#92400e; }
+
+        /* ── 확인할 일 ── */
+        .ops-row { display:flex; align-items:center; padding:13px 20px; border-bottom:1px solid #f3f4f6; gap:12px; }
+        .ops-row:last-child { border-bottom:none; }
+        .ops-icon { font-size:16px; min-width:22px; }
+        .ops-label { font-size:15px; font-weight:600; color:#111827; }
+        .ops-hint { font-size:11px; color:#9ca3af; margin-top:1px; }
+        .ops-count { font-size:22px; font-weight:800; min-width:44px; text-align:right; font-variant-numeric:tabular-nums; }
+        .ops-link-btn { padding:5px 12px; border-radius:6px; border:1.5px solid #1d4ed8; background:#eff6ff; color:#1d4ed8; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .ops-link-btn:hover { background:#dbeafe; }
       `}</style>
 
       {/* 필터 바 */}
-      <div className="db-section" style={{ padding: "12px 16px", marginBottom: 14 }}>
+      <div className="db-card" style={{ marginBottom: 14 }}>
         <div className="filter-bar">
           {(user?.role === "ADMIN" || user?.role === "OWNER") && (
-            <select className="input" style={{ height: 34, fontSize: 13, width: 110 }} value={branch} onChange={e => setBranch(e.target.value)}>
+            <select className="input" style={{ height: 32, fontSize: 13, width: 110 }} value={branch} onChange={e => setBranch(e.target.value)}>
               <option>전체</option>
               {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
             </select>
           )}
-          <input className="input" type="date" style={{ height: 34, width: 140, fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <input className="input" type="date" style={{ height: 32, width: 138, fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
           <span style={{ color: "#9ca3af", fontSize: 13 }}>~</span>
-          <input className="input" type="date" style={{ height: 34, width: 140, fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          <input className="input" type="date" style={{ height: 32, width: 138, fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
           <div style={{ display: "flex", gap: 6 }}>
             {([["오늘", "today"], ["이번 주", "week"], ["이번 달", "month"]] as const).map(([lbl, t]) => (
-              <button key={t} className="range-btn" onClick={() => setRange(t)}>{lbl}</button>
+              <button key={t} className={`range-btn${(t === "month" && isMonth) || (t === "today" && startDate === today && endDate === today) ? " active" : ""}`} onClick={() => setRange(t)}>{lbl}</button>
             ))}
           </div>
-          <button className="btn secondary" style={{ height: 34, fontSize: 13, marginLeft: "auto" }} onClick={loadDashboard}>새로고침</button>
+          <button className="btn secondary" style={{ height: 32, fontSize: 13, marginLeft: "auto" }} onClick={loadDashboard}>새로고침</button>
         </div>
       </div>
 
       {/* KPI */}
-      <div className="kpi-grid" style={{ marginBottom: 14 }}>
-        <div className="kpi-cell">
-          <div className="kpi-num">{money(totalSales)}</div>
-          <div className="kpi-label">매출</div>
-          <div className="kpi-sub">{startDate === endDate ? startDate : `${startDate} ~ ${endDate}`}</div>
+      <div className="kpi-row">
+        <div className="kpi-main">
+          <div className="kpi-main-label">매출</div>
+          <div className="kpi-main-num">{money(totalSales)}</div>
+          <div className="kpi-main-period">{startDate === endDate ? startDate : `${startDate} ~ ${endDate}`}</div>
         </div>
-        <div className="kpi-cell">
-          <div className="kpi-num">{data.new_members || 0}<span style={{ fontSize: 16, fontWeight: 500, color: "#6b7280" }}>명</span></div>
-          <div className="kpi-label">신규 등록</div>
-          <div className="kpi-sub">가입일 기준 · 선택 기간</div>
+        <div className="kpi-side">
+          <div className="kpi-side-label">신규 등록</div>
+          <div className="kpi-side-num">{data.new_members || 0}<span style={{ fontSize: 15, fontWeight: 500, color: "#9ca3af" }}>명</span></div>
+          <div className="kpi-side-sub">가입일 기준</div>
         </div>
-        <div className="kpi-cell">
-          <div className="kpi-num">{totalRereg}<span style={{ fontSize: 16, fontWeight: 500, color: "#6b7280" }}>명</span></div>
-          <div className="kpi-label">재등록</div>
-          <div className="kpi-sub">선택 기간 결제 · 기존 회원</div>
+        <div className="kpi-side">
+          <div className="kpi-side-label">재등록</div>
+          <div className="kpi-side-num">{totalRereg}<span style={{ fontSize: 15, fontWeight: 500, color: "#9ca3af" }}>명</span></div>
+          <div className="kpi-side-sub">기존 회원 결제</div>
         </div>
-        <div className="kpi-cell">
-          <div className="kpi-num">{data.active_members || 0}<span style={{ fontSize: 16, fontWeight: 500, color: "#6b7280" }}>명</span></div>
-          <div className="kpi-label">현재 이용 가능 회원</div>
-          <div className="kpi-sub">만료일·잔여 횟수 기준 · 현재</div>
+        <div className="kpi-side">
+          <div className="kpi-side-label">이용 가능</div>
+          <div className="kpi-side-num">{data.active_members || 0}<span style={{ fontSize: 15, fontWeight: 500, color: "#9ca3af" }}>명</span></div>
+          <div className="kpi-side-sub">현재 기준</div>
         </div>
       </div>
 
-      {/* 지점별 현황 표 */}
-      {branch === "전체" && branchSales.length > 0 && (
-        <div className="db-section">
-          <div className="db-section-title">지점별 현황</div>
-          <div style={{ overflowX: "auto" }}>
-            <table className="branch-table">
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "left" }}>지점</th>
-                  <th>매출</th>
-                  <th>신규</th>
-                  <th>재등록</th>
-                  <th>이용 가능</th>
-                  <th>만료 예정<br /><span style={{ fontWeight: 400 }}>(7일 이내)</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {branchSales.map((b: any) => (
-                  <tr key={b.branch_name}>
-                    <td>{b.branch_name}</td>
-                    <td>
-                      {Number(b.sales || 0).toLocaleString()}원
-                      {b.sales_growth !== null && b.sales_growth !== undefined && (
-                        <span style={{ marginLeft: 6, fontSize: 11, color: b.sales_growth >= 0 ? "#16a34a" : "#dc2626" }}>
-                          {b.sales_growth >= 0 ? "▲" : "▼"}{Math.abs(b.sales_growth)}%
-                        </span>
-                      )}
-                    </td>
-                    <td>{b.new_members || 0}명</td>
-                    <td>{b.rereg_count || 0}명</td>
-                    <td>{b.active_members || 0}명</td>
-                    <td style={{ color: (b.expiring_soon || 0) > 0 ? "#dc2626" : "#374151" }}>
-                      {b.expiring_soon || 0}명
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 10 }}>
-            매출·신규·재등록은 선택 기간 기준. 이용 가능·만료 예정은 현재 기준.
-            {data.comparison_label && ` 증감: ${data.comparison_label}.`}
-          </div>
-        </div>
-      )}
+      {/* 지점별 현황 + 확인할 일 */}
+      <div style={{ display: "grid", gridTemplateColumns: branch === "전체" && branchSales.length > 0 ? "1fr 280px" : "1fr", gap: 14, marginBottom: 14, alignItems: "start" }}>
 
-      {/* 확인할 일 */}
-      <div className="db-section">
-        <div className="db-section-title">확인할 일</div>
-        <div>
+        {/* 지점별 현황 표 */}
+        {branch === "전체" && branchSales.length > 0 && (
+          <div className="db-card" style={{ marginBottom: 0 }}>
+            <div className="db-card-header">
+              <div className="db-card-header-dot" />
+              <span className="db-card-title">지점별 현황</span>
+              <span className="db-card-sub">매출·신규·재등록: 선택기간 / 이용가능·만료예정: 현재</span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="branch-table">
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left" }}>지점</th>
+                    <th>매출</th>
+                    <th>신규</th>
+                    <th>재등록</th>
+                    <th>이용 가능</th>
+                    <th>만료 예정</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {branchSales.map((b: any, idx: number) => (
+                    <tr key={b.branch_name}>
+                      <td>
+                        <span className={`rank-badge ${idx === 0 ? "rank-1" : "rank-other"}`}>{idx + 1}</span>
+                        {b.branch_name}
+                      </td>
+                      <td style={{ fontWeight: idx === 0 ? 800 : 400, color: idx === 0 ? "#0f2044" : "#111827" }}>
+                        {Number(b.sales || 0).toLocaleString()}원
+                        {b.sales_growth !== null && b.sales_growth !== undefined && (
+                          <span style={{ marginLeft: 5, fontSize: 11, fontWeight: 600, color: b.sales_growth >= 0 ? "#16a34a" : "#dc2626" }}>
+                            {b.sales_growth >= 0 ? "▲" : "▼"}{Math.abs(b.sales_growth)}%
+                          </span>
+                        )}
+                      </td>
+                      <td>{b.new_members || 0}명</td>
+                      <td>{b.rereg_count || 0}명</td>
+                      <td>{b.active_members || 0}명</td>
+                      <td>
+                        {(b.expiring_soon || 0) >= 5
+                          ? <span className="expire-badge expire-warn">{b.expiring_soon}명</span>
+                          : (b.expiring_soon || 0) >= 2
+                          ? <span className="expire-badge expire-mid">{b.expiring_soon}명</span>
+                          : <span>{b.expiring_soon || 0}명</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 확인할 일 */}
+        <div className="db-card" style={{ marginBottom: 0 }}>
+          <div className="db-card-header">
+            <div className="db-card-header-dot" style={{ background: "#dc2626" }} />
+            <span className="db-card-title">확인할 일</span>
+          </div>
           {[
-            {
-              label: "만료 임박 회원",
-              desc: "만료일 7일 이내 또는 횟수권 3회 이하",
-              count: data.alert_members || 0,
-              href: "/member-alerts",
-              warn: (data.alert_members || 0) > 0,
-            },
-            {
-              label: "재연락 필요 상담",
-              desc: "재연락 예정일이 오늘 이전",
-              count: data.crm_alerts || 0,
-              href: "/crm-alerts",
-              warn: (data.crm_alerts || 0) > 0,
-            },
-            {
-              label: "오늘 만료",
-              desc: "오늘이 만료일인 활성 회원",
-              count: data.today_expire || 0,
-              href: "/member-expiring",
-              warn: (data.today_expire || 0) > 0,
-            },
+            { icon: "⚠", label: "만료 임박 회원", hint: "7일 이내 · 횟수권 3회↓", count: data.alert_members || 0, href: "/member-alerts", warnColor: "#dc2626" },
+            { icon: "↩", label: "재연락 필요 상담", hint: "재연락 예정일 경과", count: data.crm_alerts || 0, href: "/crm-alerts", warnColor: "#d97706" },
+            { icon: "📅", label: "오늘 만료", hint: "오늘이 만료일인 회원", count: data.today_expire || 0, href: "/member-expiring", warnColor: "#374151" },
           ].map((item) => (
-            <div key={item.label} className="ops-item">
-              <div>
+            <div key={item.label} className="ops-row">
+              <div className="ops-icon">{item.icon}</div>
+              <div style={{ flex: 1 }}>
                 <div className="ops-label">{item.label}</div>
-                <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{item.desc}</div>
+                <div className="ops-hint">{item.hint}</div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span className="ops-count" style={{ color: item.warn ? "#dc2626" : "#9ca3af" }}>
-                  {item.count}건
-                </span>
-                {item.count > 0 && (
-                  <a href={item.href} style={{ fontSize: 12, color: "#2563eb", fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
-                    보기 →
-                  </a>
-                )}
-              </div>
+              <div className="ops-count" style={{ color: item.count > 0 ? item.warnColor : "#9ca3af" }}>{item.count}</div>
+              {item.count > 0 && (
+                <a href={item.href} style={{ textDecoration: "none" }}>
+                  <div className="ops-link-btn">보기</div>
+                </a>
+              )}
             </div>
           ))}
         </div>

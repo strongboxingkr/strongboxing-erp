@@ -162,53 +162,78 @@ export default function NaverCalendarPage() {
   return (
     <AppShell title="예약 캘린더">
       <style>{`
+        /* ── 레이아웃 ── */
         .cal-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
-        .cal-layout { display:grid; grid-template-columns:1fr 380px; gap:14px; align-items:start; }
-        @media(max-width:900px){ .cal-layout { grid-template-columns:1fr; } }
+        .cal-outer { background:#fff; border:1px solid #e2e5eb; border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+        .cal-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; align-items:start; }
+        @media(max-width:860px){ .cal-layout { grid-template-columns:1fr; } }
 
-        /* react-calendar 얇은 격자형 */
-        .cal-wrap .react-calendar { width:100%; border:1px solid #d1d5db; border-radius:0; background:#fff; font-family:inherit; }
-        .cal-wrap .react-calendar__navigation { height:42px; margin-bottom:0; border-bottom:1px solid #e5e7eb; background:#f9fafb; }
-        .cal-wrap .react-calendar__navigation button { min-width:40px; font-size:14px; font-weight:600; color:#374151; background:none; border:none; }
-        .cal-wrap .react-calendar__navigation button:hover { background:#f3f4f6; }
-        .cal-wrap .react-calendar__navigation button:disabled { opacity:.3; }
-        .cal-wrap .react-calendar__navigation__label { font-size:15px; font-weight:700; color:#111827; }
-        .cal-wrap .react-calendar__month-view__weekdays { background:#f9fafb; border-bottom:1px solid #e5e7eb; }
-        .cal-wrap .react-calendar__month-view__weekdays__weekday { padding:7px 0; font-size:12px; font-weight:600; color:#6b7280; text-align:center; }
+        /* ── 달력 (react-calendar) ── */
+        .cal-wrap .react-calendar { width:100%; border:none; background:#fff; font-family:inherit; }
+        .cal-wrap .react-calendar__navigation {
+          height:52px; margin-bottom:0; border-bottom:1px solid #e2e5eb; background:#fff;
+          display:flex; align-items:center; padding:0 16px; gap:4px;
+        }
+        .cal-wrap .react-calendar__navigation button {
+          min-width:36px; height:36px; font-size:14px; font-weight:600; color:#374151;
+          background:none; border:1px solid #e2e5eb; border-radius:7px; cursor:pointer;
+          display:flex; align-items:center; justify-content:center;
+        }
+        .cal-wrap .react-calendar__navigation button:hover { background:#f4f5f7; }
+        .cal-wrap .react-calendar__navigation button:disabled { opacity:.25; cursor:default; }
+        .cal-wrap .react-calendar__navigation__label {
+          flex:1 !important; font-size:17px !important; font-weight:800 !important; color:#111827 !important;
+          background:none !important; border:none !important; cursor:default !important; pointer-events:none;
+          text-align:left !important; padding-left:4px !important;
+        }
+        .cal-wrap .react-calendar__month-view__weekdays { background:#f8f9fb; border-bottom:1px solid #e2e5eb; }
+        .cal-wrap .react-calendar__month-view__weekdays__weekday { padding:8px 0; font-size:11px; font-weight:700; color:#9ca3af; text-align:center; letter-spacing:.04em; }
         .cal-wrap .react-calendar__month-view__weekdays__weekday abbr { text-decoration:none; }
         .cal-wrap .react-calendar__month-view__days__day { padding:0; }
         .cal-wrap .react-calendar__tile {
-          height:70px; padding:5px 7px 4px; display:flex; flex-direction:column; align-items:flex-start;
+          height:72px; padding:6px 8px 5px; display:flex; flex-direction:column; align-items:flex-start;
           border:none; background:none;
-          border-right:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb;
-          cursor:pointer; position:relative;
+          border-right:1px solid #e2e5eb; border-bottom:1px solid #e2e5eb;
+          cursor:pointer; position:relative; transition:background .1s;
         }
-        .cal-wrap .react-calendar__tile:hover { background:#f8faff; }
-        .cal-wrap .react-calendar__tile abbr { font-size:12px; font-weight:500; color:#374151; line-height:1.3; }
-        /* 오늘: 날짜 숫자에 작은 원 */
+        .cal-wrap .react-calendar__tile:hover { background:#f4f8ff; }
+        .cal-wrap .react-calendar__tile abbr { font-size:13px; font-weight:600; color:#374151; line-height:1.3; }
         .cal-wrap .react-calendar__tile--now abbr {
           display:inline-flex; align-items:center; justify-content:center;
-          width:22px; height:22px; border-radius:50%;
-          border:2px solid #2563eb; color:#2563eb; font-weight:700;
+          width:24px; height:24px; border-radius:50%;
+          border:2px solid #1d4ed8; color:#1d4ed8; font-weight:800;
         }
-        /* 선택 날짜: 옅은 파란 배경 */
-        .cal-wrap .react-calendar__tile--active { background:#eff6ff !important; border:1px solid #93c5fd !important; }
-        .cal-wrap .react-calendar__tile--active abbr { color:#1d4ed8 !important; font-weight:700; }
-        .cal-wrap .react-calendar__tile--active.react-calendar__tile--now abbr {
-          border-color:#1d4ed8;
-        }
-        /* 주말 */
+        .cal-wrap .react-calendar__tile--active { background:#eff6ff !important; }
+        .cal-wrap .react-calendar__tile--active abbr { color:#1d4ed8 !important; font-weight:800; }
+        .cal-wrap .react-calendar__tile--active.react-calendar__tile--now abbr { border-color:#1d4ed8; }
         .cal-wrap .react-calendar__month-view__days__day--weekend abbr { color:#ef4444; }
         .cal-wrap .react-calendar__tile.holiday abbr { color:#ef4444; }
-        /* 이웃 달 */
-        .cal-wrap .react-calendar__month-view__days__day--neighboringMonth { opacity:.4; }
+        .cal-wrap .react-calendar__month-view__days__day--neighboringMonth { opacity:.35; }
+        .cal-count-badge {
+          margin-top:auto; font-size:11px; font-weight:700; line-height:1;
+          background:#0f2044; color:#fff; padding:2px 6px; border-radius:4px;
+        }
+        .cal-count-badge.high { background:#dc2626; }
+        .cal-count-badge.selected { background:#1d4ed8; }
 
-        /* 예약 목록 */
-        .res-item { display:flex; align-items:flex-start; gap:10px; padding:11px 14px; border-bottom:1px solid #f3f4f6; cursor:pointer; }
-        .res-item:hover { background:#f8faff; }
-        .res-item:last-child { border-bottom:none; }
+        /* ── 오른쪽 예약 목록 ── */
+        .res-panel { border-left:1px solid #e2e5eb; }
+        @media(max-width:860px){ .res-panel { border-left:none; border-top:1px solid #e2e5eb; } }
+        .res-panel-header { padding:14px 16px 12px; border-bottom:2px solid #0f2044; background:#fff; }
+        .res-panel-date { font-size:16px; font-weight:800; color:#111827; }
+        .res-panel-count { font-size:12px; color:#6b7280; margin-top:2px; }
+        .res-list { display:flex; flex-direction:column; gap:8px; padding:12px; }
+        .res-card { background:#fff; border:1px solid #e2e5eb; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); cursor:pointer; transition:box-shadow .1s; }
+        .res-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.1); }
+        .res-card-top { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid #f0f1f3; }
+        .res-card-bot { display:flex; align-items:center; gap:8px; padding:8px 14px; }
+        .res-time { font-size:16px; font-weight:800; color:#0f2044; min-width:48px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+        .res-name { font-size:14px; font-weight:700; color:#111827; flex:1; }
+        .res-purpose { display:inline-block; font-size:11px; font-weight:700; color:#1d4ed8; background:#eff6ff; padding:2px 8px; border-radius:999px; flex-shrink:0; }
+        .res-meta { font-size:12px; color:#6b7280; }
+        .res-status { flex-shrink:0; font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; }
 
-        /* 모달 */
+        /* ── 모달 ── */
         .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:9999; padding:16px; }
         .modal-box { width:100%; max-width:540px; max-height:92vh; background:#fff; border-radius:10px; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.18); overflow:hidden; }
         .modal-header { padding:16px 18px 12px; border-bottom:1px solid #e5e7eb; flex-shrink:0; }
@@ -225,12 +250,7 @@ export default function NaverCalendarPage() {
       {/* 도구 줄 */}
       <div className="cal-toolbar">
         {isAdminOrOwner ? (
-          <select
-            className="input"
-            style={{ height: 36, fontSize: 13, width: 130 }}
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-          >
+          <select className="input" style={{ height: 36, fontSize: 13, width: 130 }} value={branch} onChange={(e) => setBranch(e.target.value)}>
             <option>전체</option>
             {branches.map((b) => <option key={b.option_id}>{b.option_name}</option>)}
           </select>
@@ -242,90 +262,81 @@ export default function NaverCalendarPage() {
       </div>
 
       {/* 메인 레이아웃 */}
-      <div className="cal-layout">
-        {/* 달력 */}
-        <div className="cal-wrap" style={{ border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden" }}>
-          <Calendar
-            onChange={(v) => setValue(v)}
-            value={value}
-            locale="ko-KR"
-            calendarType="gregory"
-            formatDay={(_, date) => `${date.getDate()}`}
-            formatMonthYear={(_, date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월`}
-            tileClassName={({ date, view }) => {
-              if (view !== "month") return "";
-              return isHoliday(date) ? "holiday" : "";
-            }}
-            tileContent={({ date, view }) => {
-              if (view !== "month") return null;
-              const count = getDateRows(date).length;
-              if (count === 0) return null;
-              const isSelected = toDateKey(date) === selectedDate;
-              return (
-                <span style={{
-                  marginTop: "auto", fontSize: 10, fontWeight: 700, lineHeight: 1,
-                  color: isSelected ? "#1d4ed8" : (count >= 5 ? "#dc2626" : "#2563eb"),
-                }}>
-                  {count}건
-                </span>
-              );
-            }}
-          />
-        </div>
-
-        {/* 오른쪽 예약 목록 */}
-        <div style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden" }}>
-          <div style={{ padding: "11px 14px 9px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>
-              {formatDateHeader(selectedDate)}
-            </div>
-            {selectedRows.length > 0 && (
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>예약 {selectedRows.length}건</div>
-            )}
+      <div className="cal-outer">
+        <div className="cal-layout">
+          {/* 달력 */}
+          <div className="cal-wrap">
+            <Calendar
+              onChange={(v) => setValue(v)}
+              value={value}
+              locale="ko-KR"
+              calendarType="gregory"
+              formatDay={(_, date) => `${date.getDate()}`}
+              formatMonthYear={(_, date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월`}
+              tileClassName={({ date, view }) => {
+                if (view !== "month") return "";
+                return isHoliday(date) ? "holiday" : "";
+              }}
+              tileContent={({ date, view }) => {
+                if (view !== "month") return null;
+                const count = getDateRows(date).length;
+                if (count === 0) return null;
+                const isSelected = toDateKey(date) === selectedDate;
+                const cls = isSelected ? "cal-count-badge selected" : count >= 5 ? "cal-count-badge high" : "cal-count-badge";
+                return <span className={cls}>{count}건</span>;
+              }}
+            />
           </div>
 
-          {selectedRows.length === 0 ? (
-            <div style={{ padding: "28px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>예약이 없습니다.</div>
-          ) : (
-            <div>
-              {selectedRows.map((r) => {
-                const cancelled = isCancelled(r);
-                const purpose = getPurpose(r);
-                const source = getSourceLabel(r);
-                return (
-                  <div key={r.event_id} className="res-item" onClick={() => setSelected(r)}
-                    style={{ opacity: cancelled ? 0.5 : 1 }}>
-                    {/* 시간 */}
-                    <div style={{ minWidth: 40, fontSize: 13, fontWeight: 700, color: "#374151", paddingTop: 1, flexShrink: 0 }}>
-                      {r.start_datetime?.slice(11, 16) || "-"}
-                    </div>
-                    {/* 메인 */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: cancelled ? "#9ca3af" : "#111827", textDecoration: cancelled ? "line-through" : "none" }}>
-                          {r.customer_name || "-"}
-                        </span>
-                        {purpose && (
-                          <span style={{ fontSize: 12, color: "#374151" }}>{purpose}</span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6b7280" }}>
-                        {r.branch_name}
-                        {source ? ` · ${source}` : ""}
-                        {r.phone
-                          ? ` · ${r.phone}`
-                          : <span style={{ color: "#dc2626" }}> · 연락처 미입력</span>}
-                      </div>
-                    </div>
-                    {/* 상태 */}
-                    <div style={{ fontSize: 12, fontWeight: 600, color: getStatusColor(r.status), flexShrink: 0 }}>
-                      {r.status === "취소" ? "취소" : r.status}
-                    </div>
-                  </div>
-                );
-              })}
+          {/* 오른쪽 예약 목록 */}
+          <div className="res-panel">
+            <div className="res-panel-header">
+              <div className="res-panel-date">{formatDateHeader(selectedDate)}</div>
+              <div className="res-panel-count">
+                {selectedRows.length === 0 ? "예약 없음" : `예약 ${selectedRows.length}건`}
+              </div>
             </div>
-          )}
+
+            {selectedRows.length === 0 ? (
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>
+                이 날짜에 예약이 없습니다.
+              </div>
+            ) : (
+              <div className="res-list">
+                {selectedRows.map((r) => {
+                  const cancelled = isCancelled(r);
+                  const purpose = getPurpose(r);
+                  const source = getSourceLabel(r);
+                  const statusColor = getStatusColor(r.status);
+                  const statusBg: Record<string, string> = {
+                    "예약접수": "#eff6ff", "예약확정": "#dcfce7", "확인완료": "#f3e8ff",
+                    "상담완료": "#fef3c7", "노쇼": "#fee2e2", "취소": "#f3f4f6",
+                  };
+                  return (
+                    <div key={r.event_id} className="res-card" onClick={() => setSelected(r)}
+                      style={{ opacity: cancelled ? 0.55 : 1 }}>
+                      <div className="res-card-top">
+                        <div className="res-time">{r.start_datetime?.slice(11, 16) || "-"}</div>
+                        <div className="res-name" style={{ textDecoration: cancelled ? "line-through" : "none", color: cancelled ? "#9ca3af" : "#111827" }}>
+                          {r.customer_name || "-"}
+                        </div>
+                        <div className="res-status" style={{ color: statusColor, background: statusBg[r.status] || "#f3f4f6" }}>
+                          {r.status === "취소" ? "예약취소" : r.status}
+                        </div>
+                      </div>
+                      <div className="res-card-bot">
+                        {purpose && <span className="res-purpose">{purpose}</span>}
+                        <span className="res-meta">
+                          {r.branch_name}{source ? ` · ${source}` : ""}
+                          {r.phone ? ` · ${r.phone}` : <span style={{ color: "#dc2626" }}> · 연락처 미입력</span>}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
