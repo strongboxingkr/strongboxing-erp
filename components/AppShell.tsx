@@ -19,7 +19,6 @@ const menuGroups = [
     items: [
       ["회원관리", "/members"],
       ["회원 알림", "/member-alerts"],
-      ["회원권 만료", "/member-expiring"],
       ["재등록 관리", "/renewal"],
       ["락커 관리", "/lockers"],
       ["기간 일괄 연장", "/bulk-extend"],

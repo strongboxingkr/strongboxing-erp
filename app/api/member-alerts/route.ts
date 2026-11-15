@@ -13,25 +13,29 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const days = Number(searchParams.get("days") || 7);
+
+    const params: any[] = [days];
+
     let sql = `
       SELECT
         member_id,
         branch_name,
         name,
         phone,
+        product_name,
         pass_type,
         remaining_count,
         end_date,
-        status
+        status,
+        staff_name
       FROM members
       WHERE status = 'ACTIVE'
       AND (
-        (pass_type = 'PERIOD' AND DATE(end_date) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY))
+        (pass_type = 'PERIOD' AND end_date IS NOT NULL AND DATE(end_date) BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY))
         OR (pass_type = 'COUNT' AND remaining_count <= 2)
       )
     `;
-
-    const params: any[] = [];
 
     if (branch_name) {
       sql += ` AND branch_name = ? `;
@@ -39,7 +43,7 @@ export async function GET(req: Request) {
     }
 
     sql += `
-      ORDER BY ABS(DATEDIFF(end_date, CURDATE())) ASC, remaining_count ASC
+      ORDER BY end_date ASC, remaining_count ASC
     `;
 
     const [rows]: any = await pool.query(sql, params);
