@@ -259,18 +259,45 @@ export default function PaymentsPage() {
         </div>
       </div>
 
-      {/* 결제 목록 테이블 */}
-      <div className="table-wrap">
-        <table>
+      {/* 결제 목록 — PC 테이블 */}
+      <style>{`
+        .pay-table-wrap { background: var(--panel); border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: visible; }
+        .pay-table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; }
+        .pay-table th, .pay-table td { padding: 0 14px; height: 48px; vertical-align: middle; border-bottom: 1px solid #f3f4f6; font-size: 13px; white-space: nowrap; word-break: keep-all; }
+        .pay-table th { background: #f9fafb; font-weight: 600; color: #6B7280; text-align: left; }
+        .pay-table tbody tr:last-child td { border-bottom: none; }
+        .pay-table tbody tr:hover td { background: #f8faff; }
+        .pay-table .col-wrap { white-space: normal; word-break: break-all; }
+        .pay-table .col-actions { white-space: nowrap; text-align: right; }
+        @media (max-width: 900px) {
+          .pay-table-wrap { background: none; border: none; border-radius: 0; }
+          .pay-table { display: none; }
+          .pay-cards { display: flex !important; }
+        }
+        .pay-cards { display: none; flex-direction: column; gap: 10px; }
+        .pay-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; }
+      `}</style>
+
+      <div className="pay-table-wrap">
+        <table className="pay-table">
+          <colgroup>
+            <col style={{ width: 100 }} />
+            {isAdminOrOwner && <col style={{ width: 80 }} />}
+            <col />
+            <col />
+            <col style={{ width: 72 }} />
+            <col style={{ width: 110 }} />
+            {canEditPayment && <col style={{ width: 108 }} />}
+          </colgroup>
           <thead>
             <tr>
-              <th style={{ width: 100 }}>날짜</th>
-              {isAdminOrOwner && <th style={{ width: 90 }}>지점</th>}
+              <th>날짜</th>
+              {isAdminOrOwner && <th>지점</th>}
               <th>이름</th>
               <th>상품</th>
-              <th style={{ width: 80 }}>결제방식</th>
-              <th style={{ width: 110, textAlign: "right" }}>금액</th>
-              {canEditPayment && <th style={{ width: 80 }}></th>}
+              <th>결제방식</th>
+              <th style={{ textAlign: "right" }}>금액</th>
+              {canEditPayment && <th className="col-actions">관리</th>}
             </tr>
           </thead>
           <tbody>
@@ -279,17 +306,17 @@ export default function PaymentsPage() {
             )}
             {rows.map((r) => (
               <tr key={r.payment_id}>
-                <td style={{ color: "#6B7280", fontSize: 13 }}>{r.payment_date?.slice(0, 10)}</td>
-                {isAdminOrOwner && <td style={{ color: "#6B7280", fontSize: 13 }}>{r.branch_name}</td>}
-                <td>
+                <td style={{ color: "#6B7280" }}>{r.payment_date?.slice(0, 10)}</td>
+                {isAdminOrOwner && <td style={{ color: "#6B7280" }}>{r.branch_name}</td>}
+                <td className="col-wrap">
                   <span style={{ fontWeight: 600 }}>{r.name || "비회원"}</span>
                   {r.memo && <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{r.memo}</div>}
                 </td>
-                <td style={{ color: "#374151", fontSize: 13 }}>{r.product_name || "-"}</td>
-                <td style={{ fontSize: 13, color: "#6B7280" }}>{METHOD_LABEL[r.payment_method] || r.payment_method}</td>
+                <td className="col-wrap" style={{ color: "#374151" }}>{r.product_name || "-"}</td>
+                <td style={{ color: "#6B7280" }}>{METHOD_LABEL[r.payment_method] || r.payment_method}</td>
                 <td style={{ textAlign: "right", fontWeight: 600, color: Number(r.amount) < 0 ? "#ef4444" : "#111827" }}>{money(r.amount)}</td>
                 {canEditPayment && (
-                  <td style={{ textAlign: "right" }}>
+                  <td className="col-actions">
                     <button onClick={() => openEdit(r)} style={{ height: 28, padding: "0 10px", fontSize: 12, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 5, color: "#374151", cursor: "pointer", marginRight: 4 }}>수정</button>
                     <button
                       onClick={async () => {
@@ -307,6 +334,42 @@ export default function PaymentsPage() {
             ))}
           </tbody>
         </table>
+
+        {/* 모바일 카드 목록 */}
+        <div className="pay-cards">
+          {rows.length === 0 && <div style={{ color: "#9CA3AF", textAlign: "center", padding: 32 }}>결제 내역이 없습니다.</div>}
+          {rows.map((r) => (
+            <div key={r.payment_id} className="pay-card">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{r.name || "비회원"}</div>
+                  <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{r.branch_name} · {r.payment_date?.slice(0, 10)}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontWeight: 700, color: Number(r.amount) < 0 ? "#ef4444" : "#111827" }}>{money(r.amount)}</div>
+                  <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{METHOD_LABEL[r.payment_method] || r.payment_method}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 13, color: "#374151" }}>{r.product_name || "-"}</div>
+              {r.memo && <div style={{ marginTop: 4, fontSize: 12, color: "#9CA3AF" }}>{r.memo}</div>}
+              {canEditPayment && (
+                <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end", gap: 6 }}>
+                  <button onClick={() => openEdit(r)} style={{ height: 30, padding: "0 12px", fontSize: 12, background: "#fff", border: "1px solid #E5E7EB", borderRadius: 6, color: "#374151", cursor: "pointer" }}>수정</button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`${r.name || "비회원"} - ${r.product_name} (${money(r.amount)}) 결제를 삭제하시겠습니까?`)) return;
+                      const res = await apiFetch(`/api/payments/delete?payment_id=${r.payment_id}`, { method: "DELETE" });
+                      const json = await res.json();
+                      if (json.success) { alert("삭제 완료"); loadPayments(); }
+                      else alert(json.message || "삭제 실패");
+                    }}
+                    style={{ height: 30, padding: "0 12px", fontSize: 12, background: "none", border: "none", borderRadius: 6, color: "#ef4444", cursor: "pointer" }}
+                  >삭제</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       {/* 리뷰환급 모달 */}
       {reviewModal && (
