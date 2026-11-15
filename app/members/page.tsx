@@ -62,6 +62,9 @@ export default function MembersPage() {
   const [autoEditId, setAutoEditId] = useState("");
   const [returnToDetail, setReturnToDetail] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
+  const [showUploadBranchPicker, setShowUploadBranchPicker] = useState(false);
+  const [uploadBranch, setUploadBranch] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -612,31 +615,29 @@ ${
   const uploadExcel = async (e: any) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
 
+    const resolvedBranch = branch || user?.branch_name || "";
+    if (!resolvedBranch) {
+      // 관리자/대표가 전체 필터 상태 → 지점 선택 팝업
+      setPendingUploadFile(file);
+      setUploadBranch("");
+      setShowUploadBranchPicker(true);
+      return;
+    }
+    await doUpload(file, resolvedBranch);
+  };
+
+  const doUpload = async (file: File, branchName: string) => {
     setUploading(true);
-
     try {
       const formData = new FormData();
-
       formData.append("file", file);
-      formData.append(
-        "branch_name",
-        branch || user?.branch_name || ""
-      );
-
-      const res = await fetch("/api/members/import", {
-        method: "POST",
-        body: formData,
-      });
-
+      formData.append("branch_name", branchName);
+      const res = await fetch("/api/members/import", { method: "POST", body: formData });
       const data = await res.json();
-
-      if (data.success) {
-        alert(data.message);
-        loadMembers(user);
-      } else {
-        alert(data.message);
-      }
+      alert(data.message);
+      if (data.success) loadMembers(user);
     } finally {
       setUploading(false);
     }
@@ -815,201 +816,197 @@ ${
             position: "fixed", inset: 0, zIndex: 1000,
             background: "rgba(0,0,0,0.55)",
             display: "flex", alignItems: "flex-start", justifyContent: "center",
-            overflowY: "auto", padding: "40px 16px 40px",
+            padding: "24px 16px",
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}
         >
-        <div className="card" style={{ width: "100%", maxWidth: 860, borderRadius: 24, margin: "auto" }}>
-          <h2 style={{ marginTop: 0 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
+        <div style={{
+          background: "var(--card)", width: "100%", maxWidth: 760, borderRadius: 12,
+          display: "flex", flexDirection: "column",
+          maxHeight: "calc(100vh - 48px)", overflow: "hidden",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
+        }}>
+          {/* 헤더 */}
+          <div style={{ padding: "13px 24px 11px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
+          </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-              gap: 14,
-              alignItems: "start",
-            }}
-          >
-            {isAdminOrOwner ? (
-              <select className="input" value={form.branch_name} onChange={(e) => setForm({ ...form, branch_name: e.target.value })}>
-                <option value="">지점 선택</option>
-                {branches.map((b) => (
-                  <option key={b.option_id} value={b.option_name}>{b.option_name}</option>
-                ))}
-              </select>
-            ) : (
-              <div className="input" style={{ color: "#aaa" }}>{user?.branch_name}</div>
-            )}
+          {/* 스크롤 바디 */}
+          <div style={{ flex: 1, overflowY: "auto" }}>
 
-            <input className="input" placeholder="회원명" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <input className="input" placeholder="전화번호" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <input className="input" placeholder="출석번호 (숫자 최대 8자리)" maxLength={8} value={form.checkin_code} onChange={(e) => setForm({ ...form, checkin_code: e.target.value.replace(/[^0-9]/g, "").slice(0, 8) })} />
-
-            <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-              <option value="">성별</option>
-              <option value="남">남</option>
-              <option value="여">여</option>
-            </select>
-
-            <input className="input" type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
-<input className="input" placeholder="락카번호" value={form.locker_no} onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
-
-            <input className="input" placeholder="담당자" value={form.staff_name} onChange={(e) => setForm({ ...form, staff_name: e.target.value })} />
-
-            <select className="input" value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
-              <option value="">회원권 선택</option>
-              {products.map((p) => (
-                <option key={p.option_id} value={p.option_name}>{p.option_name}</option>
-              ))}
-            </select>
-
-            {/* 시작일 / 만료일 / 잔여횟수 — 라벨 포함, 3열 나란히 */}
-            <div style={{ gridColumn: "2 / 5", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>시작일</div>
-                <input className="input" type="date" value={form.start_date} onChange={(e) => {
-                  const newStart = e.target.value;
-                  const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
-                  const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-                  setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
-                }} />
+            {/* 기본정보 */}
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>기본정보</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 8 }}>
+                {isAdminOrOwner ? (
+                  <select className="input" value={form.branch_name} onChange={(e) => setForm({ ...form, branch_name: e.target.value })}>
+                    <option value="">지점 선택</option>
+                    {branches.map((b) => (
+                      <option key={b.option_id} value={b.option_name}>{b.option_name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="input" style={{ color: "var(--muted)" }}>{user?.branch_name}</div>
+                )}
+                <input className="input" placeholder="회원명 *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <input className="input" placeholder="전화번호 *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>만료일</div>
-                <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>잔여횟수</div>
-                <input className="input" type="number" placeholder="잔여횟수" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                <input className="input" placeholder="출석번호" maxLength={8} value={form.checkin_code} onChange={(e) => setForm({ ...form, checkin_code: e.target.value.replace(/[^0-9]/g, "").slice(0, 8) })} />
+                <select className="input" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                  <option value="">성별</option>
+                  <option value="남">남</option>
+                  <option value="여">여</option>
+                </select>
+                <input className="input" type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
+                <input className="input" placeholder="담당자" value={form.staff_name} onChange={(e) => setForm({ ...form, staff_name: e.target.value })} />
               </div>
             </div>
 
-            <div
-              style={{
-                gridColumn: "2 / 5",
-                display: "flex",
-                alignItems: "center",
-                gap: 22,
-                background: "var(--panel2)",
-                border: "1px solid #1f2937",
-                borderRadius: 14,
-                padding: "0 14px",
-                minHeight: 48,
-                color: "#ddd",
-              }}
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Number(form.checkin_sms_enabled) === 1}
-                  onChange={(e) => setForm({ ...form, checkin_sms_enabled: e.target.checked ? 1 : 0 })}
-                />{" "}
-                입장 문자 발송
-              </label>
-
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Number(form.checkout_sms_enabled) === 1}
-                  onChange={(e) => setForm({ ...form, checkout_sms_enabled: e.target.checked ? 1 : 0 })}
-                />{" "}
-                운동 종료 문자 발송
-              </label>
-
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Number(form.has_uniform) === 1}
-                  onChange={(e) => setForm({ ...form, has_uniform: e.target.checked ? 1 : 0 })}
-                />{" "}
-                운동복 대여
-              </label>
-
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Number(form.has_locker) === 1}
-                  onChange={(e) => setForm({ ...form, has_locker: e.target.checked ? 1 : 0 })}
-                />{" "}
-                락카 사용
-              </label>
-            </div>
-
-            <textarea
-              className="input"
-              placeholder="메모"
-              value={form.memo}
-              onChange={(e) => setForm({ ...form, memo: e.target.value })}
-              style={{ gridColumn: "1 / 5", minHeight: 82 }}
-            />
-
-            <>
-              <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>💳 결제 정보 (선택)</div>
-              {/* 결제금액 + 수단 + 결제일 한 줄 */}
-              <div style={{ gridColumn: "1 / 5", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  className="input"
-                  type="number"
-                  placeholder="결제금액 (원)"
-                  style={{ flex: "1 1 140px", maxWidth: 200 }}
-                  value={(form as any).payment_amount || ""}
-                  onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
-                />
-                <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
-                  {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
-                    <button key={v} className={(form as any).payment_method_new === v ? "btn" : "btn secondary"} style={{ fontSize: 12, padding: "0 14px" }}
-                      onClick={() => setForm({ ...form, payment_method_new: v } as any)}>{l}</button>
+            {/* 회원권 */}
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>회원권</div>
+              <div style={{ marginBottom: 8 }}>
+                <select className="input" value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
+                  <option value="">상품을 선택하세요</option>
+                  {products.map((p) => (
+                    <option key={p.option_id} value={p.option_name}>{p.option_name}</option>
                   ))}
+                </select>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: form.pass_type === "COUNT" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>시작일</div>
+                  <input className="input" type="date" value={form.start_date} onChange={(e) => {
+                    const newStart = e.target.value;
+                    const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
+                    const months = monthMatch ? parseInt(monthMatch[1]) : 1;
+                    setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
+                  }} />
                 </div>
-                <div style={{ flex: "0 0 auto" }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>만료일</div>
+                  <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+                </div>
+                {form.pass_type === "COUNT" && (
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>잔여횟수</div>
+                    <input className="input" type="number" placeholder="0" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 부가서비스 */}
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>부가서비스</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={Number(form.has_uniform) === 1} onChange={(e) => setForm({ ...form, has_uniform: e.target.checked ? 1 : 0 })} />
+                  운동복 대여
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={Number(form.has_locker) === 1} onChange={(e) => setForm({ ...form, has_locker: e.target.checked ? 1 : 0 })} />
+                  라커 사용
+                </label>
+              </div>
+              {Number(form.has_locker) === 1 && (
+                <div style={{ display: "grid", gridTemplateColumns: form.branch_name === "철산점" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 8, marginTop: 8 }}>
+                  {form.branch_name === "철산점" && (
+                    <div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>구역</div>
+                      <select className="input" value={(form as any).locker_zone || ""} onChange={(e) => setForm({ ...form, locker_zone: e.target.value } as any)}>
+                        <option value="">선택</option>
+                        <option value="A">A구역</option>
+                        <option value="B">B구역</option>
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>라커 번호</div>
+                    <input className="input" placeholder="예: 42" value={form.locker_no} onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>라커 이용기간 종료일</div>
+                    <input className="input" type="date" value={(form as any).locker_end_date || form.end_date} onChange={(e) => setForm({ ...form, locker_end_date: e.target.value } as any)} />
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={Number(form.checkin_sms_enabled) === 1} onChange={(e) => setForm({ ...form, checkin_sms_enabled: e.target.checked ? 1 : 0 })} />
+                  입장 문자 발송
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={Number(form.checkout_sms_enabled) === 1} onChange={(e) => setForm({ ...form, checkout_sms_enabled: e.target.checked ? 1 : 0 })} />
+                  운동 종료 문자 발송
+                </label>
+              </div>
+            </div>
+
+            {/* 결제 정보 */}
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>
+                결제 정보 <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— 선택</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 130px", maxWidth: 190 }}>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제금액 (원)</div>
+                  <input className="input" type="number" placeholder="0"
+                    value={(form as any).payment_amount || ""}
+                    onChange={(e) => setForm({ ...form, payment_amount: e.target.value } as any)}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제수단</div>
+                  <div style={{ display: "flex", gap: 5 }}>
+                    {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
+                      <button key={v}
+                        className={(form as any).payment_method_new === v ? "btn" : "btn secondary"}
+                        style={{ fontSize: 12, padding: "0 12px", height: 36 }}
+                        onClick={() => setForm({ ...form, payment_method_new: v } as any)}
+                      >{l}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
                   <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
-                  <input
-                    className="input"
-                    type="date"
-                    style={{ width: 148 }}
+                  <input className="input" type="date" style={{ width: 148 }}
                     value={(form as any).payment_date_new || today}
                     onChange={(e) => setForm({ ...form, payment_date_new: e.target.value } as any)}
                   />
                 </div>
               </div>
-            </>
-          </div>
+              {!(form as any).payment_amount && (
+                <p style={{ fontSize: 11, color: "var(--muted)", margin: "6px 0 0" }}>결제정보를 입력하지 않으면 회원만 등록됩니다.</p>
+              )}
+            </div>
 
-          <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-            <button className="btn" onClick={saveMember}>
-              {isEdit ? "수정 저장" : "회원 저장"}
-            </button>
+            {/* 메모 */}
+            <div style={{ padding: "11px 24px" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>메모</div>
+              <textarea className="input" placeholder="특이사항, 요청사항 등"
+                value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })}
+                style={{ minHeight: 48, resize: "vertical" }}
+              />
+            </div>
 
+          </div>{/* /스크롤 바디 */}
+
+          {/* 푸터 */}
+          <div style={{ padding: "11px 24px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button className="btn secondary" onClick={() => setShowForm(false)}>취소</button>
             {isEdit && form.member_id && (
               <>
-                <button
-                  className="btn secondary"
-                  onClick={() => { setShowForm(false); openHold({ ...form, member_id: form.member_id }); }}
-                >
-                  휴회
-                </button>
-                <button
-                  className="btn secondary"
-                  onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}
-                >
-                  상세
-                </button>
+                <button className="btn secondary" onClick={() => { setShowForm(false); openHold({ ...form, member_id: form.member_id }); }}>휴회</button>
+                <button className="btn secondary" onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}>상세</button>
               </>
             )}
-
-            <button className="btn secondary" onClick={() => setShowForm(false)}>
-              취소
-            </button>
-
             {isEdit && form.member_id && (
-              <button
-                className="btn secondary"
-                style={{ color: "#ff4d6d", marginLeft: "auto" }}
-                onClick={() => { deleteMember(form); setShowForm(false); }}
-              >
-                삭제
-              </button>
+              <button className="btn secondary" style={{ color: "#ff4d6d", marginRight: "auto", order: -1 }}
+                onClick={() => { deleteMember(form); setShowForm(false); }}>삭제</button>
             )}
+            <button className="btn" onClick={saveMember}>{isEdit ? "수정 저장" : "회원 등록"}</button>
           </div>
 
         </div>
@@ -1017,7 +1014,9 @@ ${
       )}
 
       {showExtendForm && extendMember && (
-        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "24px 16px" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowExtendForm(false); }}>
+        <div className="card" style={{ width: "100%", maxWidth: 600, borderRadius: 16, maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
           <h2>회원권 재등록</h2>
           <div style={{ color: "#aaa", marginBottom: 20 }}>
             {extendMember.name} / 현재: {extendMember.product_name}
@@ -1157,10 +1156,13 @@ ${
             </button>
           </div>
         </div>
+        </div>
       )}
 
       {showSmsPreview && (
-        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowSmsPreview(false); }}>
+        <div className="card" style={{ width: "100%", maxWidth: 480, borderRadius: 16 }}>
           <h2>문자 미리보기</h2>
 
           <textarea
@@ -1208,6 +1210,32 @@ ${
             >
               취소
             </button>
+          </div>
+        </div>
+        </div>
+      )}
+
+      {showUploadBranchPicker && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1100, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowUploadBranchPicker(false); }}>
+          <div className="card" style={{ width: "100%", maxWidth: 360, borderRadius: 16, padding: 24 }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 16 }}>업로드할 지점 선택</h3>
+            <select className="input" value={uploadBranch} onChange={(e) => setUploadBranch(e.target.value)} style={{ marginBottom: 16 }}>
+              <option value="">지점 선택</option>
+              {branches.map((b: any) => (
+                <option key={b.option_id} value={b.option_name}>{b.option_name}</option>
+              ))}
+            </select>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn secondary" onClick={() => { setShowUploadBranchPicker(false); setPendingUploadFile(null); }}>취소</button>
+              <button className="btn" disabled={!uploadBranch} onClick={async () => {
+                setShowUploadBranchPicker(false);
+                if (pendingUploadFile && uploadBranch) {
+                  await doUpload(pendingUploadFile, uploadBranch);
+                  setPendingUploadFile(null);
+                }
+              }}>업로드</button>
+            </div>
           </div>
         </div>
       )}

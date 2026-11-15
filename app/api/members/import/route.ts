@@ -110,10 +110,13 @@ export async function POST(req: Request) {
         SELECT member_id
         FROM members
         WHERE branch_name = ?
-          AND checkin_code = ?
+          AND (
+            checkin_code = ?
+            OR (name = ? AND phone = ?)
+          )
         LIMIT 1
         `,
-        [branchName, checkinCode]
+        [branchName, checkinCode, name, phone]
       );
 
       // 상태 파싱 (정지/휴회 → REST, 만료 → EXPIRED, 나머지 → ACTIVE)
