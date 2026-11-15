@@ -52,6 +52,19 @@ export async function POST(req: Request) {
       });
     }
 
+    // 지점+이름+전화번호 중복 체크
+    const [memberDupRows]: any = await pool.query(
+      `SELECT member_id FROM members WHERE branch_name = ? AND name = ? AND phone = ? LIMIT 1`,
+      [branch_name, name, phone]
+    );
+    if (memberDupRows.length > 0) {
+      return NextResponse.json({
+        success: false,
+        message: `이미 등록된 회원입니다. (${branch_name} · ${name} · ${phone})`,
+      });
+    }
+
+    // 같은 지점 내 출석번호 중복 체크
     const [dupRows]: any = await pool.query(
       `
       SELECT member_id, name
