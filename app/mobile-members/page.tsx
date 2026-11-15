@@ -243,13 +243,13 @@ export default function MobileMembersPage() {
         padding: "12px 16px",
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "#1e293b" }}>회원관리</div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: "#1e293b", whiteSpace: "nowrap" }}>회원 관리</div>
           <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 1 }}>
             {isAdminOrOwner ? "전체 지점" : user.branch_name}
           </div>
         </div>
-        <button className="btn" onClick={openAdd} style={{ padding: "8px 16px", fontSize: 13 }}>
+        <button className="btn" onClick={openAdd} style={{ padding: "8px 16px", fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>
           + 등록
         </button>
       </div>

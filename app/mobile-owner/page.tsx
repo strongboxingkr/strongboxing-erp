@@ -211,26 +211,29 @@ export default function MobileOwnerPage() {
                   <span style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", letterSpacing: -0.5, fontVariantNumeric: "tabular-nums" }}>
                     {money(totalSales)}<span style={{ fontSize: 14, fontWeight: 500, color: "#64748b", marginLeft: 2 }}>원</span>
                   </span>
-                  {totalGrowth !== null ? (
+                  {totalGrowth !== null && !(preset === 0 && prevTotalSales === 0) ? (
                     <span style={{ fontSize: 12, fontWeight: 700, color: totalGrowth >= 0 ? "#16a34a" : "#dc2626" }}>
                       {totalGrowth >= 0 ? "▲" : "▼"}{Math.abs(totalGrowth)}%
                       <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 400, marginLeft: 3 }}>{compLabel}</span>
                     </span>
-                  ) : (
-                    <span style={{ fontSize: 11, color: "#cbd5e1" }}>비교 없음</span>
-                  )}
+                  ) : null}
                 </div>
               </div>
-              <div style={{ borderTop: "1px solid #f1f5f9", display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+              <div style={{ borderTop: "1px solid #f1f5f9", display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr" }}>
                 {[
-                  { lbl: "신규", val: data.new_members ?? 0, sub: "선택기간" },
-                  { lbl: "재등록", val: rawBranchSales.reduce((s: number, b: any) => s + Number(b.rereg_count || 0), 0), sub: "선택기간" },
-                  { lbl: "유효회원", val: data.active_members ?? 0, sub: "현재" },
-                  { lbl: "오늘출석", val: data.checkins ?? 0, sub: "오늘" },
-                ].map((m, i) => (
-                  <div key={m.lbl} style={{ ...S.smallMetric, borderLeft: i > 0 ? "1px solid #f1f5f9" : undefined }}>
+                  { lbl: "신규", val: data.new_members ?? 0, sub: "선택기간", pos: "tl" },
+                  { lbl: "재등록", val: rawBranchSales.reduce((s: number, b: any) => s + Number(b.rereg_count || 0), 0), sub: "선택기간", pos: "tr" },
+                  { lbl: "유효회원", val: data.active_members ?? 0, sub: "현재", pos: "bl" },
+                  { lbl: "오늘출석", val: data.checkins ?? 0, sub: "오늘", pos: "br" },
+                ].map((m) => (
+                  <div key={m.lbl} style={{
+                    ...S.smallMetric,
+                    borderLeft: (m.pos === "tr" || m.pos === "br") ? "1px solid #f1f5f9" : undefined,
+                    borderTop: (m.pos === "bl" || m.pos === "br") ? "1px solid #f1f5f9" : undefined,
+                    padding: "12px 8px",
+                  }}>
                     <div style={S.metricLbl}>{m.lbl} <span style={S.basisLbl}>{m.sub}</span></div>
-                    <div style={S.metricVal}>{m.val}<span style={S.unitLbl}>명</span></div>
+                    <div style={{ ...S.metricVal, fontSize: 18 }}>{m.val}<span style={S.unitLbl}>명</span></div>
                   </div>
                 ))}
               </div>

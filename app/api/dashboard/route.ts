@@ -217,21 +217,15 @@ export async function GET(req: Request) {
       [startDate, endDate]
     );
 
-    // 신규 = 이번 기간에 처음 가입한 회원 (join_date 기준, 기존 결제 없음)
+    // 신규 = 선택 기간에 created_at 기준 가입 회원 (전체 집계와 동일 조건)
     const [branchNewMembersRaw]: any = await pool.query(
       `
       SELECT branch_name, COUNT(*) AS new_members
       FROM members
-      WHERE DATE(join_date) BETWEEN ? AND ?
-      AND NOT EXISTS (
-        SELECT 1 FROM payments p
-        WHERE p.member_id = members.member_id
-        AND p.payment_date < ?
-        AND p.final_amount > 0
-      )
+      WHERE DATE(created_at) BETWEEN ? AND ?
       GROUP BY branch_name
       `,
-      [startDate, endDate, startDate]
+      [startDate, endDate]
     );
 
     // 재등록 = 이번 기간에 결제했지만 신규가 아닌 회원

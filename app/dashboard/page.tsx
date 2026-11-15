@@ -105,7 +105,27 @@ export default function DashboardPage() {
 
         /* ── 필터 ── */
         .filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:11px 16px; }
-        .range-btn { height:32px; padding:0 12px; border-radius:6px; border:1px solid #e2e5eb; background:#fff; font-size:13px; font-weight:500; cursor:pointer; color:#374151; }
+        /* select·date input 공통: box-sizing을 border-box로 고정해
+           height 지정 시 패딩이 안쪽으로 계산되도록, line-height으로 세로 중앙 정렬 */
+        .filter-bar select.input,
+        .filter-bar input[type="date"].input {
+          box-sizing: border-box;
+          height: 38px;
+          padding: 0 10px;
+          line-height: 38px;
+          font-size: 13px;
+          width: auto;
+          display: inline-flex;
+          align-items: center;
+        }
+        /* select 화살표가 가려지지 않도록 오른쪽 여백 확보 */
+        .filter-bar select.input {
+          padding-right: 28px;
+          -webkit-appearance: auto;
+          appearance: auto;
+          cursor: pointer;
+        }
+        .range-btn { height:38px; padding:0 12px; border-radius:6px; border:1px solid #e2e5eb; background:#fff; font-size:13px; font-weight:500; cursor:pointer; color:#374151; }
         .range-btn:hover { background:#f4f5f7; }
         .range-btn.active { background:#0f2044; color:#fff; border-color:#0f2044; }
 
@@ -140,13 +160,15 @@ export default function DashboardPage() {
         .expire-mid { background:#fef3c7; color:#92400e; }
 
         /* ── 확인할 일 ── */
-        .ops-row { display:flex; align-items:center; padding:13px 20px; border-bottom:1px solid #f3f4f6; gap:12px; }
+        .ops-row { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid #f3f4f6; gap:10px; flex-wrap:wrap; }
         .ops-row:last-child { border-bottom:none; }
-        .ops-icon { font-size:16px; min-width:22px; }
-        .ops-label { font-size:15px; font-weight:600; color:#111827; }
-        .ops-hint { font-size:11px; color:#9ca3af; margin-top:1px; }
-        .ops-count { font-size:22px; font-weight:800; min-width:44px; text-align:right; font-variant-numeric:tabular-nums; }
-        .ops-link-btn { padding:5px 12px; border-radius:6px; border:1.5px solid #1d4ed8; background:#eff6ff; color:#1d4ed8; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .ops-icon { font-size:18px; min-width:24px; flex-shrink:0; }
+        .ops-text { flex:1 1 120px; min-width:0; }
+        .ops-label { font-size:14px; font-weight:600; color:#111827; word-break:keep-all; white-space:normal; }
+        .ops-hint { font-size:11px; color:#9ca3af; margin-top:2px; word-break:keep-all; white-space:normal; }
+        .ops-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+        .ops-count { font-size:20px; font-weight:800; min-width:36px; text-align:right; font-variant-numeric:tabular-nums; }
+        .ops-link-btn { padding:5px 11px; border-radius:6px; border:1.5px solid #1d4ed8; background:#eff6ff; color:#1d4ed8; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
         .ops-link-btn:hover { background:#dbeafe; }
       `}</style>
 
@@ -154,20 +176,20 @@ export default function DashboardPage() {
       <div className="db-card" style={{ marginBottom: 14 }}>
         <div className="filter-bar">
           {(user?.role === "ADMIN" || user?.role === "OWNER") && (
-            <select className="input" style={{ height: 32, fontSize: 13, width: 110 }} value={branch} onChange={e => setBranch(e.target.value)}>
+            <select className="input" style={{ width: 120 }} value={branch} onChange={e => setBranch(e.target.value)}>
               <option>전체</option>
               {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
             </select>
           )}
-          <input className="input" type="date" style={{ height: 32, width: 138, fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+          <input className="input" type="date" style={{ width: 148 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
           <span style={{ color: "#9ca3af", fontSize: 13 }}>~</span>
-          <input className="input" type="date" style={{ height: 32, width: 138, fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          <input className="input" type="date" style={{ width: 148 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
           <div style={{ display: "flex", gap: 6 }}>
             {([["오늘", "today"], ["이번 주", "week"], ["이번 달", "month"]] as const).map(([lbl, t]) => (
               <button key={t} className={`range-btn${(t === "month" && isMonth) || (t === "today" && startDate === today && endDate === today) ? " active" : ""}`} onClick={() => setRange(t)}>{lbl}</button>
             ))}
           </div>
-          <button className="btn secondary" style={{ height: 32, fontSize: 13, marginLeft: "auto" }} onClick={loadDashboard}>새로고침</button>
+          <button className="btn secondary" style={{ height: 38, fontSize: 13, padding: "0 14px", marginLeft: "auto" }} onClick={loadDashboard}>새로고침</button>
         </div>
       </div>
 
@@ -264,16 +286,18 @@ export default function DashboardPage() {
           ].map((item) => (
             <div key={item.label} className="ops-row">
               <div className="ops-icon">{item.icon}</div>
-              <div style={{ flex: 1 }}>
+              <div className="ops-text">
                 <div className="ops-label">{item.label}</div>
                 <div className="ops-hint">{item.hint}</div>
               </div>
-              <div className="ops-count" style={{ color: item.count > 0 ? item.warnColor : "#9ca3af" }}>{item.count}</div>
-              {item.count > 0 && (
-                <a href={item.href} style={{ textDecoration: "none" }}>
-                  <div className="ops-link-btn">보기</div>
-                </a>
-              )}
+              <div className="ops-right">
+                <div className="ops-count" style={{ color: item.count > 0 ? item.warnColor : "#9ca3af" }}>{item.count}</div>
+                {item.count > 0 && (
+                  <a href={item.href} style={{ textDecoration: "none" }}>
+                    <div className="ops-link-btn">보기</div>
+                  </a>
+                )}
+              </div>
             </div>
           ))}
         </div>
