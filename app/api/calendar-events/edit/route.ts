@@ -23,14 +23,15 @@ export async function POST(req: Request) {
       });
     }
 
+    const { title } = body;
     const cleanDatetime = String(start_datetime || "").replace("T", " ").slice(0, 19);
     const truncMemo = String(memo || "").slice(0, 500);
 
     await pool.query(
       `UPDATE calendar_events
-       SET customer_name = ?, phone = ?, start_datetime = ?, event_type = ?, status = ?, memo = ?
+       SET customer_name = ?, phone = ?, start_datetime = ?, event_type = ?, title = ?, status = ?, memo = ?
        WHERE event_id = ?`,
-      [customer_name || "", phone || "", cleanDatetime, event_type || "예약", status || "예약접수", truncMemo, event_id]
+      [customer_name || "", phone || "", cleanDatetime, event_type || "예약", title || "", status || "예약접수", truncMemo, event_id]
     );
 
     // source_email_id로 naver_reservations 연동 (전화번호 + 상태 + 메모 반영)

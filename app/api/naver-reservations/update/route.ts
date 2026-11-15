@@ -117,78 +117,52 @@ export async function POST(req: Request) {
     );
 
     let smsSent = false;
+    let smsError: string | null = null;
 
-    const isHomepageReservation = String(before.memo || "").includes(
-      "출처: 홈페이지 예약"
-    );
-
-    if (
-      isHomepageReservation &&
-      before.status !== "예약확정" &&
-      status === "예약확정"
-    ) {
-      const apiKey = process.env.SOLAPI_API_KEY;
-      const apiSecret = process.env.SOLAPI_API_SECRET;
-      const from = cleanPhone(getFromNumber(safeBranchName) || "");
-      const to = cleanPhone(before.phone);
-      const message = sms_message || makeConfirmMessage({ ...before, branch_name: safeBranchName, });
-
-      if (!apiKey || !apiSecret) {
-        throw new Error("솔라피 API 키가 없습니다.");
-      }
-
-      if (!from) {
-        throw new Error("발신번호가 설정되지 않았습니다.");
-      }
+    // sms_message가 명시적으로 전달된 경우에만 발송 (출처 무관, 중복 방지 포함)
+    if (sms_message && status === "예약확정") {
+      const to = cleanPhone(phone || before.phone || "");
 
       if (to.length < 10) {
-        throw new Error("수신번호가 올바르지 않습니다.");
+        smsError = "수신번호가 올바르지 않습니다.";
+      } else {
+        const apiKey = process.env.SOLAPI_API_KEY;
+        const apiSecret = process.env.SOLAPI_API_SECRET;
+        const from = cleanPhone(getFromNumber(safeBranchName) || "");
+
+        if (!apiKey || !apiSecret || !from) {
+          smsError = "발송 설정이 없습니다. 관리자에게 문의하세요.";
+        } else {
+          try {
+            const messageService = new SolapiMessageService(apiKey, apiSecret);
+            await messageService.send([{ to, from, text: sms_message }]);
+            await pool.query(
+              `INSERT INTO sms_logs (branch_name, target_type, receiver_name, receiver_phone, message, send_status, provider)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [safeBranchName, "RESERVATION_CONFIRM", before.customer_name || "", to, sms_message, "SENT", "SOLAPI"]
+            );
+            smsSent = true;
+          } catch (smsErr: any) {
+            smsError = smsErr?.message || "문자 발송 실패";
+            await pool.query(
+              `INSERT INTO sms_logs (branch_name, target_type, receiver_name, receiver_phone, message, send_status, provider)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [safeBranchName, "RESERVATION_CONFIRM", before.customer_name || "", to, sms_message, "FAILED", "SOLAPI"]
+            );
+          }
+        }
       }
-
-      const messageService = new SolapiMessageService(apiKey, apiSecret);
-
-      await messageService.send([
-        {
-          to,
-          from,
-          text: message,
-        },
-      ]);
-
-      await pool.query(
-        `
-        INSERT INTO sms_logs
-        (
-          branch_name,
-          target_type,
-          receiver_name,
-          receiver_phone,
-          message,
-          send_status,
-          provider
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          safeBranchName,
-          "RESERVATION_CONFIRM",
-          before.customer_name || "",
-          to,
-          message,
-          "SENT",
-          "SOLAPI",
-        ]
-      );
-
-      smsSent = true;
     }
 
     return NextResponse.json({
       success: true,
       message: smsSent
         ? "예약 상태 수정 및 안내문자 발송 완료"
-        : "예약 상태 수정 완료",
+        : smsError
+          ? `예약 확정 완료 (문자 발송 실패: ${smsError})`
+          : "예약 상태 수정 완료",
       sms_sent: smsSent,
+      sms_error: smsError,
     });
   } catch (error) {
     console.error(error);

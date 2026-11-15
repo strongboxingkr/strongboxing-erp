@@ -435,6 +435,20 @@ export async function GET(req: Request) {
 
       if (sameReservationRows.length > 0) {
         const reservationId = sameReservationRows[0].reservation_id;
+        const existing = sameReservationRows[0];
+
+        // 수동 입력 전화번호 보호: 메일 파싱 phone이 비었고 기존 phone이 있으면 유지
+        const safePhone = (!phone && existing.phone) ? existing.phone : phone;
+
+        // 운영 메모 보존: 기존 memo에서 ---MAIL--- 앞 운영 메모 추출 후 새 메일 텍스트 앞에 붙이기
+        const MAIL_SEP = "---MAIL---";
+        const existingMemo = String(existing.memo || "");
+        const sepIdx = existingMemo.indexOf(MAIL_SEP);
+        const existingOpsMemo = sepIdx >= 0 ? existingMemo.slice(0, sepIdx).trim() : "";
+        const newMemo = existingOpsMemo
+          ? `${existingOpsMemo}\n${MAIL_SEP}\n${memo}`
+          : memo;
+        const safeMemo = newMemo.slice(0, 2000);
 
         await pool.query(
           `
@@ -454,13 +468,13 @@ export async function GET(req: Request) {
           [
             branch_name,
             customer_name,
-            phone,
+            safePhone,
             reservation_date,
             reservation_time,
             reservation_product,
             status,
             msg.id,
-            memo,
+            safeMemo,
             reservationId,
           ]
         );
