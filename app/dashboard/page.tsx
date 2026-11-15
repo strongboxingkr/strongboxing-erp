@@ -258,9 +258,9 @@ export default function DashboardPage() {
             <span className="db-card-title">확인할 일</span>
           </div>
           {[
-            { icon: "⚠", label: "만료 임박 회원", hint: "7일 이내 · 횟수권 3회↓", count: data.alert_members || 0, href: "/member-alerts", warnColor: "#dc2626" },
+            { icon: "⚠", label: "만료 임박 회원", hint: "기간권 3일 이내 · 횟수권 3회 이하", count: data.alert_members || 0, href: "/member-management?tab=만료 예정", warnColor: "#dc2626" },
             { icon: "↩", label: "재연락 필요 상담", hint: "재연락 예정일 경과", count: data.crm_alerts || 0, href: "/crm-alerts", warnColor: "#d97706" },
-            { icon: "📅", label: "오늘 만료", hint: "오늘이 만료일인 회원", count: data.today_expire || 0, href: "/member-expiring", warnColor: "#374151" },
+            { icon: "📅", label: "오늘 만료", hint: "오늘이 만료일인 회원", count: data.today_expire || 0, href: "/member-management?tab=만료·소진", warnColor: "#374151" },
           ].map((item) => (
             <div key={item.label} className="ops-row">
               <div className="ops-icon">{item.icon}</div>

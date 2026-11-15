@@ -165,7 +165,7 @@ export default function NaverCalendarPage() {
         /* ── 레이아웃 ── */
         .cal-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
         .cal-outer { background:#fff; border:1px solid #e2e5eb; border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06); }
-        .cal-layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; align-items:start; }
+        .cal-layout { display:grid; grid-template-columns:minmax(0,3fr) 2fr; align-items:start; }
         @media(max-width:860px){ .cal-layout { grid-template-columns:1fr; } }
 
         /* ── 달력 (react-calendar) ── */
@@ -456,7 +456,7 @@ export default function NaverCalendarPage() {
                               const dt = selected.start_datetime || "";
                               setSmsModal({
                                 pendingStatus: s,
-                                msg: `[스트롱복싱 ${selected.branch_name}]\n\n${selected.customer_name}님 예약이 확정되었습니다.\n\n방문일시 : ${dt.slice(0, 10)} ${dt.slice(11, 16)}\n예약내용 : ${purpose || "방문 상담"}\n\n예약하신 시간에 뵙겠습니다.\n\n감사합니다 🥊\n스트롱복싱 ${selected.branch_name}`,
+                                msg: `[스트롱복싱 ${selected.branch_name}]\n\n${selected.customer_name}님 예약이 확정되었습니다.\n\n방문일시 : ${dt.slice(0, 10)} ${dt.slice(11, 16)}\n예약내용 : ${purpose || "방문 상담"}\n\n예약하신 시간에 뵙겠습니다.\n\n감사합니다 🥊`,
                               });
                               return;
                             }
