@@ -821,13 +821,14 @@ ${
           onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}
         >
         <div style={{
-          background: "var(--card)", width: "100%", maxWidth: 760, borderRadius: 12,
+          background: "#fff", width: "100%", maxWidth: 760, borderRadius: 12,
           display: "flex", flexDirection: "column",
           maxHeight: "calc(100vh - 48px)", overflow: "hidden",
           boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
+          color: "#111827",
         }}>
           {/* 헤더 */}
-          <div style={{ padding: "13px 24px 11px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+          <div style={{ padding: "13px 24px 11px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
           </div>
 
@@ -835,8 +836,8 @@ ${
           <div style={{ flex: 1, overflowY: "auto" }}>
 
             {/* 기본정보 */}
-            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>기본정보</div>
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>기본정보</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 8 }}>
                 {isAdminOrOwner ? (
                   <select className="input" value={form.branch_name} onChange={(e) => setForm({ ...form, branch_name: e.target.value })}>
@@ -864,8 +865,8 @@ ${
             </div>
 
             {/* 회원권 */}
-            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>회원권</div>
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>회원권</div>
               <div style={{ marginBottom: 8 }}>
                 <select className="input" value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
                   <option value="">상품을 선택하세요</option>
@@ -898,8 +899,8 @@ ${
             </div>
 
             {/* 부가서비스 */}
-            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>부가서비스</div>
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>부가서비스</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
                   <input type="checkbox" checked={Number(form.has_uniform) === 1} onChange={(e) => setForm({ ...form, has_uniform: e.target.checked ? 1 : 0 })} />
@@ -932,7 +933,7 @@ ${
                   </div>
                 </div>
               )}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid #e5e7eb" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
                   <input type="checkbox" checked={Number(form.checkin_sms_enabled) === 1} onChange={(e) => setForm({ ...form, checkin_sms_enabled: e.target.checked ? 1 : 0 })} />
                   입장 문자 발송
@@ -945,8 +946,8 @@ ${
             </div>
 
             {/* 결제 정보 */}
-            <div style={{ padding: "11px 24px", borderBottom: "1px solid var(--border)" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>
+            <div style={{ padding: "11px 24px", borderBottom: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>
                 결제 정보 <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— 선택</span>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -984,7 +985,7 @@ ${
 
             {/* 메모 */}
             <div style={{ padding: "11px 24px" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>메모</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 9 }}>메모</div>
               <textarea className="input" placeholder="특이사항, 요청사항 등"
                 value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })}
                 style={{ minHeight: 48, resize: "vertical" }}
@@ -994,7 +995,7 @@ ${
           </div>{/* /스크롤 바디 */}
 
           {/* 푸터 */}
-          <div style={{ padding: "11px 24px", borderTop: "1px solid var(--border)", flexShrink: 0, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div style={{ padding: "11px 24px", borderTop: "1px solid #e5e7eb", flexShrink: 0, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <button className="btn secondary" onClick={() => setShowForm(false)}>취소</button>
             {isEdit && form.member_id && (
               <>
