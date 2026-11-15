@@ -20,8 +20,13 @@ const menuGroups = [
       ["회원관리", "/members"],
       ["회원권 관리", "/member-management"],
       ["재등록 관리", "/renewal"],
-      ["락커 관리", "/lockers"],
       ["기간 일괄 연장", "/bulk-extend"],
+    ],
+  },
+  {
+    title: "🔑 락커",
+    items: [
+      ["락커 관리", "/lockers"],
     ],
   },
   {
@@ -39,7 +44,7 @@ const menuGroups = [
     items: [
       ["결제관리", "/payments"],
       ["회원 일일권 현황", "/day-passes"],
-      ["월별매출", "/monthly-sales"],
+      ["매출", "/sales"],
       ["재무", "/finance"],
       ["재무 요약", "/finance-summary"],
       ["일일 마감", "/daily-closing"],
