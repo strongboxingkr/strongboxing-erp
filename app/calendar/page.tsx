@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
@@ -17,7 +18,9 @@ const getStatusColor = (s: string) => {
 const SOURCE_OPTIONS = ["전화문의", "카카오톡", "인스타그램", "홈페이지", "지인소개", "방문문의", "당근", "기타"];
 const PURPOSE_OPTIONS = ["방문상담", "일일권", "기타"];
 
-export default function CalendarPage() {
+function CalendarInner() {
+  const searchParams = useSearchParams();
+
   const [rows, setRows] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [branch, setBranch] = useState("전체");
@@ -48,6 +51,28 @@ export default function CalendarPage() {
     apiFetch("/api/settings?option_type=BRANCH").then(r => r.json()).then(d => setBranches(d.rows || []));
   }, []);
 
+  // URL 파라미터(CRM 방문예약 버튼)에서 pre-fill
+  useEffect(() => {
+    if (!user) return;
+    const name = searchParams.get("name");
+    const phone = searchParams.get("phone");
+    const branch = searchParams.get("branch");
+    const channel = searchParams.get("channel");
+    const defaultBranch = !isAdminOrOwner ? (user?.branch_name || "") : (branch || "");
+    setForm(f => ({
+      ...f,
+      branch_name: defaultBranch,
+      customer_name: name || f.customer_name,
+      phone: phone || f.phone,
+      source_type: channel || f.source_type,
+    }));
+  }, [user]);
+
+  // 지점 필터: 관장은 본인 지점만
+  useEffect(() => {
+    if (user && !isAdminOrOwner) setBranch(user.branch_name || "전체");
+  }, [user]);
+
   const load = async () => {
     let url = `/api/calendar-events?start_date=${startDate}&end_date=${endDate}&include_cancelled=true`;
     if (branch !== "전체") url += `&branch_name=${encodeURIComponent(branch)}`;
@@ -60,20 +85,21 @@ export default function CalendarPage() {
     if (user !== null) load();
   }, [branch, startDate, endDate, user]);
 
-  const filtered = rows.filter((r) => {
+  const filtered = rows.filter(r => {
     if (!search.trim()) return true;
     return r.customer_name?.includes(search) || r.phone?.includes(search);
   });
 
   const addReservation = async () => {
-    if (!form.branch_name) return alert("지점을 선택해주세요.");
+    const branchVal = isAdminOrOwner ? form.branch_name : (user?.branch_name || "");
+    if (!branchVal) return alert("지점을 선택해주세요.");
     if (!form.customer_name) return alert("이름을 입력해주세요.");
     if (!form.start_datetime) return alert("방문일시를 선택해주세요.");
 
     const res = await apiFetch("/api/calendar-events/add", {
       method: "POST",
       body: JSON.stringify({
-        branch_name: form.branch_name,
+        branch_name: branchVal,
         customer_name: form.customer_name,
         phone: form.phone,
         start_datetime: form.start_datetime,
@@ -86,7 +112,7 @@ export default function CalendarPage() {
     const json = await res.json();
     if (json.success) {
       alert("예약 등록 완료");
-      setForm({ branch_name: "", customer_name: "", phone: "", purpose: "방문상담", source_type: "전화문의", start_datetime: "", ops_memo: "" });
+      setForm({ branch_name: isAdminOrOwner ? "" : (user?.branch_name || ""), customer_name: "", phone: "", purpose: "방문상담", source_type: "전화문의", start_datetime: "", ops_memo: "" });
       load();
     } else {
       alert(json.message || "등록 실패");
@@ -117,18 +143,22 @@ export default function CalendarPage() {
         <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", marginBottom: 10 }}>
           <div className="field">
             <label className="field-label">지점 <span className="req">*</span></label>
-            <select className="input" style={{ height: 38 }} value={form.branch_name} onChange={(e) => setForm({ ...form, branch_name: e.target.value })}>
-              <option value="">지점 선택</option>
-              {branches.map((b) => <option key={b.option_id} value={b.option_name}>{b.option_name}</option>)}
-            </select>
+            {isAdminOrOwner ? (
+              <select className="input" style={{ height: 38 }} value={form.branch_name} onChange={e => setForm({ ...form, branch_name: e.target.value })}>
+                <option value="">지점 선택</option>
+                {branches.map(b => <option key={b.option_id} value={b.option_name}>{b.option_name}</option>)}
+              </select>
+            ) : (
+              <div className="input" style={{ height: 38, lineHeight: "38px", background: "#f9fafb", color: "#374151" }}>{user?.branch_name}</div>
+            )}
           </div>
           <div className="field">
             <label className="field-label">이름 <span className="req">*</span></label>
-            <input className="input" style={{ height: 38 }} placeholder="이름" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
+            <input className="input" style={{ height: 38 }} placeholder="이름" value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} />
           </div>
           <div className="field">
             <label className="field-label">전화번호</label>
-            <input className="input" style={{ height: 38 }} placeholder="010-0000-0000" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <input className="input" style={{ height: 38 }} placeholder="010-0000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
           </div>
         </div>
 
@@ -136,19 +166,19 @@ export default function CalendarPage() {
         <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", marginBottom: 10 }}>
           <div className="field">
             <label className="field-label">예약 목적</label>
-            <select className="input" style={{ height: 38 }} value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })}>
+            <select className="input" style={{ height: 38 }} value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })}>
               {PURPOSE_OPTIONS.map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
           <div className="field">
             <label className="field-label">유입경로</label>
-            <select className="input" style={{ height: 38 }} value={form.source_type} onChange={(e) => setForm({ ...form, source_type: e.target.value })}>
+            <select className="input" style={{ height: 38 }} value={form.source_type} onChange={e => setForm({ ...form, source_type: e.target.value })}>
               {SOURCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div className="field">
             <label className="field-label">방문일시 <span className="req">*</span></label>
-            <input className="input" type="datetime-local" style={{ height: 38, fontSize: 13 }} value={form.start_datetime} onChange={(e) => setForm({ ...form, start_datetime: e.target.value })} />
+            <input className="input" type="datetime-local" style={{ height: 38, fontSize: 13 }} value={form.start_datetime} onChange={e => setForm({ ...form, start_datetime: e.target.value })} />
           </div>
         </div>
 
@@ -156,7 +186,7 @@ export default function CalendarPage() {
         <div className="field" style={{ marginBottom: 12 }}>
           <label className="field-label">운영 메모 <span style={{ fontWeight: 400, color: "#9ca3af" }}>(선택)</span></label>
           <textarea className="input" style={{ minHeight: 64, resize: "vertical", fontSize: 13 }} placeholder="내부 메모를 입력하세요. 문자 발송에 포함되지 않습니다."
-            value={form.ops_memo} onChange={(e) => setForm({ ...form, ops_memo: e.target.value })} />
+            value={form.ops_memo} onChange={e => setForm({ ...form, ops_memo: e.target.value })} />
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -168,19 +198,19 @@ export default function CalendarPage() {
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           {isAdminOrOwner ? (
-            <select className="input" style={{ width: 120, height: 36 }} value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <select className="input" style={{ width: 120, height: 36 }} value={branch} onChange={e => setBranch(e.target.value)}>
               <option>전체</option>
-              {branches.map((b) => <option key={b.option_id}>{b.option_name}</option>)}
+              {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
             </select>
           ) : (
             <span style={{ fontSize: 14, color: "#374151", fontWeight: 600 }}>{user?.branch_name}</span>
           )}
-          <input className="input" type="date" style={{ width: 150, height: 36 }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <input className="input" type="date" style={{ width: 150, height: 36 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
           <span style={{ color: "#9ca3af" }}>~</span>
-          <input className="input" type="date" style={{ width: 150, height: 36 }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          <input className="input" style={{ flex: 1, minWidth: 160, height: 36 }} placeholder="이름 / 전화번호" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input className="input" type="date" style={{ width: 150, height: 36 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+          <input className="input" style={{ flex: 1, minWidth: 160, height: 36 }} placeholder="이름 / 전화번호" value={search} onChange={e => setSearch(e.target.value)} />
           <button className="btn" style={{ height: 36 }} onClick={load}>조회</button>
-          <button className="btn secondary" style={{ height: 36 }} onClick={() => { setStartDate(today); setEndDate(today); setSearch(""); setBranch("전체"); }}>초기화</button>
+          <button className="btn secondary" style={{ height: 36 }} onClick={() => { setStartDate(today); setEndDate(today); setSearch(""); if (isAdminOrOwner) setBranch("전체"); }}>초기화</button>
         </div>
       </div>
 
@@ -203,7 +233,7 @@ export default function CalendarPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => {
+              {filtered.map(r => {
                 const isCan = ["취소", "예약취소"].includes(r.status);
                 const purpose = (() => {
                   const t = String(r.title || "");
@@ -242,39 +272,47 @@ export default function CalendarPage() {
       {/* 수정 모달 */}
       {selected && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>예약 수정</div>
-                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", fontSize: 18, color: "#9ca3af", cursor: "pointer" }}>✕</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {/* 상담 조회 연결 */}
+                  <a href={`/crm?search=${encodeURIComponent(selected.customer_name || "")}`}
+                    style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "underline" }}
+                    target="_blank" rel="noreferrer">
+                    상담 이력 조회 →
+                  </a>
+                  <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", fontSize: 18, color: "#9ca3af", cursor: "pointer" }}>✕</button>
+                </div>
               </div>
             </div>
             <div className="modal-body">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}>
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 3 }}>이름</div>
-                  <input className="input" style={{ height: 36 }} value={selected.customer_name || ""} onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })} />
+                  <input className="input" style={{ height: 36 }} value={selected.customer_name || ""} onChange={e => setSelected({ ...selected, customer_name: e.target.value })} />
                 </div>
                 <div style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 3 }}>방문일시</div>
-                  <input className="input" type="datetime-local" style={{ height: 36, fontSize: 13 }} value={selected.start_datetime?.slice(0, 16) || ""} onChange={(e) => setSelected({ ...selected, start_datetime: e.target.value })} />
+                  <input className="input" type="datetime-local" style={{ height: 36, fontSize: 13 }} value={selected.start_datetime?.slice(0, 16) || ""} onChange={e => setSelected({ ...selected, start_datetime: e.target.value })} />
                 </div>
               </div>
               <div style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 3 }}>전화번호</div>
-                <input className="input" style={{ height: 36 }} value={selected.phone || ""} onChange={(e) => setSelected({ ...selected, phone: e.target.value })} />
+                <input className="input" style={{ height: 36 }} value={selected.phone || ""} onChange={e => setSelected({ ...selected, phone: e.target.value })} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px", marginBottom: 10 }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 3 }}>예약 목적</div>
-                  <select className="input" style={{ height: 36 }} value={selected.title || ""} onChange={(e) => setSelected({ ...selected, title: e.target.value })}>
+                  <select className="input" style={{ height: 36 }} value={selected.title || ""} onChange={e => setSelected({ ...selected, title: e.target.value })}>
                     {PURPOSE_OPTIONS.map(p => <option key={p}>{p}</option>)}
                     {selected.title && !PURPOSE_OPTIONS.includes(selected.title) && <option value={selected.title}>{selected.title}</option>}
                   </select>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 3 }}>유입경로</div>
-                  <select className="input" style={{ height: 36 }} value={selected.event_type || ""} onChange={(e) => setSelected({ ...selected, event_type: e.target.value })}>
+                  <select className="input" style={{ height: 36 }} value={selected.event_type || ""} onChange={e => setSelected({ ...selected, event_type: e.target.value })}>
                     {SOURCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
@@ -283,7 +321,7 @@ export default function CalendarPage() {
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 3 }}>운영 메모</div>
                 <textarea className="input" style={{ minHeight: 72, resize: "vertical", fontSize: 13 }}
                   value={selected.memo?.split("---MAIL---")[0]?.trim() || ""}
-                  onChange={(e) => {
+                  onChange={e => {
                     const mailPart = selected.memo?.includes("---MAIL---")
                       ? selected.memo.split("---MAIL---").slice(1).join("---MAIL---")
                       : "";
@@ -296,7 +334,7 @@ export default function CalendarPage() {
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>상태</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {["예약접수", "예약확정", "상담완료", "노쇼", "취소"].map((s) => {
+                  {["예약접수", "예약확정", "상담완료", "노쇼", "취소"].map(s => {
                     const label = s === "취소" ? "예약 취소" : s;
                     const active = selected.status === s;
                     return (
@@ -306,7 +344,7 @@ export default function CalendarPage() {
                         onClick={async () => {
                           if (s === "예약확정") {
                             setSmsReservation(selected);
-                            setSmsMessage(`[스트롱복싱 ${selected.branch_name}]\n\n${selected.customer_name}님 예약이 확정되었습니다.\n\n방문일시 : ${selected.start_datetime?.slice(0, 16).replace("T", " ")}\n예약내용 : ${selected.title || "방문 상담"}\n\n편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.\n처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.\n\n감사합니다.\n스트롱복싱 ${selected.branch_name}`);
+                            setSmsMessage(`[스트롱복싱 ${selected.branch_name}]\n\n${selected.customer_name}님 예약이 확정되었습니다.\n\n방문일시 : ${selected.start_datetime?.slice(0, 16).replace("T", " ")}\n예약내용 : ${selected.title || "방문 상담"}\n\n편한 복장과 실내 운동화를 지참 후 방문 부탁드립니다.\n처음 방문이신 경우 예약시간 5~10분 전 도착 부탁드립니다.\n\n감사합니다 🥊\n스트롱복싱 ${selected.branch_name}`);
                             setSelected(null);
                             setSmsModalOpen(true);
                             return;
@@ -351,13 +389,13 @@ export default function CalendarPage() {
       {/* 문자 발송 모달 */}
       {smsModalOpen && smsReservation && (
         <div className="modal-overlay" onClick={() => setSmsModalOpen(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500 }}>
+          <div className="modal-box" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <div className="modal-header">
               <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>예약확정 안내문자</div>
               <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{smsReservation.customer_name} · {smsReservation.phone || "연락처 없음"}</div>
             </div>
             <div className="modal-body">
-              <textarea className="input" value={smsMessage} onChange={(e) => setSmsMessage(e.target.value)} style={{ minHeight: 220, resize: "vertical", fontSize: 13 }} />
+              <textarea className="input" value={smsMessage} onChange={e => setSmsMessage(e.target.value)} style={{ minHeight: 220, resize: "vertical", fontSize: 13 }} />
             </div>
             <div className="modal-footer">
               <button className="btn secondary" style={{ height: 36, fontSize: 13 }} onClick={() => setSmsModalOpen(false)}>닫기</button>
@@ -394,5 +432,13 @@ export default function CalendarPage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense>
+      <CalendarInner />
+    </Suspense>
   );
 }
