@@ -33,7 +33,7 @@ export async function GET(req: Request) {
       WHERE YEAR(p.payment_date) = ?
         AND MONTH(p.payment_date) = ?
         AND p.final_amount > 0
-        AND (p.status IS NULL OR p.status != 'CANCELLED')
+        AND (p.memo IS NULL OR p.memo NOT LIKE '[취소]%')
         ${branchWhere}
       GROUP BY sale_date
       ORDER BY sale_date DESC
