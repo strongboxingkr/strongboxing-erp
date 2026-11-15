@@ -551,7 +551,7 @@ export default function MemberDetailPage() {
                   </span>
                 );
               })()}
-              {Number(data.member.remaining_count || 0) > 0 && Number(data.member.remaining_count) <= 3 && (
+              {Number(data.member.remaining_count || 0) > 0 && Number(data.member.remaining_count) <= 2 && (
                 <span style={{ background: "rgba(255,77,109,.15)", color: "#ff4d6d", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900 }}>횟수부족</span>
               )}
               <button className="btn secondary"
