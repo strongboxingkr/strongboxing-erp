@@ -54,6 +54,7 @@ const menuGroups = [
     title: "🔔 문자/공지",
     items: [
       ["문자관리", "/sms"],
+      ["공지·일정 관리", "/notice-management"],
       ["공지사항", "/notice"],
       ["회원앱 소식", "/member-news"],
       ["마무리 운동", "/finishers"],

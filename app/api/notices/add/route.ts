@@ -18,18 +18,20 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const { branch_name, title, content } = body;
+    const { branch_name, title, content, status, start_date, end_date, is_important } = body;
 
     await pool.query(
-      `
-      INSERT INTO notices
-      (branch_name, title, content, created_by)
-      VALUES (?, ?, ?, ?)
-      `,
+      `INSERT INTO notices
+        (branch_name, title, content, status, start_date, end_date, is_important, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         branch_name || "전체",
         title,
         content || "",
+        status || "PUBLISHED",
+        start_date || null,
+        end_date || null,
+        is_important ? 1 : 0,
         user.login_id || "",
       ]
     );
@@ -38,11 +40,11 @@ export async function POST(req: Request) {
       success: true,
       message: "공지 등록 완료",
     });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({
       success: false,
       message: "공지 등록 실패",
-      error,
+      error: error?.message,
     });
   }
 }

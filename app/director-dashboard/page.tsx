@@ -26,12 +26,21 @@ export default function DirectorDashboardPage() {
   const [selBranch, setSelBranch] = useState("전체");
   const [summary, setSummary] = useState<any>(null);
   const [attendance, setAttendance]     = useState<any[]>([]);
-  const [allBranches, setAllBranches]   = useState<any[]>([]);
   const [expiring, setExpiring]         = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[] | null>(null);
   const [reservErr, setReservErr]       = useState(false);
   const [loading, setLoading]     = useState(true);
   const [showExpiring, setShowExpiring] = useState(false);
+
+  // 공지·일정
+  const [notices, setNotices]     = useState<any[]>([]);
+  const [events, setEvents]       = useState<any[] | null>(null);
+  const [noticeDetail, setNoticeDetail] = useState<any>(null);
+
+  // 자동문자 현황
+  const [smsLogs, setSmsLogs]       = useState<any[]>([]);
+  const [showSms, setShowSms]       = useState(false);
+  const [smsLoading, setSmsLoading] = useState(false);
 
   const isAdminOrOwner = (role?: string) => role === "ADMIN" || role === "OWNER";
 
@@ -45,25 +54,19 @@ export default function DirectorDashboardPage() {
       : (u.branch_name ? `?branch_name=${encodeURIComponent(u.branch_name)}` : "");
 
     try {
-      const [sumRes, attRes, allAttRes, expRes] = await Promise.all([
+      const [sumRes, attRes, expRes] = await Promise.all([
         apiFetch(`/api/dashboard/summary${branchParam}`),
         apiFetch(`/api/attendance/live${branchParam}`),
-        apiFetch(`/api/attendance/live?all_branches=true`),
         apiFetch(`/api/members?status=ACTIVE&expiring=7${branchParam ? branchParam.replace("?", "&") : ""}`),
       ]);
 
-      const [sumJson, attJson, allAttJson, expJson] = await Promise.all([
-        sumRes.json(), attRes.json(), allAttRes.json(), expRes.json(),
+      const [sumJson, attJson, expJson] = await Promise.all([
+        sumRes.json(), attRes.json(), expRes.json(),
       ]);
 
       setSummary(sumJson.data);
       setAttendance(attJson.rows || []);
 
-      const branchList = ["철산점", "목동점", "개봉점", "신정점"];
-      const branchMap: Record<string, number> = {};
-      branchList.forEach(b => (branchMap[b] = 0));
-      (allAttJson.branches || []).forEach((r: any) => { branchMap[r.branch_name] = Number(r.count || 0); });
-      setAllBranches(branchList.map(b => ({ branch_name: b, count: branchMap[b] })));
 
       const today0 = new Date(); today0.setHours(0, 0, 0, 0);
       const threeDays = new Date(today0); threeDays.setDate(threeDays.getDate() + 3);
@@ -79,12 +82,57 @@ export default function DirectorDashboardPage() {
 
     setLoading(false);
 
+    // 공지·일정 로드
+    loadNoticesAndEvents(
+      isAdminOrOwner(u.role)
+        ? (branch && branch !== "전체" ? branch : undefined)
+        : u.branch_name
+    );
+
     // 예약은 독립적으로 로드
     loadReservations(
       isAdminOrOwner(u.role)
         ? (branch && branch !== "전체" ? branch : undefined)
         : u.branch_name
     );
+  };
+
+  /* ── 공지·일정 로드 ── */
+  const loadNoticesAndEvents = async (branch?: string) => {
+    try {
+      const bp = branch ? `?branch_name=${encodeURIComponent(branch)}` : "";
+      const nRes = await apiFetch(`/api/notices${bp}`);
+      const nJson = await nRes.json();
+      const today = new Date().toISOString().slice(0, 10);
+      const filtered = (nJson.rows || []).filter((n: any) => {
+        if (n.use_yn === "N") return false;
+        const st = n.status || "PUBLISHED";
+        if (st !== "PUBLISHED") return false;
+        if (n.start_date && n.start_date.slice(0, 10) > today) return false;
+        if (n.end_date && n.end_date.slice(0, 10) < today) return false;
+        return true;
+      }).sort((a: any, b: any) => (b.is_important || 0) - (a.is_important || 0));
+      setNotices(filtered);
+    } catch { setNotices([]); }
+
+    try {
+      const bp = branch ? `?branch_name=${encodeURIComponent(branch)}&status=PUBLISHED&upcoming=1` : "?status=PUBLISHED&upcoming=1";
+      const eRes = await apiFetch(`/api/events${bp}`);
+      const eJson = await eRes.json();
+      setEvents(eJson.success ? (eJson.rows || []) : []);
+    } catch { setEvents([]); }
+  };
+
+  /* ── SMS 로그 로드 ── */
+  const loadSmsLogs = async (branch?: string) => {
+    setSmsLoading(true);
+    try {
+      const bp = branch ? `?branch_name=${encodeURIComponent(branch)}` : "";
+      const res = await apiFetch(`/api/sms/logs${bp}`);
+      const data = await res.json();
+      setSmsLogs(data.rows || []);
+    } catch { setSmsLogs([]); }
+    setSmsLoading(false);
   };
 
   /* ── 예약 로드 ── */
@@ -166,13 +214,18 @@ export default function DirectorDashboardPage() {
         .resv-source { font-size:11px; color:#9ca3af; white-space:nowrap; }
         .resv-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0; }
 
-        /* ── 오늘 출석 / 지점 ── */
+        /* ── 오늘 출석 / 공지·일정 ── */
         .dir-two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-two-col { grid-template-columns:1fr; } }
         .dir-att-row { display:flex; justify-content:space-between; align-items:center; padding:9px 20px; border-bottom:1px solid #f3f4f6; font-size:13px; }
         .dir-att-row:last-child { border-bottom:none; }
-        .dir-branch-row { display:flex; justify-content:space-between; align-items:center; padding:11px 20px; border-bottom:1px solid #f3f4f6; }
-        .dir-branch-row:last-child { border-bottom:none; }
+        /* 공지·일정 카드 */
+        .dir-ni-row { padding:10px 20px; border-bottom:1px solid #f3f4f6; cursor:pointer; }
+        .dir-ni-row:last-child { border-bottom:none; }
+        .dir-ni-row:hover { background:#f8faff; }
+        .dir-ni-title { font-size:13px; font-weight:700; color:#111827; margin-bottom:2px; }
+        .dir-ni-meta { font-size:11px; color:#9ca3af; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+        .dir-ni-badge { display:inline-block; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:700; white-space:nowrap; }
 
         /* ── 만료 임박 ── */
         .dir-expire-row { display:flex; align-items:center; padding:10px 20px; border-bottom:1px solid #f3f4f6; gap:12px; text-decoration:none; display:flex; }
@@ -339,24 +392,78 @@ export default function DirectorDashboardPage() {
         </div>
 
         <div className="dir-card" style={{ marginBottom: 0 }}>
-          <div className="dir-card-header">
-            <div className="dir-dot" style={{ background: "#6366f1" }} />
-            <span className="dir-card-title">전체 지점 당일 출석</span>
+          <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="dir-dot" style={{ background: "#6366f1" }} />
+              <span className="dir-card-title">공지·일정</span>
+              {(notices.length + (events?.length || 0)) > 0 && (
+                <span className="dir-card-sub">{notices.length + (events?.length || 0)}건</span>
+              )}
+            </div>
+            <Link href="/notice-management" style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>관리 →</Link>
           </div>
           {loading ? (
             <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
+          ) : notices.length === 0 && (events === null || events.length === 0) ? (
+            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>공지·일정 없음</div>
           ) : (
-            allBranches.map(b => (
-              <div key={b.branch_name} className="dir-branch-row">
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{b.branch_name}</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: b.count > 0 ? "#0f2044" : "#9ca3af", fontVariantNumeric: "tabular-nums" }}>
-                  {b.count}<span style={{ fontSize: 12, fontWeight: 400, color: "#9ca3af" }}>명</span>
-                </span>
-              </div>
-            ))
+            <>
+              {notices.slice(0, 3).map((n: any) => (
+                <div key={n.notice_id} className="dir-ni-row" onClick={() => setNoticeDetail(n)}>
+                  <div className="dir-ni-title">
+                    {n.is_important ? <span style={{ color: "#dc2626", marginRight: 4 }}>★</span> : null}
+                    {n.title}
+                  </div>
+                  <div className="dir-ni-meta">
+                    <span className="dir-ni-badge" style={{ background: n.branch_name === "전체" ? "#dcfce7" : "#dbeafe", color: n.branch_name === "전체" ? "#166534" : "#1d4ed8" }}>{n.branch_name}</span>
+                    <span>공지</span>
+                  </div>
+                </div>
+              ))}
+              {(events || []).slice(0, 3).map((e: any) => {
+                const today = new Date().toISOString().slice(0, 10);
+                const isRecruitClose = e.recruit_end && e.recruit_end.slice(0, 10) >= today;
+                return (
+                  <div key={e.event_id} className="dir-ni-row">
+                    <div className="dir-ni-title">{e.title}</div>
+                    <div className="dir-ni-meta">
+                      <span className="dir-ni-badge" style={{ background: "#f3f4f6", color: "#374151" }}>
+                        {({"SPORTS_CONTEST": "생활체육 대회", "BELT_TEST": "단증 심사", "HOLIDAY": "휴무", "EVENT": "행사", "ETC": "기타"} as any)[e.event_type] || e.event_type}
+                      </span>
+                      {e.date_tbd ? <span>날짜 미정</span> : e.event_start ? <span>행사 {String(e.event_start).slice(0, 10)}</span> : null}
+                      {isRecruitClose && <span style={{ color: "#dc2626", fontWeight: 700 }}>모집마감 {e.recruit_end.slice(0, 10)}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
           )}
         </div>
       </div>
+
+      {/* ── 공지 상세 모달 ── */}
+      {noticeDetail && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+          onClick={e => { if (e.target === e.currentTarget) setNoticeDetail(null); }}
+        >
+          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 540, maxHeight: "80vh", overflow: "auto", boxShadow: "0 8px 40px rgba(0,0,0,.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #e2e5eb" }}>
+              <span style={{ fontWeight: 800, fontSize: 15, color: "#111827" }}>
+                {noticeDetail.is_important ? <span style={{ color: "#dc2626", marginRight: 4 }}>★</span> : null}
+                {noticeDetail.title}
+              </span>
+              <button onClick={() => setNoticeDetail(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#9ca3af" }}>×</button>
+            </div>
+            <div style={{ padding: "16px 20px" }}>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 12 }}>
+                대상: {noticeDetail.branch_name} · {String(noticeDetail.created_at || "").slice(0, 10)}
+              </div>
+              <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "#374151" }}>{noticeDetail.content || "(내용 없음)"}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 만료 임박 회원 (접기/펼치기) ── */}
       <div className="dir-card">
@@ -395,6 +502,86 @@ export default function DirectorDashboardPage() {
                 </div>
               </Link>
             ))}
+          </>
+        )}
+      </div>
+
+      {/* ── 자동문자 발송 현황 (접기/펼치기) ── */}
+      <div className="dir-card">
+        <button
+          onClick={() => {
+            if (!showSms && smsLogs.length === 0) {
+              loadSmsLogs(
+                isAdminOrOwner(user?.role)
+                  ? (selBranch !== "전체" ? selBranch : undefined)
+                  : user?.branch_name
+              );
+            }
+            setShowSms(v => !v);
+          }}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "none", border: "none", cursor: "pointer", padding: "13px 20px", textAlign: "left" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="dir-dot" style={{ background: "#0891b2" }} />
+            <span style={{ fontWeight: 700, fontSize: 13, color: "#111827" }}>자동문자 발송 현황</span>
+            <span style={{ fontSize: 12, color: "#9ca3af" }}>오늘 기준</span>
+            {showSms && !smsLoading && smsLogs.length > 0 && (() => {
+              const ok  = smsLogs.filter((s: any) => s.status === "SUCCESS" || s.status === "SENT").length;
+              const fail = smsLogs.filter((s: any) => s.status === "FAIL" || s.status === "FAILED").length;
+              return (
+                <span style={{ fontSize: 12, color: "#374151" }}>
+                  총 {smsLogs.length}건
+                  {ok > 0 && <span style={{ color: "#166534", marginLeft: 4 }}>성공 {ok}</span>}
+                  {fail > 0 && <span style={{ color: "#dc2626", marginLeft: 4 }}>실패 {fail}</span>}
+                </span>
+              );
+            })()}
+          </div>
+          <span style={{ color: "#9ca3af", fontSize: 12 }}>{showSms ? "▲" : "▼"}</span>
+        </button>
+        {showSms && (
+          <>
+            <div style={{ height: 1, background: "#e2e5eb" }} />
+            {smsLoading ? (
+              <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
+            ) : smsLogs.length === 0 ? (
+              <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 발송된 자동문자 없음</div>
+            ) : (
+              <>
+                {/* 요약 헤더 */}
+                {(() => {
+                  const ok   = smsLogs.filter((s: any) => s.status === "SUCCESS" || s.status === "SENT").length;
+                  const fail = smsLogs.filter((s: any) => s.status === "FAIL" || s.status === "FAILED").length;
+                  const etc  = smsLogs.length - ok - fail;
+                  return (
+                    <div style={{ display: "flex", gap: 16, padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #f1f3f5" }}>
+                      <span style={{ fontSize: 13 }}>총 <strong>{smsLogs.length}</strong>건</span>
+                      <span style={{ fontSize: 13, color: "#166534" }}>성공 <strong>{ok}</strong></span>
+                      <span style={{ fontSize: 13, color: "#dc2626" }}>실패 <strong>{fail}</strong></span>
+                      {etc > 0 && <span style={{ fontSize: 13, color: "#9ca3af" }}>기타 <strong>{etc}</strong></span>}
+                    </div>
+                  );
+                })()}
+                {smsLogs.slice(0, 20).map((s: any) => {
+                  const isOk = s.status === "SUCCESS" || s.status === "SENT";
+                  const isFail = s.status === "FAIL" || s.status === "FAILED";
+                  return (
+                    <div key={s.sms_id} style={{ display: "flex", alignItems: "center", padding: "9px 20px", borderBottom: "1px solid #f3f4f6", gap: 10 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: isOk ? "#16a34a" : isFail ? "#dc2626" : "#9ca3af", flexShrink: 0, display: "inline-block" }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#374151", minWidth: 56 }}>{s.name || s.member_name || "—"}</span>
+                      <span style={{ fontSize: 12, color: "#6b7280", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.message || s.msg || "—"}</span>
+                      <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>{String(s.created_at || "").slice(11, 16)}</span>
+                    </div>
+                  );
+                })}
+                {smsLogs.length > 20 && (
+                  <div style={{ padding: "8px 20px", fontSize: 12, color: "#9ca3af", borderTop: "1px solid #f3f4f6" }}>
+                    외 {smsLogs.length - 20}건 —{" "}
+                    <Link href="/sms" style={{ color: "#1d4ed8", fontWeight: 600 }}>전체 보기</Link>
+                  </div>
+                )}
+              </>
+            )}
           </>
         )}
       </div>
