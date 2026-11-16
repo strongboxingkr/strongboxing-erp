@@ -149,6 +149,25 @@ function SalesInner() {
         .sales-tab { padding:9px 20px; font-size:13px; font-weight:600; color:#6b7280; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; background:none; border-top:none; border-left:none; border-right:none; }
         .sales-tab.active { color:#0f2044; border-bottom-color:#0f2044; }
         .sales-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+        /* select: line-height/flex 금지 — native select는 height만으로 세로 정렬 */
+        .sales-toolbar select.input {
+          box-sizing: border-box !important;
+          height: 38px !important;
+          padding: 0 10px !important;
+          padding-right: 28px !important;
+          font-size: 13px !important;
+          width: auto !important;
+          appearance: auto !important;
+          -webkit-appearance: auto !important;
+        }
+        /* input[type=date], input[type=number] 등 non-select */
+        .sales-toolbar input.input {
+          box-sizing: border-box !important;
+          height: 38px !important;
+          padding: 0 10px !important;
+          font-size: 13px !important;
+          width: auto !important;
+        }
         .sales-card { background:#fff; border:1px solid #e2e5eb; border-radius:10px; overflow:hidden; }
         .sales-card-title { padding:12px 16px; border-bottom:1px solid #e2e5eb; font-size:14px; font-weight:700; color:#111827; display:flex; justify-content:space-between; align-items:center; }
         .sales-summary { display:grid; border-bottom:1px solid #e2e5eb; }
@@ -182,13 +201,13 @@ function SalesInner() {
         <>
           <div className="sales-toolbar">
             {isAdminOrOwner ? (
-              <select className="input" style={{ height: 36, fontSize: 13, width: 130 }} value={branch} onChange={e => { setBranch(e.target.value); loadDaily(e.target.value); }}>
+              <select className="input" style={{ width: 130 }} value={branch} onChange={e => { setBranch(e.target.value); loadDaily(e.target.value); }}>
                 <option>전체</option>
                 {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
               </select>
             ) : <span style={{ fontSize: 13, fontWeight: 600 }}>{user?.branch_name}</span>}
-            <input className="input" type="date" style={{ height: 36 }} value={dailyDate} onChange={e => setDailyDate(e.target.value)} />
-            <button className="btn" style={{ height: 36 }} onClick={() => loadDaily()}>조회</button>
+            <input className="input" type="date" value={dailyDate} onChange={e => setDailyDate(e.target.value)} />
+            <button className="btn" style={{ height: 38 }} onClick={() => loadDaily()}>조회</button>
             {isAdminOrOwner && <button className="btn-export" onClick={download}>엑셀 내보내기</button>}
           </div>
 
@@ -235,18 +254,18 @@ function SalesInner() {
         <>
           <div className="sales-toolbar">
             {isAdminOrOwner ? (
-              <select className="input" style={{ height: 36, fontSize: 13, width: 130 }} value={branch} onChange={e => { setBranch(e.target.value); loadMonthly(e.target.value); }}>
+              <select className="input" style={{ width: 130 }} value={branch} onChange={e => { setBranch(e.target.value); loadMonthly(e.target.value); }}>
                 <option>전체</option>
                 {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
               </select>
             ) : <span style={{ fontSize: 13, fontWeight: 600 }}>{user?.branch_name}</span>}
-            <select className="input" style={{ height: 36, width: 100 }} value={mYear} onChange={e => setMYear(e.target.value)}>
+            <select className="input" style={{ width: 100 }} value={mYear} onChange={e => setMYear(e.target.value)}>
               {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
-            <select className="input" style={{ height: 36, width: 80 }} value={mMonth} onChange={e => setMMonth(e.target.value)}>
+            <select className="input" style={{ width: 80 }} value={mMonth} onChange={e => setMMonth(e.target.value)}>
               {Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{m}월</option>)}
             </select>
-            <button className="btn" style={{ height: 36 }} onClick={() => loadMonthly()}>조회</button>
+            <button className="btn" style={{ height: 38 }} onClick={() => loadMonthly()}>조회</button>
             {isAdminOrOwner && <button className="btn-export" onClick={download}>엑셀 내보내기</button>}
           </div>
 
@@ -334,15 +353,15 @@ function SalesInner() {
         <>
           <div className="sales-toolbar">
             {isAdminOrOwner ? (
-              <select className="input" style={{ height: 36, fontSize: 13, width: 130 }} value={branch} onChange={e => { setBranch(e.target.value); loadAnnual(e.target.value); }}>
+              <select className="input" style={{ width: 130 }} value={branch} onChange={e => { setBranch(e.target.value); loadAnnual(e.target.value); }}>
                 <option>전체</option>
                 {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
               </select>
             ) : <span style={{ fontSize: 13, fontWeight: 600 }}>{user?.branch_name}</span>}
-            <select className="input" style={{ height: 36, width: 100 }} value={aYear} onChange={e => setAYear(e.target.value)}>
+            <select className="input" style={{ width: 100 }} value={aYear} onChange={e => setAYear(e.target.value)}>
               {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
-            <button className="btn" style={{ height: 36 }} onClick={() => loadAnnual()}>조회</button>
+            <button className="btn" style={{ height: 38 }} onClick={() => loadAnnual()}>조회</button>
             {isAdminOrOwner && <button className="btn-export" onClick={download}>엑셀 내보내기</button>}
           </div>
           <div className="info-note" style={{ marginBottom: 8 }}>지출·차액은 별도 지출 등록 기능이 없어 미집계 표시됩니다. 차액 열은 엑셀 내보내기에 "매출-등록지출"로 표기됩니다.</div>

@@ -19,8 +19,9 @@ type Row = {
   alert_type: string | null;
 };
 
-const EXPIRY_DAYS = 3;
-const COUNT_THRESHOLD = 3;
+// defaults — overridden by UI state below
+const DEFAULT_EXPIRY_DAYS = 3;
+const DEFAULT_COUNT_THRESHOLD = 3;
 
 const getAlertBadgeStyle = (alert_type: string | null) => {
   if (!alert_type) return { bg: "#f3f4f6", color: "#6b7280" };
@@ -46,6 +47,8 @@ function MemberManagementInner() {
   const [user, setUser] = useState<any>(null);
   const [tab, setTab] = useState<Tab>(initialTab);
   const [loading, setLoading] = useState(false);
+  const [expiryDays, setExpiryDays] = useState(DEFAULT_EXPIRY_DAYS);
+  const [countThreshold, setCountThreshold] = useState(DEFAULT_COUNT_THRESHOLD);
 
   const isAdminOrOwner = user?.role === "ADMIN" || user?.role === "OWNER";
 
@@ -78,9 +81,12 @@ function MemberManagementInner() {
   }, [branch]);
 
   const handleMemberClick = (member_id: number) => {
-    const params = new URLSearchParams({ tab, branch, search });
-    router.push(`/members/${member_id}?back=/member-management&${params}`);
+    router.push(`/members?member_id=${member_id}`);
   };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const limitDate = new Date(); limitDate.setDate(limitDate.getDate() + expiryDays);
+  const limitDateStr = limitDate.toISOString().slice(0, 10);
 
   const filterRows = (all: Row[]): Row[] => {
     let filtered = all;
@@ -88,18 +94,19 @@ function MemberManagementInner() {
       filtered = all.filter(r =>
         r.pass_type === "DATE" &&
         r.end_date &&
-        new Date(r.end_date.slice(0, 10)) >= new Date(new Date().toISOString().slice(0, 10))
+        r.end_date.slice(0, 10) >= todayStr &&
+        r.end_date.slice(0, 10) <= limitDateStr
       );
     } else if (tab === "횟수 부족") {
       filtered = all.filter(r =>
         r.pass_type === "COUNT" &&
         r.remaining_count !== null &&
         r.remaining_count > 0 &&
-        r.remaining_count <= COUNT_THRESHOLD
+        r.remaining_count <= countThreshold
       );
     } else if (tab === "만료·소진") {
       filtered = all.filter(r =>
-        (r.pass_type === "DATE" && r.end_date && new Date(r.end_date.slice(0, 10)) < new Date(new Date().toISOString().slice(0, 10))) ||
+        (r.pass_type === "DATE" && r.end_date && r.end_date.slice(0, 10) < todayStr) ||
         (r.pass_type === "COUNT" && (r.remaining_count === 0 || r.remaining_count === null))
       );
     }
@@ -116,10 +123,10 @@ function MemberManagementInner() {
 
   const tabCounts: Record<Tab, number> = {
     "전체": filterRows(rows).length,
-    "만료 예정": rows.filter(r => r.pass_type === "DATE" && r.end_date && new Date(r.end_date.slice(0, 10)) >= new Date(new Date().toISOString().slice(0, 10))).length,
-    "횟수 부족": rows.filter(r => r.pass_type === "COUNT" && r.remaining_count !== null && r.remaining_count > 0 && r.remaining_count <= COUNT_THRESHOLD).length,
+    "만료 예정": rows.filter(r => r.pass_type === "DATE" && r.end_date && r.end_date.slice(0, 10) >= todayStr && r.end_date.slice(0, 10) <= limitDateStr).length,
+    "횟수 부족": rows.filter(r => r.pass_type === "COUNT" && r.remaining_count !== null && r.remaining_count > 0 && r.remaining_count <= countThreshold).length,
     "만료·소진": rows.filter(r =>
-      (r.pass_type === "DATE" && r.end_date && new Date(r.end_date.slice(0, 10)) < new Date(new Date().toISOString().slice(0, 10))) ||
+      (r.pass_type === "DATE" && r.end_date && r.end_date.slice(0, 10) < todayStr) ||
       (r.pass_type === "COUNT" && (r.remaining_count === 0 || r.remaining_count === null))
     ).length,
   };
@@ -177,9 +184,30 @@ function MemberManagementInner() {
           onClick={() => load(user, branch)}>새로고침</button>
       </div>
 
-      {/* 조회 기준 안내 */}
-      <div className="mm-info">
-        조회 기준: 기간권 오늘~{EXPIRY_DAYS}일 이내 만료 예정 · 횟수권 {COUNT_THRESHOLD}회 이하 · 이미 만료·소진된 활성 회원 포함 &nbsp;|&nbsp; 휴회·삭제·미래 시작 회원은 제외됩니다.
+      {/* 조회 기준 필터 */}
+      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", marginBottom: 10, padding: "8px 12px", background: "#f8faff", border: "1px solid #e2e5eb", borderRadius: 8, fontSize: 13 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ color: "#6b7280", whiteSpace: "nowrap" }}>기간권 만료</span>
+          <select
+            value={expiryDays}
+            onChange={e => setExpiryDays(Number(e.target.value))}
+            style={{ height: 30, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, background: "#fff" }}
+          >
+            {[1, 3, 7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d}일 이내</option>)}
+          </select>
+        </div>
+        <div style={{ width: 1, height: 20, background: "#e2e5eb" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ color: "#6b7280", whiteSpace: "nowrap" }}>횟수권 잔여</span>
+          <select
+            value={countThreshold}
+            onChange={e => setCountThreshold(Number(e.target.value))}
+            style={{ height: 30, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, background: "#fff" }}
+          >
+            {[1, 2, 3, 5, 10].map(n => <option key={n} value={n}>{n}회 이하</option>)}
+          </select>
+        </div>
+        <span style={{ color: "#9ca3af", fontSize: 12 }}>휴회·삭제·미래 시작 회원 제외</span>
       </div>
 
       {/* 탭 + 목록 */}

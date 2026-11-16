@@ -105,25 +105,27 @@ export default function DashboardPage() {
 
         /* ── 필터 ── */
         .filter-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:11px 16px; }
-        /* select·date input 공통: box-sizing을 border-box로 고정해
-           height 지정 시 패딩이 안쪽으로 계산되도록, line-height으로 세로 중앙 정렬 */
-        .filter-bar select.input,
+        /* select: line-height/inline-flex 금지 — native select는 height만으로 세로 정렬됨 */
+        .filter-bar select.input {
+          box-sizing: border-box;
+          height: 38px;
+          padding: 0 10px;
+          padding-right: 28px;
+          font-size: 13px;
+          width: auto;
+          -webkit-appearance: auto;
+          appearance: auto;
+          cursor: pointer;
+        }
+        /* date input은 inline-flex + align-items 가능 */
         .filter-bar input[type="date"].input {
           box-sizing: border-box;
           height: 38px;
           padding: 0 10px;
-          line-height: 38px;
           font-size: 13px;
           width: auto;
           display: inline-flex;
           align-items: center;
-        }
-        /* select 화살표가 가려지지 않도록 오른쪽 여백 확보 */
-        .filter-bar select.input {
-          padding-right: 28px;
-          -webkit-appearance: auto;
-          appearance: auto;
-          cursor: pointer;
         }
         .range-btn { height:38px; padding:0 12px; border-radius:6px; border:1px solid #e2e5eb; background:#fff; font-size:13px; font-weight:500; cursor:pointer; color:#374151; }
         .range-btn:hover { background:#f4f5f7; }
@@ -164,7 +166,7 @@ export default function DashboardPage() {
         .ops-row:last-child { border-bottom:none; }
         .ops-icon { font-size:18px; min-width:24px; flex-shrink:0; }
         .ops-text { flex:1 1 120px; min-width:0; }
-        .ops-label { font-size:14px; font-weight:600; color:#111827; word-break:keep-all; white-space:normal; }
+        .ops-label { font-size:14px; font-weight:600; color:#111827; word-break:keep-all; white-space:nowrap; }
         .ops-hint { font-size:11px; color:#9ca3af; margin-top:2px; word-break:keep-all; white-space:normal; }
         .ops-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
         .ops-count { font-size:20px; font-weight:800; min-width:36px; text-align:right; font-variant-numeric:tabular-nums; }
@@ -316,42 +318,6 @@ export default function DashboardPage() {
 
         {secondary && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 14 }}>
-
-            {/* 결제수단 비율 */}
-            <div className="db-card" style={{ marginBottom: 0 }}>
-              <div className="db-card-header">
-                <div className="db-card-header-dot" />
-                <span className="db-card-title">결제수단 비율</span>
-              </div>
-              <div style={{ padding: "16px 20px" }}>
-                {totalSales === 0 ? (
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>해당 기간 매출 없음</div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {[
-                      { label: "카드", amt: Number(pm.CARD || 0), color: "#1d4ed8" },
-                      { label: "현금", amt: Number(pm.CASH || 0), color: "#16a34a" },
-                      { label: "계좌이체", amt: Number(pm.TRANSFER || 0), color: "#7c3aed" },
-                    ].map(({ label, amt, color }) => {
-                      const p = totalSales > 0 ? Math.round((amt / totalSales) * 100) : 0;
-                      return (
-                        <div key={label}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>{label}</span>
-                            <span style={{ fontSize: 14, color: "#111827", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                              {money(amt)} <span style={{ color: "#9ca3af", fontWeight: 400, fontSize: 12 }}>{p}%</span>
-                            </span>
-                          </div>
-                          <div style={{ background: "#f3f4f6", borderRadius: 4, height: 7, overflow: "hidden" }}>
-                            <div style={{ width: `${p}%`, height: "100%", background: color, borderRadius: 4, transition: "width .4s" }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* 예약 비교 */}
             {branch === "전체" && reservStats && (
