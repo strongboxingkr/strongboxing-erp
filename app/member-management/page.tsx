@@ -49,6 +49,7 @@ function MemberManagementInner() {
   const [loading, setLoading] = useState(false);
   const [expiryDays, setExpiryDays] = useState(DEFAULT_EXPIRY_DAYS);
   const [countThreshold, setCountThreshold] = useState(DEFAULT_COUNT_THRESHOLD);
+  const [modalRow, setModalRow] = useState<Row | null>(null);
 
   const isAdminOrOwner = user?.role === "ADMIN" || user?.role === "OWNER";
 
@@ -156,6 +157,19 @@ function MemberManagementInner() {
         .mm-detail-btn:hover { background:#f4f5f7; }
         .mm-empty { padding:40px 24px; text-align:center; color:#9ca3af; font-size:13px; }
 
+        /* 모달 */
+        .mm-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+        .mm-modal { background:#fff; border-radius:12px; width:100%; max-width:420px; box-shadow:0 8px 32px rgba(0,0,0,.18); overflow:hidden; }
+        .mm-modal-header { padding:16px 20px; border-bottom:1px solid #e2e5eb; display:flex; justify-content:space-between; align-items:center; }
+        .mm-modal-title { font-size:16px; font-weight:800; color:#111827; }
+        .mm-modal-close { background:none; border:none; font-size:20px; color:#9ca3af; cursor:pointer; padding:0 4px; line-height:1; }
+        .mm-modal-close:hover { color:#374151; }
+        .mm-modal-body { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+        .mm-modal-row { display:flex; align-items:flex-start; gap:8px; font-size:14px; }
+        .mm-modal-label { width:80px; color:#9ca3af; font-size:12px; font-weight:600; flex-shrink:0; padding-top:1px; }
+        .mm-modal-val { color:#111827; font-weight:600; flex:1; }
+        .mm-modal-footer { padding:12px 20px; border-top:1px solid #e2e5eb; display:flex; gap:8px; justify-content:flex-end; }
+
         /* 모바일 */
         @media(max-width:720px) {
           .mm-table thead { display:none; }
@@ -245,7 +259,7 @@ function MemberManagementInner() {
                   <tr key={r.member_id}>
                     <td>
                       <div className="mm-row-top">
-                        <button className="mm-name-btn" onClick={() => handleMemberClick(r.member_id)}>
+                        <button className="mm-name-btn" onClick={() => setModalRow(r)}>
                           {r.name}
                         </button>
                       </div>
@@ -264,7 +278,7 @@ function MemberManagementInner() {
                     </td>
                     <td>
                       <button className="mm-detail-btn"
-                        onClick={() => handleMemberClick(r.member_id)}>
+                        onClick={() => setModalRow(r)}>
                         상세
                       </button>
                     </td>
@@ -275,6 +289,64 @@ function MemberManagementInner() {
           </table>
         )}
       </div>
+      {/* ── 회원 정보 모달 ── */}
+      {modalRow && (() => {
+        const r = modalRow;
+        const isDate = r.pass_type === "PERIOD" || r.pass_type === "DATE";
+        const { bg, color } = getAlertBadgeStyle(r.alert_type);
+        return (
+          <div className="mm-modal-bg" onClick={() => setModalRow(null)}>
+            <div className="mm-modal" onClick={e => e.stopPropagation()}>
+              <div className="mm-modal-header">
+                <span className="mm-modal-title">{r.name}</span>
+                <button className="mm-modal-close" onClick={() => setModalRow(null)}>×</button>
+              </div>
+              <div className="mm-modal-body">
+                <div className="mm-modal-row">
+                  <span className="mm-modal-label">지점</span>
+                  <span className="mm-modal-val">{r.branch_name}</span>
+                </div>
+                <div className="mm-modal-row">
+                  <span className="mm-modal-label">연락처</span>
+                  <span className="mm-modal-val">{r.phone || "—"}</span>
+                </div>
+                <div className="mm-modal-row">
+                  <span className="mm-modal-label">회원권</span>
+                  <span className="mm-modal-val">{r.product_name || "—"}</span>
+                </div>
+                {isDate && (
+                  <div className="mm-modal-row">
+                    <span className="mm-modal-label">만료일</span>
+                    <span className="mm-modal-val">{r.end_date?.slice(0, 10) || "—"}</span>
+                  </div>
+                )}
+                {!isDate && (
+                  <div className="mm-modal-row">
+                    <span className="mm-modal-label">잔여 횟수</span>
+                    <span className="mm-modal-val">{r.remaining_count ?? 0}회</span>
+                  </div>
+                )}
+                <div className="mm-modal-row">
+                  <span className="mm-modal-label">상태</span>
+                  <span className="mm-modal-val">{r.status}</span>
+                </div>
+                {r.alert_type && (
+                  <div className="mm-modal-row">
+                    <span className="mm-modal-label">관리 사유</span>
+                    <span className="mm-badge" style={{ background: bg, color }}>{r.alert_type}</span>
+                  </div>
+                )}
+              </div>
+              <div className="mm-modal-footer">
+                <button className="btn secondary" style={{ height: 34, fontSize: 13, padding: "0 14px" }} onClick={() => setModalRow(null)}>닫기</button>
+                <a href={`/members?member_id=${r.member_id}`} style={{ textDecoration: "none" }}>
+                  <button className="btn" style={{ height: 34, fontSize: 13, padding: "0 14px" }}>회원 수정</button>
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </AppShell>
   );
 }
