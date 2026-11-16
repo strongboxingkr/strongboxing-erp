@@ -325,7 +325,7 @@ export default function DashboardPage() {
                 <div className="db-card-header">
                   <div className="db-card-header-dot" />
                   <span className="db-card-title">지점별 예약 비교</span>
-                  <span className="db-card-sub">네이버 예약(naver_reservations) 기준</span>
+                  <span className="db-card-sub">예약 캘린더 기준</span>
                 </div>
                 <div style={{ overflowX: "auto" }}>
                   <table className="branch-table">
