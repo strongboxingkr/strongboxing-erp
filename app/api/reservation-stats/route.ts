@@ -17,26 +17,28 @@ export async function GET(req: Request) {
     const prevMonth = prevDate.getMonth() + 1;
 
     const thisStart = `${thisYear}-${String(thisMonth).padStart(2, "0")}-01`;
-    const thisEnd = `${thisYear}-${String(thisMonth).padStart(2, "0")}-31`;
+    const nextMonth = thisMonth === 12 ? 1 : thisMonth + 1;
+    const nextMonthYear = thisMonth === 12 ? thisYear + 1 : thisYear;
+    const thisEnd = `${nextMonthYear}-${String(nextMonth).padStart(2, "0")}-01`;
+
     const prevStart = `${prevYear}-${String(prevMonth).padStart(2, "0")}-01`;
-    const prevEnd = `${prevYear}-${String(prevMonth).padStart(2, "0")}-31`;
 
     const [thisRows]: any = await pool.query(
       `SELECT branch_name, COUNT(*) AS cnt
        FROM calendar_events
-       WHERE DATE(start_datetime) BETWEEN ? AND ?
+       WHERE start_datetime >= ? AND start_datetime < ?
          AND status NOT IN ('취소', '예약취소')
        GROUP BY branch_name`,
-      [thisStart, thisEnd]
+      [thisStart + " 00:00:00", thisEnd + " 00:00:00"]
     );
 
     const [prevRows]: any = await pool.query(
       `SELECT branch_name, COUNT(*) AS cnt
        FROM calendar_events
-       WHERE DATE(start_datetime) BETWEEN ? AND ?
+       WHERE start_datetime >= ? AND start_datetime < ?
          AND status NOT IN ('취소', '예약취소')
        GROUP BY branch_name`,
-      [prevStart, prevEnd]
+      [prevStart + " 00:00:00", thisStart + " 00:00:00"]
     );
 
     const branches = ["철산점", "목동점", "개봉점", "신정점"];
