@@ -16,6 +16,10 @@ export default function SettingsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [selectedType, setSelectedType] = useState("BRANCH");
   const [autoSms, setAutoSms] = useState<any>(null);
+  const [alertPhones, setAlertPhones] = useState<any[]>([]);
+  const [alertPhoneForm, setAlertPhoneForm] = useState({ branch: "", phone: "" });
+  const [alertPhoneEditing, setAlertPhoneEditing] = useState<number | null>(null);
+  const [alertPhoneEditVal, setAlertPhoneEditVal] = useState("");
 
   const loadAutoSms = async () => {
     const res = await fetch("/api/settings?option_type=AUTO_SMS");
@@ -34,7 +38,13 @@ export default function SettingsPage() {
     setAutoSms({ ...autoSms, option_value: newVal });
   };
 
-  useEffect(() => { loadAutoSms(); }, []);
+  const loadAlertPhones = async () => {
+    const res = await fetch("/api/settings?option_type=RESERVATION_ALERT_PHONE");
+    const data = await res.json();
+    setAlertPhones(data.rows || []);
+  };
+
+  useEffect(() => { loadAutoSms(); loadAlertPhones(); }, []);
 
   const [form, setForm] = useState({
     option_name: "",
@@ -150,6 +160,99 @@ export default function SettingsPage() {
             INSERT INTO settings_options (option_type, option_name, option_value, use_yn, sort_order) VALUES ('AUTO_SMS', '만료 7일 전 자동 SMS', 'OFF', 'Y', 1);
           </div>
         )}
+      </div>
+
+      {/* 예약 알림 수신 번호 */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginBottom: 12 }}>📢 예약 알림 수신 번호</h2>
+        <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14 }}>
+          예약 캘린더에서 '관장에게 예약 알림' 발송 시 수신할 지점별 번호를 설정합니다.<br />
+          고객 연락처와 별개입니다. 지점당 하나만 설정하세요.
+        </p>
+
+        {/* 목록 */}
+        {alertPhones.length > 0 && (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 14 }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--muted)", fontWeight: 700 }}>지점</th>
+                <th style={{ padding: "6px 10px", textAlign: "left", color: "var(--muted)", fontWeight: 700 }}>수신 번호</th>
+                <th style={{ width: 120 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {alertPhones.map((r: any) => (
+                <tr key={r.option_id} style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>{r.option_name}</td>
+                  <td style={{ padding: "8px 10px" }}>
+                    {alertPhoneEditing === r.option_id ? (
+                      <input
+                        className="input"
+                        style={{ height: 32, fontSize: 13, width: 160 }}
+                        value={alertPhoneEditVal}
+                        onChange={e => setAlertPhoneEditVal(e.target.value)}
+                      />
+                    ) : (
+                      r.option_value
+                    )}
+                  </td>
+                  <td style={{ padding: "8px 10px", display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                    {alertPhoneEditing === r.option_id ? (
+                      <>
+                        <button className="btn" style={{ height: 28, fontSize: 12, padding: "0 10px" }} onClick={async () => {
+                          await fetch("/api/settings/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ option_id: r.option_id, option_value: alertPhoneEditVal }) });
+                          setAlertPhoneEditing(null);
+                          loadAlertPhones();
+                        }}>저장</button>
+                        <button className="btn secondary" style={{ height: 28, fontSize: 12, padding: "0 10px" }} onClick={() => setAlertPhoneEditing(null)}>취소</button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="btn secondary" style={{ height: 28, fontSize: 12, padding: "0 10px" }} onClick={() => { setAlertPhoneEditing(r.option_id); setAlertPhoneEditVal(r.option_value); }}>수정</button>
+                        <button className="btn secondary" style={{ height: 28, fontSize: 12, padding: "0 10px", color: "#dc2626", borderColor: "#fecaca" }} onClick={async () => {
+                          if (!confirm(`${r.option_name} 알림 수신 번호를 삭제할까요?`)) return;
+                          await fetch("/api/settings/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ option_id: r.option_id }) });
+                          loadAlertPhones();
+                        }}>삭제</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* 추가 */}
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>지점명</div>
+            <input className="input" style={{ height: 36, fontSize: 13, width: 120 }}
+              placeholder="예: 철산점"
+              value={alertPhoneForm.branch}
+              onChange={e => setAlertPhoneForm({ ...alertPhoneForm, branch: e.target.value })}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4 }}>수신 번호 (관장 전화번호)</div>
+            <input className="input" style={{ height: 36, fontSize: 13, width: 160 }}
+              placeholder="01012345678"
+              value={alertPhoneForm.phone}
+              onChange={e => setAlertPhoneForm({ ...alertPhoneForm, phone: e.target.value })}
+            />
+          </div>
+          <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={async () => {
+            if (!alertPhoneForm.branch || !alertPhoneForm.phone) { alert("지점명과 수신 번호를 모두 입력하세요."); return; }
+            const res = await fetch("/api/settings/add", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ option_type: "RESERVATION_ALERT_PHONE", option_name: alertPhoneForm.branch, option_value: alertPhoneForm.phone }),
+            });
+            const data = await res.json();
+            if (data.success) { setAlertPhoneForm({ branch: "", phone: "" }); loadAlertPhones(); }
+            else alert(data.message || "추가 실패");
+          }}>추가</button>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

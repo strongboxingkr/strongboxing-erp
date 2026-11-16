@@ -526,8 +526,8 @@ export default function DirectorDashboardPage() {
             <span style={{ fontWeight: 700, fontSize: 13, color: "#111827" }}>자동문자 발송 현황</span>
             <span style={{ fontSize: 12, color: "#9ca3af" }}>오늘 기준</span>
             {showSms && !smsLoading && smsLogs.length > 0 && (() => {
-              const ok  = smsLogs.filter((s: any) => s.status === "SUCCESS" || s.status === "SENT").length;
-              const fail = smsLogs.filter((s: any) => s.status === "FAIL" || s.status === "FAILED").length;
+              const ok  = smsLogs.filter((s: any) => s.send_status === "SUCCESS" || s.send_status === "SENT").length;
+              const fail = smsLogs.filter((s: any) => s.send_status === "FAIL" || s.send_status === "FAILED").length;
               return (
                 <span style={{ fontSize: 12, color: "#374151" }}>
                   총 {smsLogs.length}건
@@ -550,8 +550,8 @@ export default function DirectorDashboardPage() {
               <>
                 {/* 요약 헤더 */}
                 {(() => {
-                  const ok   = smsLogs.filter((s: any) => s.status === "SUCCESS" || s.status === "SENT").length;
-                  const fail = smsLogs.filter((s: any) => s.status === "FAIL" || s.status === "FAILED").length;
+                  const ok   = smsLogs.filter((s: any) => s.send_status === "SUCCESS" || s.send_status === "SENT").length;
+                  const fail = smsLogs.filter((s: any) => s.send_status === "FAIL" || s.send_status === "FAILED").length;
                   const etc  = smsLogs.length - ok - fail;
                   return (
                     <div style={{ display: "flex", gap: 16, padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #f1f3f5" }}>
@@ -563,13 +563,20 @@ export default function DirectorDashboardPage() {
                   );
                 })()}
                 {smsLogs.slice(0, 20).map((s: any) => {
-                  const isOk = s.status === "SUCCESS" || s.status === "SENT";
-                  const isFail = s.status === "FAIL" || s.status === "FAILED";
+                  const isOk = s.send_status === "SUCCESS" || s.send_status === "SENT";
+                  const isFail = s.send_status === "FAIL" || s.send_status === "FAILED";
+                  const typeLabel: Record<string, string> = {
+                    CHECKOUT: "퇴실", ATTENDANCE: "출석", EXPIRING_3DAYS: "만료3일",
+                    EXPIRING_2DAYS: "만료2일", EXPIRING_TODAY: "만료당일",
+                    LOW_COUNT: "횟수부족", CRM_TODAY: "CRM",
+                  };
+                  const tLabel = typeLabel[s.target_type] || s.target_type || "";
                   return (
                     <div key={s.sms_id} style={{ display: "flex", alignItems: "center", padding: "9px 20px", borderBottom: "1px solid #f3f4f6", gap: 10 }}>
                       <span style={{ width: 8, height: 8, borderRadius: "50%", background: isOk ? "#16a34a" : isFail ? "#dc2626" : "#9ca3af", flexShrink: 0, display: "inline-block" }} />
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#374151", minWidth: 56 }}>{s.name || s.member_name || "—"}</span>
-                      <span style={{ fontSize: 12, color: "#6b7280", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.message || s.msg || "—"}</span>
+                      <span style={{ fontSize: 11, color: "#fff", background: s.target_type === "CHECKOUT" ? "#0891b2" : "#6b7280", borderRadius: 4, padding: "1px 5px", whiteSpace: "nowrap" }}>{tLabel}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#374151", minWidth: 50 }}>{s.receiver_name || "—"}</span>
+                      <span style={{ fontSize: 12, color: "#6b7280", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.message || "—"}</span>
                       <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>{String(s.created_at || "").slice(11, 16)}</span>
                     </div>
                   );

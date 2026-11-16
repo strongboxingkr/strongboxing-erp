@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [branch, setBranch] = useState("전체");
-  const [startDate, setStartDate] = useState(getMonthStart());
+  const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [user, setUser] = useState<any>(null);
   const [attendStats, setAttendStats] = useState<any>(null);

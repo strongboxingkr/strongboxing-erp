@@ -13,13 +13,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const params: any[] = [];
+    let branchClause = "";
+    if (branch) {
+      branchClause = "AND branch_name = ?";
+      params.push(branch);
+    }
+
     const [rows]: any = await pool.query(`
       SELECT *
       FROM sms_logs
       WHERE DATE(created_at) = CURDATE()
+      ${branchClause}
       ORDER BY sms_id DESC
       LIMIT 200
-    `);
+    `, params);
 
     return NextResponse.json({
       success: true,

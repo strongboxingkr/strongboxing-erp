@@ -82,6 +82,10 @@ export default function NaverCalendarPage() {
   const [smsModal, setSmsModal] = useState<{ msg: string; pendingStatus: string } | null>(null);
   const [editOpsMemo, setEditOpsMemo] = useState("");
   const [mailCollapsed, setMailCollapsed] = useState(true);
+  const [notifyModal, setNotifyModal] = useState<{ alertPhone: string; msg: string } | null>(null);
+  const [notifyInfo, setNotifyInfo] = useState<{ alertPhone: string | null; lastLog: any } | null>(null);
+  const [notifySending, setNotifySending] = useState(false);
+  const [dirtyFields, setDirtyFields] = useState(false);
 
   const toDateKey = (d: Date) => {
     const y = d.getFullYear();
@@ -115,6 +119,14 @@ export default function NaverCalendarPage() {
       const { opsMemo } = parseMemo(selected.memo || "");
       setEditOpsMemo(opsMemo);
       setMailCollapsed(true);
+      setDirtyFields(false);
+      setNotifyInfo(null);
+      if (isAdminOrOwner) {
+        apiFetch(`/api/reservations/notify-director?branch_name=${encodeURIComponent(selected.branch_name)}&event_id=${selected.event_id}`)
+          .then(r => r.json())
+          .then(d => { if (d.success) setNotifyInfo({ alertPhone: d.alertPhone, lastLog: d.lastLog }); })
+          .catch(() => {});
+      }
     }
   }, [selected?.event_id]);
 
@@ -384,14 +396,14 @@ export default function NaverCalendarPage() {
                     <div className="field-label">이름</div>
                     <input className="input" style={{ height: 36, fontSize: 14 }}
                       value={selected.customer_name || ""}
-                      onChange={(e) => setSelected({ ...selected, customer_name: e.target.value })}
+                      onChange={(e) => { setSelected({ ...selected, customer_name: e.target.value }); setDirtyFields(true); }}
                     />
                   </div>
                   <div className="field-row">
                     <div className="field-label">방문일시</div>
                     <input className="input" type="datetime-local" style={{ height: 36, fontSize: 13 }}
                       value={selected.start_datetime?.slice(0, 16) || ""}
-                      onChange={(e) => setSelected({ ...selected, start_datetime: e.target.value })}
+                      onChange={(e) => { setSelected({ ...selected, start_datetime: e.target.value }); setDirtyFields(true); }}
                     />
                   </div>
                 </div>
@@ -401,7 +413,7 @@ export default function NaverCalendarPage() {
                   <input className="input" style={{ height: 36, fontSize: 14 }}
                     value={selected.phone || ""}
                     placeholder="전화번호 미입력"
-                    onChange={(e) => setSelected({ ...selected, phone: e.target.value })}
+                    onChange={(e) => { setSelected({ ...selected, phone: e.target.value }); setDirtyFields(true); }}
                   />
                   {!selected.phone && (
                     <div style={{ fontSize: 11, color: "#dc2626", marginTop: 3 }}>연락처를 입력하고 저장하면 보완됩니다.</div>
@@ -420,9 +432,9 @@ export default function NaverCalendarPage() {
                   <div className="field-label">운영 메모</div>
                   <textarea className="input"
                     value={editOpsMemo}
-                    onChange={(e) => setEditOpsMemo(e.target.value)}
+                    onChange={(e) => { setEditOpsMemo(e.target.value); setDirtyFields(true); }}
                     placeholder="운영 메모 (선택)"
-                    style={{ width: "100%", minHeight: 64, resize: "vertical", fontSize: 13 }}
+                    style={{ width: "100%", minHeight: 120, resize: "vertical", fontSize: 13 }}
                   />
                 </div>
 
@@ -471,6 +483,50 @@ export default function NaverCalendarPage() {
                     })}
                   </div>
                 </div>
+                {/* 관장에게 예약 알림 — ADMIN/OWNER만 표시 */}
+                {isAdminOrOwner && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #f0f1f3" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", marginBottom: 8 }}>관장 알림</div>
+
+                    {/* 마지막 발송 로그 */}
+                    {notifyInfo?.lastLog && (() => {
+                      const log = notifyInfo.lastLog;
+                      const isOk = log.send_status === "SENT" || log.send_status === "SUCCESS";
+                      const sentAt = String(log.created_at || "").slice(0, 16).replace("T", " ");
+                      return (
+                        <div style={{ fontSize: 12, color: isOk ? "#166534" : "#dc2626", background: isOk ? "#f0fdf4" : "#fef2f2", border: `1px solid ${isOk ? "#bbf7d0" : "#fecaca"}`, borderRadius: 6, padding: "6px 10px", marginBottom: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                          <span>{isOk ? "✓" : "✗"}</span>
+                          <span>{isOk ? "발송 완료" : "발송 실패"} · {sentAt} · {log.receiver_phone}</span>
+                        </div>
+                      );
+                    })()}
+
+                    {/* 발송 버튼 */}
+                    <button
+                      style={{ height: 34, padding: "0 14px", fontSize: 13, fontWeight: 700, border: "1px solid #0891b2", borderRadius: 6, background: "#ecfeff", color: "#0e7490", cursor: "pointer", width: "100%" }}
+                      onClick={async () => {
+                        if (dirtyFields) {
+                          alert("저장되지 않은 수정 사항이 있습니다. 먼저 저장해주세요.");
+                          return;
+                        }
+                        if (!selected.phone) {
+                          alert("고객 연락처가 없습니다. 전화번호를 입력하고 저장한 뒤 발송하세요.");
+                          return;
+                        }
+                        if (!notifyInfo?.alertPhone) {
+                          alert("이 지점의 예약 알림 수신 번호가 설정되지 않았습니다.\n설정관리 → 예약 알림 수신 번호에서 추가하세요.");
+                          return;
+                        }
+                        const dt = selected.start_datetime || "";
+                        const statusLabel = selected.status === "예약접수" ? "예약접수 — 확정 필요" : selected.status || "";
+                        const msg = `[스트롱복싱 ${selected.branch_name} 예약 알림]\n상태: ${statusLabel}\n방문일시: ${dt.slice(0, 10)} ${dt.slice(11, 16)}\n예약자: ${selected.customer_name || "-"}\n연락처: ${selected.phone || "-"}\n예약 목적: ${purpose || "-"}\n유입경로: ${source || "-"}`;
+                        setNotifyModal({ alertPhone: notifyInfo.alertPhone, msg });
+                      }}
+                    >
+                      📢 관장에게 예약 알림 {notifyInfo?.lastLog ? "(재발송)" : ""}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 푸터 */}
@@ -479,7 +535,7 @@ export default function NaverCalendarPage() {
                 <button className="btn secondary" style={{ height: 36, fontSize: 13 }} onClick={() => setSelected(null)}>닫기</button>
                 <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={async () => {
                   const json = await saveEvent();
-                  if (json.success) { setSelected(null); loadReservations(); }
+                  if (json.success) { setDirtyFields(false); setSelected(null); loadReservations(); }
                   else alert(json.message || "저장 실패");
                 }}>저장</button>
               </div>
@@ -488,6 +544,61 @@ export default function NaverCalendarPage() {
           </div>
         );
       })()}
+
+      {/* 관장 알림 미리보기 모달 */}
+      {notifyModal && selected && (
+        <div className="modal-overlay" onClick={() => { if (!notifySending) setNotifyModal(null); }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,.18)" }}>
+            <div style={{ padding: "14px 18px 12px", borderBottom: "1px solid #e5e7eb" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>관장에게 예약 알림 미리보기</div>
+              {notifyInfo?.lastLog && (
+                <div style={{ fontSize: 12, color: "#b45309", marginTop: 3 }}>⚠ 이미 발송된 알림입니다. 재발송 시 확인 후 발송하세요.</div>
+              )}
+            </div>
+            <div style={{ padding: "14px 18px" }}>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
+                <strong>수신 지점:</strong> {selected.branch_name} &nbsp;|&nbsp;
+                <strong>수신 번호:</strong> {notifyModal.alertPhone}
+              </div>
+              <textarea className="input" value={notifyModal.msg}
+                onChange={(e) => setNotifyModal({ ...notifyModal, msg: e.target.value })}
+                rows={10} style={{ fontSize: 13, resize: "vertical" }} />
+            </div>
+            <div style={{ padding: "10px 18px 14px", display: "flex", gap: 8, justifyContent: "flex-end", borderTop: "1px solid #e5e7eb" }}>
+              <button className="btn secondary" style={{ height: 36, fontSize: 13 }} disabled={notifySending} onClick={() => setNotifyModal(null)}>닫기</button>
+              <button className="btn" style={{ height: 36, fontSize: 13, background: "#0891b2", borderColor: "#0891b2" }} disabled={notifySending}
+                onClick={async () => {
+                  setNotifySending(true);
+                  const isResend = !!notifyInfo?.lastLog;
+                  const res = await apiFetch("/api/reservations/notify-director", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      event_id: selected.event_id,
+                      branch_name: selected.branch_name,
+                      customer_name: selected.customer_name,
+                      phone: selected.phone,
+                      start_datetime: selected.start_datetime,
+                      message: notifyModal.msg,
+                      is_resend: isResend,
+                    }),
+                  });
+                  const json = await res.json();
+                  setNotifySending(false);
+                  if (json.success) {
+                    setNotifyModal(null);
+                    // 로그 갱신
+                    apiFetch(`/api/reservations/notify-director?branch_name=${encodeURIComponent(selected.branch_name)}&event_id=${selected.event_id}`)
+                      .then(r => r.json()).then(d => { if (d.success) setNotifyInfo({ alertPhone: d.alertPhone, lastLog: d.lastLog }); });
+                    alert(json.message || "발송 완료");
+                  } else {
+                    alert(json.message || "발송 실패");
+                  }
+                }}
+              >{notifySending ? "발송 중..." : "발송"}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 문자 모달 */}
       {smsModal && selected && (
