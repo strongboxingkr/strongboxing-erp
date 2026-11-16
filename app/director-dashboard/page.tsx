@@ -138,14 +138,16 @@ export default function DirectorDashboardPage() {
         .dir-card-sub { font-size:11px; color:#9ca3af; }
 
         /* ── 6 KPI ── */
-        .dir-kpi6 { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:14px; }
+        /* 매출 카드(처음 2개)에 더 넓은 공간 배정, 금액이 한 줄로 유지되도록 */
+        .dir-kpi6 { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; margin-bottom:14px; }
         @media(max-width:1100px){ .dir-kpi6 { grid-template-columns:repeat(3,1fr); } }
         @media(max-width:640px){  .dir-kpi6 { grid-template-columns:repeat(2,1fr); } }
-        .dir-kpi-card { background:#fff; border:1px solid #e2e5eb; border-radius:10px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+        .dir-kpi-card { background:#fff; border:1px solid #e2e5eb; border-radius:10px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.06); min-width:0; }
         .dir-kpi-card.main { border-top:3px solid #0f2044; }
         .dir-kpi-label { font-size:11px; font-weight:700; color:#9ca3af; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; white-space:nowrap; }
-        .dir-kpi-num { font-size:22px; font-weight:800; color:#0f2044; letter-spacing:-.01em; font-variant-numeric:tabular-nums; line-height:1.2; }
-        .dir-kpi-num.lg { font-size:26px; }
+        /* white-space:nowrap으로 금액+원 줄바꿈 방지, 넘칠 경우 font-size 축소 */
+        .dir-kpi-num { font-size:22px; font-weight:800; color:#0f2044; letter-spacing:-.01em; font-variant-numeric:tabular-nums; line-height:1.2; white-space:nowrap; overflow:hidden; }
+        .dir-kpi-num.lg { font-size:clamp(18px,2.2vw,26px); }
         .dir-kpi-sub { font-size:11px; color:#9ca3af; margin-top:3px; }
 
         /* ── 필터 ── */
@@ -220,14 +222,14 @@ export default function DirectorDashboardPage() {
           <div className="dir-kpi-sub">오늘 기준</div>
         </div>
         <div className="dir-kpi-card">
-          <div className="dir-kpi-label">오늘 신규 등록</div>
+          <div className="dir-kpi-label">오늘 신규</div>
           <div className="dir-kpi-num">{loading ? "—" : (summary?.today_new || 0)}<span style={{ fontSize: 13, fontWeight: 500, color: "#9ca3af" }}>명</span></div>
-          <div className="dir-kpi-sub">오늘</div>
+          <div className="dir-kpi-sub">가입일 기준</div>
         </div>
         <div className="dir-kpi-card">
-          <div className="dir-kpi-label">이번달 신규 등록</div>
+          <div className="dir-kpi-label">이번달 신규</div>
           <div className="dir-kpi-num">{loading ? "—" : (summary?.month_new || 0)}<span style={{ fontSize: 13, fontWeight: 500, color: "#9ca3af" }}>명</span></div>
-          <div className="dir-kpi-sub">이번달</div>
+          <div className="dir-kpi-sub">가입일 기준</div>
         </div>
       </div>
 
@@ -301,18 +303,23 @@ export default function DirectorDashboardPage() {
       {/* ── 오늘 출석 + 전체 지점 출석 ── */}
       <div className="dir-two-col">
         <div className="dir-card" style={{ marginBottom: 0 }}>
-          <div className="dir-card-header">
-            <div className="dir-dot" style={{ background: "#0f2044" }} />
-            <span className="dir-card-title">오늘 출석</span>
-            <span className="dir-card-sub">{attendance.length}명</span>
+          <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="dir-dot" style={{ background: "#0f2044" }} />
+              <span className="dir-card-title">오늘 출석</span>
+              <span className="dir-card-sub">총 {attendance.length}명</span>
+            </div>
+            <Link href="/attendance" style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
+              전체 보기 →
+            </Link>
           </div>
           {loading ? (
             <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
           ) : attendance.length === 0 ? (
             <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 출석 없음</div>
           ) : (
-            <div style={{ maxHeight: 300, overflowY: "auto" }}>
-              {attendance.map((a: any, i: number) => (
+            <>
+              {attendance.slice(0, 5).map((a: any, i: number) => (
                 <div key={i} className="dir-att-row">
                   <span style={{ fontWeight: 600, color: "#111827" }}>{a.name}</span>
                   <span style={{ color: "#9ca3af", fontSize: 12 }}>
@@ -322,7 +329,12 @@ export default function DirectorDashboardPage() {
                   </span>
                 </div>
               ))}
-            </div>
+              {attendance.length > 5 && (
+                <div style={{ padding: "8px 20px", fontSize: 12, color: "#9ca3af", borderTop: "1px solid #f3f4f6" }}>
+                  외 {attendance.length - 5}명 — <Link href="/attendance" style={{ color: "#1d4ed8", fontWeight: 600 }}>전체 보기</Link>
+                </div>
+              )}
+            </>
           )}
         </div>
 
