@@ -6,7 +6,7 @@ import AlertsFloating from "@/components/AlertsFloating";
 
 const menuGroups = [
   {
-    title: "📊 홈",
+    title: "홈",
     items: [
       ["대시보드", "/dashboard"],
       ["관장 대시보드", "/director-dashboard"],
@@ -15,7 +15,7 @@ const menuGroups = [
     ],
   },
   {
-    title: "👥 회원",
+    title: "회원",
     items: [
       ["회원관리", "/members"],
       ["회원권 관리", "/member-management"],
@@ -24,13 +24,13 @@ const menuGroups = [
     ],
   },
   {
-    title: "🔑 락커",
+    title: "락커",
     items: [
       ["락커 관리", "/lockers"],
     ],
   },
   {
-    title: "📅 예약/상담",
+    title: "예약·상담",
     items: [
       ["예약 등록", "/calendar"],
       ["예약 캘린더", "/naver-calendar"],
@@ -40,7 +40,7 @@ const menuGroups = [
     ],
   },
   {
-    title: "💰 결제/재무",
+    title: "결제·재무",
     items: [
       ["결제관리", "/payments"],
       ["회원 일일권 현황", "/day-passes"],
@@ -51,7 +51,7 @@ const menuGroups = [
     ],
   },
   {
-    title: "🔔 문자/공지",
+    title: "문자·공지",
     items: [
       ["문자관리", "/sms"],
       ["공지·일정 관리", "/notice-management"],
@@ -62,7 +62,7 @@ const menuGroups = [
     ],
   },
   {
-    title: "⚙ 설정",
+    title: "설정",
     items: [
       ["계정관리", "/users"],
       ["권한관리", "/permissions"],
@@ -85,6 +85,7 @@ export default function AppShell({
   const [checked, setChecked] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentPath, setCurrentPath] = useState("");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
@@ -124,15 +125,16 @@ export default function AppShell({
 
     setAllowedPaths(paths);
 
-    const currentPath = window.location.pathname;
+    const pathname = window.location.pathname;
+    setCurrentPath(pathname);
 
     const currentGroup = menuGroups.find((group) =>
-      group.items.some((item) => item[1] === currentPath)
+      group.items.some((item) => item[1] === pathname)
     );
 
-    setOpenGroups(currentGroup ? [currentGroup.title] : ["📊 홈"]);
+    setOpenGroups(currentGroup ? [currentGroup.title] : ["홈"]);
 
-    if (!paths.includes(currentPath)) {
+    if (!paths.includes(pathname)) {
       alert("접근 권한이 없습니다.");
       location.href = paths.includes("/dashboard")
         ? "/dashboard"
@@ -193,13 +195,15 @@ export default function AppShell({
           STRONG<span> ERP</span>
         </div>
 
-        <div style={{ marginBottom: 20, color: "#aaa", fontSize: 13 }}>
-          <div style={{ color: "white", fontWeight: 900 }}>{user.name}</div>
-          <div>{user.role === "OWNER" ? "대표" : "관장"}</div>
-          <div>{user.branch_name || "전체지점"}</div>
+        <div style={{ marginBottom: 12, padding: "8px 10px", background: "#F9FAFB", borderRadius: 8, border: "1px solid #E5E7EB" }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{user.name}</div>
+          <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+            {user.role === "ADMIN" ? "관리자" : user.role === "OWNER" ? "대표" : user.role === "DIRECTOR" ? "관장" : user.role === "COACH" ? "코치" : user.role}
+            {user.branch_name ? ` · ${user.branch_name}` : " · 전체지점"}
+          </div>
         </div>
 
-        <nav className="nav">
+        <nav className="nav" style={{ flex: 1, overflowY: "auto" }}>
           {menuGroups.map((group) => {
             const visibleItems = group.items.filter((m) =>
               allowedPaths.includes(m[1]) &&
@@ -217,13 +221,13 @@ export default function AppShell({
                   onClick={() => toggleGroup(group.title)}
                 >
                   <span>{group.title}</span>
-                  <span>{opened ? "−" : "+"}</span>
+                  <span style={{ fontSize: 14, fontWeight: 400 }}>{opened ? "−" : "+"}</span>
                 </button>
 
                 {opened && (
                   <div className="submenu">
                     {visibleItems.map(([name, path]) => (
-                      <Link href={path} key={path}>
+                      <Link href={path} key={path} className={currentPath === path ? "active" : ""}>
                         {name}
                       </Link>
                     ))}
@@ -234,13 +238,15 @@ export default function AppShell({
           })}
         </nav>
 
-        <button
-          className="btn secondary"
-          style={{ marginTop: 20, width: "100%" }}
-          onClick={logout}
-        >
-          로그아웃
-        </button>
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #E5E7EB" }}>
+          <button
+            className="btn secondary"
+            style={{ width: "100%", fontSize: 13, height: 36 }}
+            onClick={logout}
+          >
+            로그아웃
+          </button>
+        </div>
       </aside>
 
       <main className="main">
