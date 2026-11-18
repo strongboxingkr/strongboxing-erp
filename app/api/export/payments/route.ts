@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const user = await getUserFromRequest(req);
 
     if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
-
+    if (!isAdminOrOwner(user.role)) return NextResponse.json({ success: false, message: "대표·관리자만 내보낼 수 있습니다." }, { status: 403 });
 
     let sql = `
       SELECT
