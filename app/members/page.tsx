@@ -878,17 +878,19 @@ ${
                     const oldEndMs = new Date(form.end_date).getTime();
                     const diffMs = oldEndMs - oldStartMs;
                     const newEndDate = new Date(new Date(newStart).getTime() + diffMs).toISOString().slice(0, 10);
-                    setForm({ ...form, start_date: newStart, end_date: newEndDate });
+                    const newLockerEnd = (form as any).locker_end_date ? newEndDate : (form as any).locker_end_date;
+                    setForm({ ...form, start_date: newStart, end_date: newEndDate, locker_end_date: newLockerEnd } as any);
                   } else {
                     const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
                     const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-                    setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
+                    const newEndDate = form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date;
+                    setForm({ ...form, start_date: newStart, end_date: newEndDate, locker_end_date: newEndDate } as any);
                   }
                 }} />
               </div>
               <div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>만료일</div>
-                <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+                <input className="input" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, locker_end_date: (form as any).locker_end_date !== undefined ? e.target.value : undefined } as any)} />
               </div>
               <div>
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>잔여횟수</div>
