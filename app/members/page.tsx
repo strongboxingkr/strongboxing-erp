@@ -873,7 +873,7 @@ ${
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>시작일</div>
                 <input className="input" type="date" value={form.start_date} onChange={(e) => {
                   const newStart = e.target.value;
-                  if (isEdit && form.pass_type === "PERIOD" && form.start_date && form.end_date) {
+                  if (isEdit && form.start_date && form.end_date) {
                     const oldStartMs = new Date(form.start_date).getTime();
                     const oldEndMs = new Date(form.end_date).getTime();
                     const diffMs = oldEndMs - oldStartMs;
