@@ -264,6 +264,7 @@ export default function MembersPage() {
       checkout_sms_enabled: m.checkout_sms_enabled || 0,
       has_uniform: m.has_uniform || 0,
       has_locker: m.has_locker || 0,
+      locker_end_date: m.locker_end_date?.slice(0, 10) || "",
       // 최근 결제 채우기
       payment_amount: latestPayment ? String(latestPayment.final_amount) : "",
       payment_method_new: latestPayment?.payment_method || "CARD",
@@ -872,9 +873,17 @@ ${
                 <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>시작일</div>
                 <input className="input" type="date" value={form.start_date} onChange={(e) => {
                   const newStart = e.target.value;
-                  const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
-                  const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-                  setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
+                  if (isEdit && form.pass_type === "PERIOD" && form.start_date && form.end_date) {
+                    const oldStartMs = new Date(form.start_date).getTime();
+                    const oldEndMs = new Date(form.end_date).getTime();
+                    const diffMs = oldEndMs - oldStartMs;
+                    const newEndDate = new Date(new Date(newStart).getTime() + diffMs).toISOString().slice(0, 10);
+                    setForm({ ...form, start_date: newStart, end_date: newEndDate });
+                  } else {
+                    const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
+                    const months = monthMatch ? parseInt(monthMatch[1]) : 1;
+                    setForm({ ...form, start_date: newStart, end_date: form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date });
+                  }
                 }} />
               </div>
               <div>
@@ -937,6 +946,20 @@ ${
                 락카 사용
               </label>
             </div>
+
+            {isEdit && Number(form.has_locker) === 1 && (
+              <div style={{ gridColumn: "1 / 5", display: "flex", alignItems: "center", gap: 12, background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 14px" }}>
+                <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>락커 종료일</span>
+                <input
+                  className="input"
+                  type="date"
+                  value={(form as any).locker_end_date || ""}
+                  onChange={(e) => setForm({ ...form, locker_end_date: e.target.value } as any)}
+                  style={{ maxWidth: 180 }}
+                />
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>락카번호: {form.locker_no || "미지정"}</span>
+              </div>
+            )}
 
             <textarea
               className="input"
