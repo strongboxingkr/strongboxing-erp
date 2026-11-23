@@ -257,9 +257,14 @@ function pickKakaoDateTime(text: string) {
 }
 
 export async function GET(req: Request) {
-  const user = await getUserFromRequest(req);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const cronSecret = req.headers.get("x-cron-secret");
+  if (cronSecret && cronSecret === process.env.CRON_SECRET) {
+    // cron 자동 호출 허용
+  } else {
+    const user = await getUserFromRequest(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminOrOwner(user.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   try {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
