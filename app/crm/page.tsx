@@ -193,13 +193,13 @@ function CrmInner() {
           <div className="crm-field">
             <label className="crm-label">지점 *</label>
             {isAdminOrOwner ? (
-              <select className="input" style={{ height: 36 }} value={form.branch_name}
+              <select className="input" style={{ padding: "7px 10px", fontSize: 14 }} value={form.branch_name}
                 onChange={e => setForm({ ...form, branch_name: e.target.value })}>
                 <option value="">지점 선택</option>
                 {branches.map(b => <option key={b.option_id} value={b.option_name}>{b.option_name}</option>)}
               </select>
             ) : (
-              <div className="input" style={{ height: 36, lineHeight: "36px", color: "#374151", background: "#f9fafb" }}>{user?.branch_name}</div>
+              <div style={{ padding: "7px 10px", fontSize: 14, color: "#374151", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8 }}>{user?.branch_name}</div>
             )}
           </div>
           <div className="crm-field">
@@ -214,7 +214,7 @@ function CrmInner() {
           </div>
           <div className="crm-field">
             <label className="crm-label">유입경로</label>
-            <select className="input" style={{ height: 36 }} value={form.inquiry_channel}
+            <select className="input" style={{ padding: "7px 10px", fontSize: 14 }} value={form.inquiry_channel}
               onChange={e => setForm({ ...form, inquiry_channel: e.target.value })}>
               <option>네이버예약</option>
               {channels.map(c => <option key={c.option_id} value={c.option_name}>{c.option_name}</option>)}
@@ -226,14 +226,14 @@ function CrmInner() {
         <div className={`crm-grid crm-row3`} style={{ marginBottom: 10 }}>
           <div className="crm-field">
             <label className="crm-label">문의 유형</label>
-            <select className="input" style={{ height: 36 }} value={form.inquiry_type}
+            <select className="input" style={{ padding: "7px 10px", fontSize: 14 }} value={form.inquiry_type}
               onChange={e => setForm({ ...form, inquiry_type: e.target.value })}>
               {["신규상담","재등록문의","가격문의","체험문의","기타"].map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
           <div className="crm-field">
             <label className="crm-label">상태</label>
-            <select className="input" style={{ height: 36 }} value={form.status}
+            <select className="input" style={{ padding: "7px 10px", fontSize: 14 }} value={form.status}
               onChange={e => setForm({ ...form, status: e.target.value })}>
               {["신규문의","상담중","방문예약","등록완료","재연락필요","보류","노쇼"].map(s => <option key={s}>{s}</option>)}
             </select>
