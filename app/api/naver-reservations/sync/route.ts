@@ -442,8 +442,9 @@ export async function GET(req: Request) {
         const reservationId = sameReservationRows[0].reservation_id;
         const existing = sameReservationRows[0];
 
-        // 수동 입력 전화번호 보호: 메일 파싱 phone이 비었고 기존 phone이 있으면 유지
-        const safePhone = (!phone && existing.phone) ? existing.phone : phone;
+        // 수동 입력 전화번호 보호: 메일 파싱 phone이 비었거나 마스킹된 번호면 기존 phone 유지
+        const isMasked = (p: string) => !p || p.includes("*");
+        const safePhone = (isMasked(phone) && existing.phone) ? existing.phone : phone;
 
         // 운영 메모 보존: 기존 memo에서 ---MAIL--- 앞 운영 메모 추출 후 새 메일 텍스트 앞에 붙이기
         const MAIL_SEP = "---MAIL---";
@@ -506,7 +507,8 @@ export async function GET(req: Request) {
             ? status
             : (lockedStatuses.includes(existingStatus) ? existingStatus : status);
 
-          const safeCalPhone = (!phone && calendarRows[0].phone) ? calendarRows[0].phone : phone;
+          const isMaskedCal = (p: string) => !p || p.includes("*");
+          const safeCalPhone = (isMaskedCal(phone) && calendarRows[0].phone) ? calendarRows[0].phone : phone;
           await pool.query(
             `
             UPDATE calendar_events
