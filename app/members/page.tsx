@@ -61,6 +61,7 @@ export default function MembersPage() {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "EXPIRED">("ALL");
   const [autoEditId, setAutoEditId] = useState("");
   const [returnToDetail, setReturnToDetail] = useState(false);
+  const [embedMode, setEmbedMode] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
@@ -180,6 +181,7 @@ export default function MembersPage() {
     const params = new URLSearchParams(window.location.search);
     setAutoEditId(params.get("member_id") || "");
     setReturnToDetail(params.get("return") === "detail");
+    setEmbedMode(params.get("embed") === "1");
 
     loadBranches();
     loadProducts();
@@ -428,6 +430,10 @@ export default function MembersPage() {
       setShowForm(false);
       setIsEdit(false);
       setForm(makeDefaultForm());
+      if (embedMode) {
+        window.parent.postMessage({ type: "MEMBER_SAVED", member_id: form.member_id }, "*");
+        return;
+      }
       if (returnToDetail && isEdit && form.member_id) {
         location.href = `/member-detail?member_id=${form.member_id}`;
         return;
@@ -761,7 +767,7 @@ ${
       {/* 컴팩트 툴바 */}
       <div
         style={{
-          display: "flex",
+          display: embedMode ? "none" : "flex",
           alignItems: "center",
           gap: 8,
           flexWrap: "wrap",
@@ -846,8 +852,8 @@ ${
       </div>
 
       {showForm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
-        <div className="card" style={{ marginBottom: 0, borderRadius: 24, width: "100%", maxWidth: 900, maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={embedMode ? {} : { position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={embedMode ? undefined : (e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
+        <div className="card" style={{ marginBottom: 0, borderRadius: 24, width: "100%", maxWidth: 900, maxHeight: embedMode ? undefined : "90vh", overflowY: embedMode ? undefined : "auto" }}>
           <h2 style={{ marginTop: 0 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
 
           <div
@@ -1449,6 +1455,7 @@ ${
           borderRadius: 12,
           padding: 0,
           overflow: "hidden",
+          display: embedMode ? "none" : undefined,
         }}
       >
         {/* 고정 헤더 */}

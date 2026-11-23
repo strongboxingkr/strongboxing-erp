@@ -209,6 +209,7 @@ export default function MemberDetailPage() {
   const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "" });
   const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const [uploading, setUploading] =
     useState(false);
@@ -556,7 +557,7 @@ export default function MemberDetailPage() {
               )}
               <button className="btn secondary"
                 style={{ fontSize: 12, padding: "3px 12px", height: 28, marginLeft: 4 }}
-                onClick={() => location.href = `/members?member_id=${data.member.member_id}&return=detail`}>
+                onClick={() => setShowEditModal(true)}>
                 수정
               </button>
               <span style={{ fontSize: 13, color: "#9ca3af" }}>
@@ -1387,6 +1388,36 @@ export default function MemberDetailPage() {
                 {refundSubmitting ? "처리 중..." : "환불 확인"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 회원 수정 iframe 모달 */}
+      {showEditModal && data?.member && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}
+        >
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 940, height: "88vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid #e5e7eb" }}>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>회원 수정</span>
+              <button onClick={() => setShowEditModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}>✕</button>
+            </div>
+            <iframe
+              src={`/members?member_id=${data.member.member_id}&embed=1`}
+              style={{ flex: 1, border: "none", width: "100%" }}
+              onLoad={(e) => {
+                const iframe = e.currentTarget;
+                const handler = (ev: MessageEvent) => {
+                  if (ev.data?.type === "MEMBER_SAVED") {
+                    setShowEditModal(false);
+                    window.removeEventListener("message", handler);
+                    location.reload();
+                  }
+                };
+                window.addEventListener("message", handler);
+              }}
+            />
           </div>
         </div>
       )}
