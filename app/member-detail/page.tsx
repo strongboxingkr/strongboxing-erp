@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 
@@ -58,9 +58,9 @@ function AttendanceCalendar({
   const selectedCheckins = selectedDate ? (byDate[selectedDate] || []) : [];
 
   return (
-    <div className="card" style={{ borderRadius: 12, marginBottom: 18, padding: 0, overflow: "hidden" }}>
+    <div className="card" style={{ borderRadius: 12, marginBottom: 18, padding: 0, overflow: "hidden", maxWidth: 980 }}>
       {/* 헤더 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid #e5e7eb" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button onClick={prevMonth} style={btnStyle}>‹</button>
           <span style={{ fontSize: 15, fontWeight: 700, minWidth: 72, textAlign: "center" }}>
@@ -71,12 +71,12 @@ function AttendanceCalendar({
         <span style={{ fontSize: 13, color: "#6b7280" }}>이번 달 출석 <strong style={{ color: "#2563eb" }}>{monthTotal}</strong>회</span>
       </div>
 
-      <div style={{ padding: "0 8px 8px" }}>
+      <div style={{ padding: "0 0 0" }}>
         {/* 요일 헤더 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
           {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
             <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600,
-              color: i === 0 ? "#ef4444" : i === 6 ? "#3b82f6" : "#9ca3af", padding: "10px 0 6px" }}>
+              color: i === 0 ? "#ef4444" : i === 6 ? "#3b82f6" : "#9ca3af", padding: "8px 0 5px" }}>
               {d}
             </div>
           ))}
@@ -86,7 +86,7 @@ function AttendanceCalendar({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderTop: "1px solid #f3f4f6" }}>
           {cells.map((day, i) => {
             if (!day) return (
-              <div key={i} style={{ borderRight: i % 7 !== 6 ? "1px solid #f3f4f6" : undefined, borderBottom: "1px solid #f3f4f6", minHeight: 52 }} />
+              <div key={i} style={{ borderRight: i % 7 !== 6 ? "1px solid #f3f4f6" : undefined, borderBottom: "1px solid #f3f4f6", minHeight: 44 }} />
             );
             const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
             const records = byDate[dateStr] || [];
@@ -103,11 +103,10 @@ function AttendanceCalendar({
                 style={{
                   borderRight: dow !== 6 ? "1px solid #f3f4f6" : undefined,
                   borderBottom: "1px solid #f3f4f6",
-                  minHeight: 52,
-                  padding: "5px 5px 4px",
+                  minHeight: 44,
+                  padding: "4px 5px 3px",
                   cursor: hasAttendance ? "pointer" : "default",
-                  background: isSelected ? "#eff6ff" : undefined,
-                  position: "relative",
+                  background: isSelected ? "#eff6ff" : hasAttendance ? "#f0f9ff" : undefined,
                 }}
               >
                 {/* 날짜 숫자 */}
@@ -115,35 +114,19 @@ function AttendanceCalendar({
                   fontSize: 12,
                   fontWeight: isToday ? 700 : 400,
                   color: isToday ? "#fff" : dow === 0 ? "#ef4444" : dow === 6 ? "#3b82f6" : "#374151",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 20, height: 20, borderRadius: "50%",
                   background: isToday ? "#2563eb" : undefined,
                   lineHeight: 1,
                 }}>
                   {day}
                 </div>
-                {/* 출석 표시 */}
+                {/* 출석 표시 — 텍스트만 (점 중복 제거) */}
                 {hasAttendance && (
-                  <div style={{ marginTop: 2 }}>
-                    {inCnt > 0 && (
-                      <div style={{ fontSize: 10, color: isSelected ? "#1d4ed8" : "#2563eb", fontWeight: 600, lineHeight: 1.3 }}>
-                        입장 {inCnt}회
-                      </div>
-                    )}
-                    {outCnt > 0 && (
-                      <div style={{ fontSize: 10, color: "#d97706", fontWeight: 600, lineHeight: 1.3 }}>
-                        퇴장 {outCnt}회
-                      </div>
-                    )}
+                  <div style={{ marginTop: 1 }}>
+                    {inCnt > 0 && <div style={{ fontSize: 10, color: isSelected ? "#1d4ed8" : "#2563eb", fontWeight: 600, lineHeight: 1.3 }}>입장 {inCnt}회</div>}
+                    {outCnt > 0 && <div style={{ fontSize: 10, color: "#d97706", fontWeight: 600, lineHeight: 1.3 }}>퇴장 {outCnt}회</div>}
                   </div>
-                )}
-                {/* 출석 점 표시 */}
-                {hasAttendance && !isSelected && (
-                  <div style={{ position: "absolute", bottom: 4, right: 5, width: 5, height: 5, borderRadius: "50%", background: "#2563eb" }} />
                 )}
               </div>
             );
@@ -285,6 +268,50 @@ const btnStyle: React.CSSProperties = {
   padding: "3px 10px", cursor: "pointer", fontSize: 15, color: "#374151",
 };
 
+// 결제 액션 버튼 — PC: 한 줄, 모바일: 수정+더보기
+function PayActions({ payment, openMenuId, setOpenMenuId, onEdit, onCancel, onRefund, onDelete }: {
+  payment: any; openMenuId: number | null; setOpenMenuId: (id: number | null) => void;
+  onEdit: () => void; onCancel: () => Promise<void>; onRefund?: () => void; onDelete: () => Promise<void>;
+}) {
+  const isOpen = openMenuId === payment.payment_id;
+  const btnBase: React.CSSProperties = { padding: "3px 9px", fontSize: 12, border: "1px solid #d1d5db", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#374151", whiteSpace: "nowrap" };
+
+  return (
+    <>
+      {/* PC: 버튼 한 줄 */}
+      <div className="pay-actions-pc" style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <button style={btnBase} onClick={onEdit}>수정</button>
+        <button style={btnBase} onClick={onCancel}>결제 취소</button>
+        {onRefund && <button style={btnBase} onClick={onRefund}>환불</button>}
+        <button style={{ ...btnBase, color: "#dc2626", border: "1px solid #fca5a5" }} onClick={onDelete}>삭제</button>
+      </div>
+      {/* 모바일: 수정 + 더보기 */}
+      <div className="pay-actions-mobile" style={{ display: "none", gap: 4, alignItems: "center", position: "relative" }}>
+        <button style={btnBase} onClick={onEdit}>수정</button>
+        <button style={btnBase} onClick={() => setOpenMenuId(isOpen ? null : payment.payment_id)}>⋯</button>
+        {isOpen && (
+          <div style={{
+            position: "fixed", zIndex: 9999,
+            background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 130, overflow: "hidden",
+            // 위치는 JS로 조정되지 않고 근사치로 처리 — 실제로는 portal 없이도 fixed가 viewport 기준
+          }}>
+            <button style={{ width: "100%", padding: "11px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#374151" }}
+              onClick={() => { setOpenMenuId(null); onCancel(); }}>결제 취소</button>
+            {onRefund && (
+              <button style={{ width: "100%", padding: "11px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#374151" }}
+                onClick={() => { setOpenMenuId(null); onRefund(); }}>환불</button>
+            )}
+            <div style={{ height: 1, background: "#f3f4f6" }} />
+            <button style={{ width: "100%", padding: "11px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#dc2626" }}
+              onClick={() => { setOpenMenuId(null); onDelete(); }}>삭제</button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // 변경이력 행 컴포넌트
 function HistoryRow({ datetime, typeLabel, memo, performer, hasDetail, beforeValue, afterValue, detail }: {
   datetime: string; typeLabel: string; memo: string; performer: string | null;
@@ -377,6 +404,7 @@ export default function MemberDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const tabBarRef = useRef<HTMLDivElement>(null);
 
   const [uploading, setUploading] =
     useState(false);
@@ -708,90 +736,44 @@ export default function MemberDetailPage() {
 
       {data && (
         <>
-          {/* 컴팩트 헤더 */}
-          <div className="card" style={{ marginBottom: 8, padding: "12px 16px", borderRadius: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 24, fontWeight: 900 }}>{data.member.name}</span>
+          {/* 통합 요약 패널 */}
+          <div className="card" style={{ marginBottom: 8, padding: "14px 16px", borderRadius: 14 }}>
+            {/* 1행: 이름 / 상태 / 수정 / 지점·전화 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+              <span style={{ fontSize: 22, fontWeight: 900, lineHeight: 1 }}>{data.member.name}</span>
               {(() => {
                 const st = getMemberStatus(data.member);
-                return (
-                  <span style={{ background: `${st.color}22`, color: st.color, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900 }}>
-                    {st.text}
-                  </span>
-                );
+                return <span style={{ background: `${st.color}22`, color: st.color, padding: "2px 9px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>{st.text}</span>;
               })()}
               {Number(data.member.remaining_count || 0) > 0 && Number(data.member.remaining_count) <= 3 && (
-                <span style={{ background: "rgba(255,77,109,.15)", color: "#ff4d6d", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900 }}>횟수부족</span>
+                <span style={{ background: "rgba(255,77,109,.15)", color: "#ff4d6d", padding: "2px 9px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>횟수부족</span>
               )}
-              <button className="btn secondary"
-                style={{ fontSize: 12, padding: "3px 12px", height: 28, marginLeft: 4 }}
+              <button className="btn secondary" style={{ fontSize: 12, padding: "2px 10px", height: 26 }}
                 onClick={() => {
                   const m = data.member;
-                  setEditForm({
-                    branch_name: m.branch_name || "",
-                    name: m.name || "",
-                    phone: m.phone || "",
-                    short_phone: m.short_phone || "",
-                    gender: m.gender || "",
-                    birth_date: m.birth_date?.slice(0,10) || "",
-                    locker_number: m.locker_number || "",
-                    coach_name: m.coach_name || "",
-                    product_name: m.product_name || "",
-                    pass_type: m.pass_type || "PERIOD",
-                    start_date: m.start_date?.slice(0,10) || "",
-                    end_date: m.end_date?.slice(0,10) || "",
-                    remaining_count: m.remaining_count ?? 0,
-                    has_sms: m.has_sms ?? 0,
-                    has_exit_sms: m.has_exit_sms ?? 0,
-                    has_sportswear: m.has_sportswear ?? 0,
-                    has_locker: m.has_locker ?? 0,
-                    locker_end_date: m.locker_end_date?.slice(0,10) || "",
-                    notes: m.notes || "",
-                  });
+                  setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_number || "", coach_name: m.coach_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.has_sms ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_sportswear ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.notes || "" });
                   setShowEditModal(true);
-                }}>
-                수정
-              </button>
-              <span style={{ fontSize: 13, color: "#9ca3af" }}>
-                {data.member.branch_name} · {data.member.phone}
+                }}>수정</button>
+              <span style={{ fontSize: 13, color: "#9ca3af", marginLeft: 2 }}>{data.member.branch_name} · {data.member.phone}</span>
+            </div>
+            {/* 2행: 세부 정보 그리드 */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px 24px", fontSize: 13 }}>
+              <span><span style={{ color: "#9ca3af" }}>회원번호 </span><strong>{data.member.member_no || "-"}</strong></span>
+              <span><span style={{ color: "#9ca3af" }}>출석번호 </span><strong>{data.member.checkin_code || "-"}</strong></span>
+              <span><span style={{ color: "#9ca3af" }}>담당자 </span><strong>{data.member.staff_name || "-"}</strong></span>
+              <span><span style={{ color: "#9ca3af" }}>회원권 </span><strong>{data.member.product_name || "-"}</strong></span>
+              <span><span style={{ color: "#9ca3af" }}>이용기간 </span><strong>{data.member.start_date?.slice(0,10) || "-"} ~ {data.member.end_date?.slice(0,10) || "-"}</strong></span>
+              <span>
+                <span style={{ color: "#9ca3af" }}>잔여 </span>
+                {(() => { const r = getRemaining(data.member); return <strong style={{ color: r.color }}>{r.text}</strong>; })()}
               </span>
-            </div>
-            <div style={{ marginTop: 8, display: "flex", gap: 20, flexWrap: "wrap", fontSize: 13 }}>
-              <span><span style={{ color: "#6b7280" }}>회원번호 </span><strong>{data.member.member_no || "-"}</strong></span>
-              <span><span style={{ color: "#6b7280" }}>출석번호 </span><strong>{data.member.checkin_code || "-"}</strong></span>
-              <span><span style={{ color: "#6b7280" }}>담당자 </span><strong>{data.member.staff_name || "-"}</strong></span>
+              <span><span style={{ color: "#9ca3af" }}>락커 </span><strong>{data.member.locker_no || "없음"}</strong></span>
             </div>
           </div>
 
-          {/* 이용정보 띠 */}
-          <div className="card" style={{ marginBottom: 10, padding: "10px 16px", borderRadius: 14 }}>
-            <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>회원권</div>
-                <div style={{ fontWeight: 800, fontSize: 15 }}>{data.member.product_name || "-"}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>이용기간</div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>
-                  {data.member.start_date?.slice(0, 10) || "-"} ~ {data.member.end_date?.slice(0, 10) || "-"}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>잔여</div>
-                {(() => {
-                  const r = getRemaining(data.member);
-                  return <div style={{ fontWeight: 800, fontSize: 15, color: r.color }}>{r.text}</div>;
-                })()}
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>락카</div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{data.member.locker_no || "없음"}</div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ overflowX: "auto", borderBottom: "1px solid #e5e7eb", marginBottom: 16 }}>
-            <div style={{ display: "flex", gap: 0, minWidth: "max-content" }}>
+          {/* 탭 바 */}
+          <div ref={tabBarRef} style={{ overflowX: "auto", borderBottom: "1px solid #e5e7eb", marginBottom: 12 }}>
+            <div style={{ display: "flex", minWidth: "max-content" }}>
               {[
                 ["INFO", "기본정보"],
                 ["PAY", "결제내역"],
@@ -802,13 +784,23 @@ export default function MemberDetailPage() {
               ].map(([key, label]) => (
                 <button
                   key={key}
-                  onClick={() => setTab(key)}
+                  onClick={() => {
+                    setTab(key);
+                    // 탭 전환 시 탭바 위치로 스크롤 (헤더 오프셋 고려)
+                    setTimeout(() => {
+                      if (tabBarRef.current) {
+                        const top = tabBarRef.current.getBoundingClientRect().top + window.scrollY - 60;
+                        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+                      }
+                    }, 50);
+                  }}
                   style={{
                     background: "none", border: "none", cursor: "pointer",
-                    padding: "10px 16px", fontSize: 14, fontWeight: tab === key ? 700 : 400,
-                    color: tab === key ? "#2563eb" : "#4b5563",
+                    padding: "0 16px", height: 44, fontSize: 14,
+                    fontWeight: tab === key ? 700 : 400,
+                    color: tab === key ? "#2563eb" : "#6b7280",
                     borderBottom: tab === key ? "2px solid #2563eb" : "2px solid transparent",
-                    whiteSpace: "nowrap", transition: "color 0.15s",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {label}
@@ -1037,45 +1029,27 @@ export default function MemberDetailPage() {
                             {isCancelled ? <s style={{ color: "#ef4444" }}>{money(p.refund_amount)}</s> : money(p.final_amount)}
                           </td>
                           <td style={{ padding: "12px 16px", color: "#374151", whiteSpace: "nowrap" }}>{methodLabel}</td>
-                          <td style={{ padding: "12px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                          <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
                             {!isCancelled && (
-                              <div style={{ display: "inline-flex", gap: 6, alignItems: "center", position: "relative" }}>
-                                <button
-                                  style={{ padding: "4px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#374151" }}
-                                  onClick={() => { setEditPayment(p); setEditPayForm({ product_name: p.product_name || "", final_amount: String(p.final_amount || ""), payment_method: p.payment_method || "CARD", payment_date: p.payment_date?.slice(0, 10) || "", memo: p.memo || "" }); }}
-                                >수정</button>
-                                <div style={{ position: "relative" }}>
-                                  <button
-                                    style={{ padding: "4px 8px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#374151" }}
-                                    onClick={() => setOpenMenuId(openMenuId === p.payment_id ? null : p.payment_id)}
-                                  >⋯</button>
-                                  {openMenuId === p.payment_id && (
-                                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", zIndex: 100, minWidth: 120, overflow: "hidden" }}>
-                                      <button style={{ width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#374151" }}
-                                        onClick={async () => {
-                                          setOpenMenuId(null);
-                                          if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
-                                          const res = await apiFetch("/api/payments/cancel", { method: "POST", body: JSON.stringify({ payment_id: p.payment_id }) });
-                                          const json = await res.json();
-                                          if (json.success) load(); else alert(json.message || "취소 실패");
-                                        }}>결제 취소</button>
-                                      {p.pass_type && (
-                                        <button style={{ width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#374151" }}
-                                          onClick={() => { setOpenMenuId(null); setRefundTarget(p); setRefundForm({ refund_amount: "", refund_reason: "" }); }}>환불</button>
-                                      )}
-                                      <div style={{ height: 1, background: "#f3f4f6" }} />
-                                      <button style={{ width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#dc2626" }}
-                                        onClick={async () => {
-                                          setOpenMenuId(null);
-                                          if (!confirm(`${p.product_name} 결제를 완전 삭제할까요?\n삭제 후 복구 불가합니다.`)) return;
-                                          const res = await apiFetch(`/api/payments/delete?payment_id=${p.payment_id}`, { method: "DELETE" });
-                                          const json = await res.json();
-                                          if (json.success) load(); else alert(json.message || "삭제 실패");
-                                        }}>삭제</button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                              <PayActions
+                                payment={p}
+                                openMenuId={openMenuId}
+                                setOpenMenuId={setOpenMenuId}
+                                onEdit={() => { setEditPayment(p); setEditPayForm({ product_name: p.product_name || "", final_amount: String(p.final_amount || ""), payment_method: p.payment_method || "CARD", payment_date: p.payment_date?.slice(0, 10) || "", memo: p.memo || "" }); }}
+                                onCancel={async () => {
+                                  if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
+                                  const res = await apiFetch("/api/payments/cancel", { method: "POST", body: JSON.stringify({ payment_id: p.payment_id }) });
+                                  const json = await res.json();
+                                  if (json.success) load(); else alert(json.message || "취소 실패");
+                                }}
+                                onRefund={p.pass_type ? () => { setRefundTarget(p); setRefundForm({ refund_amount: "", refund_reason: "" }); } : undefined}
+                                onDelete={async () => {
+                                  if (!confirm(`${p.product_name} 결제를 완전 삭제할까요?\n삭제 후 복구 불가합니다.`)) return;
+                                  const res = await apiFetch(`/api/payments/delete?payment_id=${p.payment_id}`, { method: "DELETE" });
+                                  const json = await res.json();
+                                  if (json.success) load(); else alert(json.message || "삭제 실패");
+                                }}
+                              />
                             )}
                           </td>
                         </tr>

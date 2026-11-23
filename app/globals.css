@@ -580,6 +580,10 @@ tr:hover td {
     gap: 3px;
   }
 
+  /* 결제 액션: 모바일에서 한줄→더보기로 전환 */
+  .pay-actions-pc { display: none !important; }
+  .pay-actions-mobile { display: flex !important; }
+
   .calendar-big .react-calendar__tile {
     min-height: 60px;
     font-size: 13px;
