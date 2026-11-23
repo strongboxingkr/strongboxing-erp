@@ -1121,10 +1121,10 @@ ${
 
       {showExtendForm && extendMember && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }} onClick={() => setShowExtendForm(false)}>
-          <div style={{ background: "#fff", borderRadius: 10, width: "100%", maxWidth: 800, maxHeight: "90vh", overflow: "auto", boxShadow: "0 8px 40px rgba(0,0,0,.18)" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#fff", borderRadius: 10, width: "100%", maxWidth: 800, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(0,0,0,.18)" }} onClick={e => e.stopPropagation()}>
 
             {/* 헤더 */}
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>회원권 재등록</div>
                 <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>{extendMember.name} · 현재: {extendMember.product_name}</div>
@@ -1133,12 +1133,12 @@ ${
             </div>
 
             {/* 폼 본문 */}
-            <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", flex: 1 }}>
 
               {/* 상품 선택 — 전체 너비 */}
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>상품 선택 <span style={{ color: "#dc2626" }}>*</span></div>
-                <select className="input" style={{ height: 38, fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
                   <option value="">상품 선택</option>
                   {products.map((p: any) => (
                     <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
@@ -1200,8 +1200,8 @@ ${
 
               {/* 메모 — 전체 너비 */}
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>메모</div>
-                <input className="input" placeholder="메모 (선택)" style={{ height: 38, fontSize: 14 }}
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>메모 <span style={{ fontWeight: 400, color: "#9ca3af" }}>(선택)</span></div>
+                <textarea className="input" placeholder="메모" rows={2} style={{ fontSize: 14, resize: "vertical", lineHeight: "1.5" }}
                   value={reregForm.memo}
                   onChange={(e) => setReregForm({ ...reregForm, memo: e.target.value })} />
               </div>
@@ -1245,7 +1245,7 @@ ${
             </div>
 
             {/* 푸터 버튼 */}
-            <div style={{ padding: "12px 20px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8, flexShrink: 0 }}>
               <button className="btn secondary" style={{ height: 38, fontSize: 14, padding: "0 18px" }} onClick={() => setShowExtendForm(false)}>취소</button>
               <button className="btn" style={{ height: 38, fontSize: 14, padding: "0 18px" }} onClick={saveRereg}>재등록 저장</button>
             </div>
