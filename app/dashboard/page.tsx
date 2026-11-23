@@ -162,15 +162,15 @@ export default function DashboardPage() {
         .expire-mid { background:#fef3c7; color:#92400e; }
 
         /* ── 확인할 일 ── */
-        .ops-row { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid #f3f4f6; gap:10px; flex-wrap:wrap; }
+        .ops-row { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid #f3f4f6; gap:10px; flex-wrap:nowrap; }
         .ops-row:last-child { border-bottom:none; }
         .ops-icon { font-size:18px; min-width:24px; flex-shrink:0; }
-        .ops-text { flex:1 1 120px; min-width:0; }
+        .ops-text { flex:1 1 0; min-width:0; overflow:hidden; }
         .ops-label { font-size:14px; font-weight:600; color:#111827; word-break:keep-all; white-space:nowrap; }
         .ops-hint { font-size:11px; color:#9ca3af; margin-top:2px; word-break:keep-all; white-space:normal; }
-        .ops-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+        .ops-right { display:flex; align-items:center; gap:8px; flex-shrink:0; min-width:100px; justify-content:flex-end; }
         .ops-count { font-size:20px; font-weight:800; min-width:36px; text-align:right; font-variant-numeric:tabular-nums; }
-        .ops-link-btn { padding:5px 11px; border-radius:6px; border:1.5px solid #1d4ed8; background:#eff6ff; color:#1d4ed8; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+        .ops-link-btn { padding:5px 11px; border-radius:6px; border:1.5px solid #1d4ed8; background:#eff6ff; color:#1d4ed8; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; min-width:46px; text-align:center; }
         .ops-link-btn:hover { background:#dbeafe; }
       `}</style>
 
