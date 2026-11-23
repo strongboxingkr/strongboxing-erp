@@ -1120,11 +1120,16 @@ ${
       )}
 
       {showExtendForm && extendMember && (
-        <div className="card" style={{ marginBottom: 18, borderRadius: 24 }}>
-          <h2>회원권 재등록</h2>
-          <div style={{ color: "#aaa", marginBottom: 20 }}>
-            {extendMember.name} / 현재: {extendMember.product_name}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }} onClick={() => setShowExtendForm(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 540, maxHeight: "92vh", overflow: "auto", boxShadow: "0 8px 40px rgba(0,0,0,.2)" }} onClick={e => e.stopPropagation()}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>회원권 재등록</div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>{extendMember.name} · 현재: {extendMember.product_name}</div>
+            </div>
+            <button onClick={() => setShowExtendForm(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
           </div>
+          <div style={{ padding: "16px 20px" }}>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
             <div>
@@ -1251,13 +1256,11 @@ ${
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            <button className="btn" onClick={saveRereg}>
-              재등록 저장
-            </button>
-            <button className="btn secondary" onClick={() => setShowExtendForm(false)}>
-              취소
-            </button>
+          <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" }}>
+            <button className="btn secondary" style={{ height: 38 }} onClick={() => setShowExtendForm(false)}>취소</button>
+            <button className="btn" style={{ height: 38 }} onClick={saveRereg}>재등록 저장</button>
+          </div>
+          </div>
           </div>
         </div>
       )}
