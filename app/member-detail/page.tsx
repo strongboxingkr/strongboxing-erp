@@ -1269,7 +1269,7 @@ export default function MemberDetailPage() {
                       payment_method: addPayForm.payment_method,
                       payment_date: addPayForm.payment_date,
                       memo: addPayForm.memo,
-                      payment_purpose: "PASS",
+                      payment_purpose: "GENERAL",
                     }),
                   });
                   const json = await res.json();

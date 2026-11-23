@@ -365,7 +365,7 @@ export default function MembersPage() {
               amount: addAmt,
               final_amount: addAmt,
               memo: "",
-              payment_purpose: "EXTRA",
+              payment_purpose: "GENERAL",
             }),
           });
         }
