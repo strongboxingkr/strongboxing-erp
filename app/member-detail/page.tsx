@@ -1233,13 +1233,16 @@ export default function MemberDetailPage() {
               <button onClick={() => setAddPayModal(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "var(--muted)" }}>✕</button>
             </div>
             <div style={{ display: "grid", gap: 12 }}>
-              <select className="input" value={addPayForm.product_name} onChange={e => {
-                const p = products.find((p: any) => p.option_name === e.target.value);
-                setAddPayForm({ ...addPayForm, product_name: e.target.value, final_amount: p?.amount ? String(p.amount) : addPayForm.final_amount });
-              }}>
-                <option value="">상품 선택</option>
-                {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
-              </select>
+              <input
+                className="input"
+                placeholder="상품명 직접 입력 (예: 주3회 차액, 핸드랩)"
+                value={addPayForm.product_name}
+                onChange={e => setAddPayForm({ ...addPayForm, product_name: e.target.value })}
+                list="product-list"
+              />
+              <datalist id="product-list">
+                {products.map((p: any) => <option key={p.option_id} value={p.option_name} />)}
+              </datalist>
               <input className="input" type="number" placeholder="결제금액" value={addPayForm.final_amount} onChange={e => setAddPayForm({ ...addPayForm, final_amount: e.target.value })} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {([["CARD","카드"],["CASH","현금"],["TRANSFER","계좌이체"]] as const).map(([m, l]) => (
