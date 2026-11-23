@@ -276,104 +276,58 @@ export default function SettingsPage() {
           {optionTypes.find((t) => t.value === selectedType)?.label} 추가
         </h2>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 2fr 1fr auto",
-            gap: 12,
-          }}
-        >
-          <input
-            className="input"
-            placeholder="표시명 예: 1개월 기간권"
-            value={form.option_name}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                option_name: e.target.value,
-              })
-            }
-          />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, alignItems: "end" }}>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>상품명 *</div>
+            <input className="input" placeholder="예: 1개월 기간권, 핸드랩" value={form.option_name} onChange={(e) => setForm({ ...form, option_name: e.target.value })} />
+          </div>
 
-          <input
-            className="input"
-            placeholder="값 예: PERIOD / COUNT"
-            value={form.option_value}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                option_value: e.target.value,
-              })
-            }
-          />
-
-          <input
-            className="input"
-            type="number"
-            placeholder="순서"
-            value={form.sort_order}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                sort_order: Number(e.target.value),
-              })
-            }
-          />
-
-          <button className="btn" onClick={save}>
-            추가
-          </button>
-
-          {selectedType === "PASS_PRODUCT" && (
+          {selectedType === "PASS_PRODUCT" ? (
             <>
-              <input
-                className="input"
-                type="number"
-                placeholder="금액"
-                value={form.amount}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    amount: Number(e.target.value),
-                  })
-                }
-              />
-
-              <input
-                className="input"
-                type="number"
-                placeholder="기간 개월 예: 1, 3"
-                value={form.duration_months}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    duration_months: Number(e.target.value),
-                  })
-                }
-              />
-
-              <input
-                className="input"
-                type="number"
-                placeholder="횟수 예: 12, 36"
-                value={form.count_value}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    count_value: Number(e.target.value),
-                  })
-                }
-              />
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>종류 *</div>
+                <select className="input" value={form.option_value} onChange={(e) => setForm({ ...form, option_value: e.target.value })}>
+                  <option value="">선택</option>
+                  <option value="PERIOD">기간권 (PERIOD)</option>
+                  <option value="COUNT">횟수권 (COUNT)</option>
+                  <option value="DAILY">일일권 (DAILY)</option>
+                  <option value="EXTRA">부가상품 (핸드랩·락카 등)</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>기본금액 (원)</div>
+                <input className="input" type="number" placeholder="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>기간 (개월, 기간권만)</div>
+                <input className="input" type="number" placeholder="예: 1, 3, 6" value={form.duration_months} onChange={(e) => setForm({ ...form, duration_months: Number(e.target.value) })} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>횟수 (횟수권만)</div>
+                <input className="input" type="number" placeholder="예: 8, 12" value={form.count_value} onChange={(e) => setForm({ ...form, count_value: Number(e.target.value) })} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>정렬순서</div>
+                <input className="input" type="number" placeholder="0" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>값</div>
+                <input className="input" placeholder="값" value={form.option_value} onChange={(e) => setForm({ ...form, option_value: e.target.value })} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>정렬순서</div>
+                <input className="input" type="number" placeholder="0" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
+              </div>
             </>
           )}
-        </div>
 
-        {selectedType === "PASS_PRODUCT" && (
-          <p style={{ color: "#aaa", marginTop: 12 }}>
-            기간권은 값에 PERIOD, 횟수권은 COUNT를 넣어. 기간권은 개월 수,
-            횟수권은 횟수를 입력하면 결제/회원권에 자동 반영돼.
-          </p>
-        )}
+          <div style={{ paddingTop: 20 }}>
+            <button className="btn" style={{ width: "100%" }} onClick={save}>추가</button>
+          </div>
+        </div>
       </div>
 
       <div className="table-wrap">
