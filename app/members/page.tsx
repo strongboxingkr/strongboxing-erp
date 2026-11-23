@@ -763,7 +763,7 @@ ${
   }).length;
 
   return (
-    <AppShell title="회원관리">
+    <AppShell title="회원관리" embed={embedMode}>
       {/* 컴팩트 툴바 */}
       <div
         style={{

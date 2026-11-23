@@ -76,9 +76,11 @@ const MOBILE_ONLY_PATHS = ["/mobile-owner", "/mobile-branch"];
 export default function AppShell({
   title,
   children,
+  embed,
 }: {
   title: string;
   children: React.ReactNode;
+  embed?: boolean;
 }) {
   const [user, setUser] = useState<any>(null);
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
@@ -187,6 +189,10 @@ export default function AppShell({
   };
 
   if (!user || !checked) return null;
+
+  if (embed) {
+    return <div style={{ padding: 0, background: "#fff" }}>{children}</div>;
+  }
 
   return (
     <div className="app-shell">
