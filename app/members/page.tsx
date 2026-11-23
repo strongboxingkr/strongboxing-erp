@@ -346,9 +346,32 @@ export default function MembersPage() {
 
     if (data.success) {
       const newMemberId = data.member_id;
+      // 추가 결제 (수정 모드 + add 모드)
+      const payMode = (targetForm as any).payMode;
+      const payMemberId = isEdit ? targetForm.member_id : newMemberId;
+      if (isEdit && payMode === "add") {
+        const addAmt = Number((targetForm as any).add_payment_amount || 0);
+        const addProduct = ((targetForm as any).add_product_name || "").trim();
+        if (addAmt > 0 && addProduct) {
+          await apiFetch("/api/payments/add", {
+            method: "POST",
+            body: JSON.stringify({
+              member_id: payMemberId,
+              branch_name: targetForm.branch_name,
+              payment_date: (targetForm as any).add_payment_date || today,
+              start_date: targetForm.start_date,
+              payment_method: (targetForm as any).add_payment_method || "CARD",
+              product_name: addProduct,
+              amount: addAmt,
+              final_amount: addAmt,
+              memo: "",
+              payment_purpose: "EXTRA",
+            }),
+          });
+        }
+      }
       // 결제금액 처리
       const payAmt = Number((targetForm as any).payment_amount || 0);
-      const payMemberId = isEdit ? targetForm.member_id : newMemberId;
       const latestPaymentId = (targetForm as any).latest_payment_id;
       const paymentChanged = !!(targetForm as any).payment_changed;
       if (payMemberId && payAmt > 0) {
@@ -972,8 +995,52 @@ ${
             />
 
             <>
-              <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>💳 결제 정보 (선택)</div>
-              {/* 결제금액 + 수단 + 결제일 한 줄 */}
+              <div style={{ gridColumn: "1 / 5", fontSize: 13, fontWeight: 700, color: "var(--accent)", marginTop: 4 }}>
+                💳 결제 정보 (선택)
+                {isEdit && (
+                  <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 400, color: "var(--muted)" }}>
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: (form as any).payMode === "add" ? "var(--accent)" : "var(--muted)", fontWeight: (form as any).payMode === "add" ? 700 : 400, fontSize: 12, padding: "0 6px" }}
+                      onClick={() => setForm({ ...form, payMode: "add" } as any)}
+                    >+ 추가 결제</button>
+                    <span style={{ color: "#ddd" }}>|</span>
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: (form as any).payMode !== "add" ? "var(--accent)" : "var(--muted)", fontWeight: (form as any).payMode !== "add" ? 700 : 400, fontSize: 12, padding: "0 6px" }}
+                      onClick={() => setForm({ ...form, payMode: "edit" } as any)}
+                    >기존 수정</button>
+                  </span>
+                )}
+              </div>
+
+              {/* 추가 결제 모드 (수정 화면 전용) */}
+              {isEdit && (form as any).payMode === "add" && (
+                <div style={{ gridColumn: "1 / 5", display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap", background: "var(--panel2)", borderRadius: 8, padding: "10px 12px", border: "1px solid var(--line)" }}>
+                  <div style={{ flex: "1 1 180px" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>상품·내용</div>
+                    <input className="input" placeholder="예: 핸드랩, 주3회 차액" value={(form as any).add_product_name || ""} onChange={(e) => setForm({ ...form, add_product_name: e.target.value } as any)} />
+                  </div>
+                  <div style={{ flex: "0 0 140px" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제금액</div>
+                    <input className="input" type="number" placeholder="금액 (원)" value={(form as any).add_payment_amount || ""} onChange={(e) => setForm({ ...form, add_payment_amount: e.target.value } as any)} />
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
+                      <button key={v} type="button" className={(form as any).add_payment_method === v ? "btn" : "btn secondary"} style={{ fontSize: 12, padding: "0 12px", height: 40 }}
+                        onClick={() => setForm({ ...form, add_payment_method: v } as any)}>{l}</button>
+                    ))}
+                  </div>
+                  <div style={{ flex: "0 0 auto" }}>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 3 }}>결제일</div>
+                    <input className="input" type="date" style={{ width: 148 }} value={(form as any).add_payment_date || today} onChange={(e) => setForm({ ...form, add_payment_date: e.target.value } as any)} />
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--muted)" }}>※ 수정 저장 시 별도 결제 건으로 추가됩니다</div>
+                </div>
+              )}
+
+              {/* 기존 결제 수정 모드 */}
+              {(!isEdit || (form as any).payMode !== "add") && (
               <div style={{ gridColumn: "1 / 5", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <input
                   className="input"
@@ -1000,6 +1067,7 @@ ${
                   />
                 </div>
               </div>
+              )}
             </>
           </div>
 
