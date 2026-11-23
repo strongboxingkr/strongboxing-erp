@@ -854,7 +854,7 @@ ${
       {showForm && (
         <div style={embedMode ? {} : { position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={embedMode ? undefined : (e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
         <div className="card" style={{ marginBottom: 0, borderRadius: 24, width: "100%", maxWidth: 900, maxHeight: embedMode ? undefined : "90vh", overflowY: embedMode ? undefined : "auto" }}>
-          <h2 style={{ marginTop: 0 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>
+          {!embedMode && <h2 style={{ marginTop: 0 }}>{isEdit ? "회원 수정" : "회원 등록"}</h2>}
 
           <div
             style={{
