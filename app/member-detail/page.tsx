@@ -737,37 +737,50 @@ export default function MemberDetailPage() {
       {data && (
         <>
           {/* 통합 요약 패널 */}
-          <div className="card" style={{ marginBottom: 8, padding: "14px 16px", borderRadius: 14 }}>
-            {/* 1행: 이름 / 상태 / 수정 / 지점·전화 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-              <span style={{ fontSize: 22, fontWeight: 900, lineHeight: 1 }}>{data.member.name}</span>
+          <div className="card" style={{ marginBottom: 8, padding: "16px 18px", borderRadius: 10 }}>
+            {/* 1행: 이름 / 상태 배지들 / 수정 버튼 오른쪽 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.2 }}>{data.member.name}</span>
               {(() => {
                 const st = getMemberStatus(data.member);
-                return <span style={{ background: `${st.color}22`, color: st.color, padding: "2px 9px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>{st.text}</span>;
+                return <span style={{ background: `${st.color}18`, color: st.color, padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>{st.text}</span>;
               })()}
               {Number(data.member.remaining_count || 0) > 0 && Number(data.member.remaining_count) <= 3 && (
-                <span style={{ background: "rgba(255,77,109,.15)", color: "#ff4d6d", padding: "2px 9px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>횟수부족</span>
+                <span style={{ background: "rgba(255,77,109,.12)", color: "#ff4d6d", padding: "2px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>횟수부족</span>
               )}
-              <button className="btn secondary" style={{ fontSize: 12, padding: "2px 10px", height: 26 }}
+              <span style={{ fontSize: 13, color: "#6b7280" }}>{data.member.branch_name}</span>
+              <span style={{ fontSize: 13, color: "#6b7280" }}>{data.member.phone}</span>
+              <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30, marginLeft: "auto" }}
                 onClick={() => {
                   const m = data.member;
                   setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_number || "", coach_name: m.coach_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.has_sms ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_sportswear ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.notes || "" });
                   setShowEditModal(true);
-                }}>수정</button>
-              <span style={{ fontSize: 13, color: "#9ca3af", marginLeft: 2 }}>{data.member.branch_name} · {data.member.phone}</span>
+                }}>회원정보 수정</button>
             </div>
-            {/* 2행: 세부 정보 그리드 */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px 24px", fontSize: 13 }}>
-              <span><span style={{ color: "#9ca3af" }}>회원번호 </span><strong>{data.member.member_no || "-"}</strong></span>
-              <span><span style={{ color: "#9ca3af" }}>출석번호 </span><strong>{data.member.checkin_code || "-"}</strong></span>
-              <span><span style={{ color: "#9ca3af" }}>담당자 </span><strong>{data.member.staff_name || "-"}</strong></span>
-              <span><span style={{ color: "#9ca3af" }}>회원권 </span><strong>{data.member.product_name || "-"}</strong></span>
-              <span><span style={{ color: "#9ca3af" }}>이용기간 </span><strong>{data.member.start_date?.slice(0,10) || "-"} ~ {data.member.end_date?.slice(0,10) || "-"}</strong></span>
-              <span>
-                <span style={{ color: "#9ca3af" }}>잔여 </span>
-                {(() => { const r = getRemaining(data.member); return <strong style={{ color: r.color }}>{r.text}</strong>; })()}
-              </span>
-              <span><span style={{ color: "#9ca3af" }}>락커 </span><strong>{data.member.locker_no || "없음"}</strong></span>
+
+            {/* 구분선 */}
+            <div style={{ borderTop: "1px solid #f3f4f6", margin: "10px 0 10px" }} />
+
+            {/* 2행: 식별정보 / 회원권 두 그룹 */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 32px" }}>
+              {/* 회원 식별정보 */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", alignItems: "center" }}>
+                <SumItem label="회원번호" value={data.member.member_no || "-"} />
+                <SumItem label="출석번호" value={data.member.checkin_code || "-"} />
+                <SumItem label="담당자" value={data.member.staff_name || "-"} />
+              </div>
+
+              <div style={{ width: 1, background: "#e5e7eb", alignSelf: "stretch", flexShrink: 0 }} />
+
+              {/* 현재 회원권 */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", alignItems: "center" }}>
+                <SumItem label="상품" value={data.member.product_name || "-"} />
+                <SumItem label="이용기간" value={
+                  (data.member.start_date?.slice(0,10) || "-") + " ~ " + (data.member.end_date?.slice(0,10) || "-")
+                } nowrap />
+                <SumItem label="잔여" valueEl={(() => { const r = getRemaining(data.member); return <strong style={{ color: r.color, fontSize: 14 }}>{r.text}</strong>; })()} />
+                <SumItem label="락커" value={data.member.locker_no || "없음"} />
+              </div>
             </div>
           </div>
 
@@ -970,7 +983,7 @@ export default function MemberDetailPage() {
           )}
           {tab === "INFO" && (
             <div className="card" style={{ borderRadius: 8, marginBottom: 12, padding: "16px 18px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0 24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0 24px" }}>
                 <Info label="성별" value={data.member.gender || "-"} />
                 <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
                 <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
@@ -981,7 +994,7 @@ export default function MemberDetailPage() {
                   : data.member.status === "REST" ? "휴회"
                   : data.member.status || "-"
                 } />
-                <Info label="주소" value={data.member.address || "-"} />
+                <Info label="주소" value={data.member.address || "-"} wide />
               </div>
             </div>
           )}
@@ -1288,9 +1301,18 @@ export default function MemberDetailPage() {
     </AppShell>
   );
 }
-function Info({ label, value }: { label: string; value: any }) {
+function SumItem({ label, value, valueEl, nowrap }: { label: string; value?: string; valueEl?: JSX.Element; nowrap?: boolean }) {
   return (
-    <div style={{ padding: "6px 0", borderBottom: "1px solid #f3f4f6" }}>
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4, fontSize: 13, whiteSpace: nowrap ? "nowrap" : undefined }}>
+      <span style={{ color: "#9ca3af", fontWeight: 400 }}>{label}</span>
+      {valueEl ?? <strong style={{ fontWeight: 600, color: "#111827" }}>{value}</strong>}
+    </span>
+  );
+}
+
+function Info({ label, value, wide }: { label: string; value: any; wide?: boolean }) {
+  return (
+    <div style={{ padding: "6px 0", gridColumn: wide ? "1 / -1" : undefined }}>
       <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 14, color: "#111827", wordBreak: "break-word" }}>{value}</div>
     </div>
