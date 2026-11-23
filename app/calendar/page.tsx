@@ -16,6 +16,7 @@ const getStatusColor = (s: string) => {
 };
 
 const SOURCE_OPTIONS = ["전화문의", "카카오톡", "인스타그램", "홈페이지", "지인소개", "방문문의", "당근", "기타"];
+const SOURCE_KO: Record<string, string> = { NAVER: "네이버", naver: "네이버", "네이버예약": "네이버", "네이버": "네이버" };
 const PURPOSE_OPTIONS = ["방문상담", "일일권", "기타"];
 
 function CalendarInner() {
@@ -133,11 +134,17 @@ function CalendarInner() {
         .modal-footer { padding:11px 18px; border-top:1px solid #e5e7eb; flex-shrink:0; display:flex; gap:8px; justify-content:flex-end; }
         .status-btn { height:32px; padding:0 12px; border-radius:5px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid #e5e7eb; background:#f9fafb; color:#374151; }
         .status-btn.active { border-color:transparent; color:#fff; }
+        @media (max-width: 768px) {
+          .form-grid { grid-template-columns: 1fr 1fr !important; }
+          .form-grid > *:last-child:nth-child(odd) { grid-column: 1 / -1; }
+          .cal-filter-row { flex-direction: column; align-items: stretch !important; }
+          .cal-filter-row > div { width: 100% !important; }
+          .cal-filter-row input[type="date"] { width: 100% !important; }
+        }
       `}</style>
 
       {/* 예약 등록 폼 */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "18px 20px", marginBottom: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 14 }}>예약 등록</div>
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "16px 18px", marginBottom: 14 }}>
 
         {/* 행 1: 지점 / 이름 / 전화번호 */}
         <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", marginBottom: 10 }}>
@@ -185,32 +192,50 @@ function CalendarInner() {
         {/* 행 3: 운영 메모 */}
         <div className="field" style={{ marginBottom: 12 }}>
           <label className="field-label">운영 메모 <span style={{ fontWeight: 400, color: "#9ca3af" }}>(선택)</span></label>
-          <textarea className="input" style={{ minHeight: 64, resize: "vertical", fontSize: 13 }} placeholder="내부 메모를 입력하세요. 문자 발송에 포함되지 않습니다."
+          <textarea className="input" style={{ minHeight: 60, resize: "vertical", fontSize: 13 }}
             value={form.ops_memo} onChange={e => setForm({ ...form, ops_memo: e.target.value })} />
+          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>고객 문자에 포함되지 않는 내부 메모입니다.</div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button className="btn" style={{ height: 38, minWidth: 90 }} onClick={addReservation}>등록</button>
+          <button className="btn" style={{ height: 38, minWidth: 90 }} onClick={addReservation}>예약 등록</button>
         </div>
       </div>
 
       {/* 조회 필터 */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "12px 16px", marginBottom: 14 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          {isAdminOrOwner ? (
-            <select className="input" style={{ width: 120, height: 36 }} value={branch} onChange={e => setBranch(e.target.value)}>
-              <option>전체</option>
-              {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
-            </select>
-          ) : (
-            <span style={{ fontSize: 14, color: "#374151", fontWeight: 600 }}>{user?.branch_name}</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+          {isAdminOrOwner && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>지점</span>
+              <select className="input" style={{ width: 110, height: 36, fontSize: 13 }} value={branch} onChange={e => setBranch(e.target.value)}>
+                <option>전체</option>
+                {branches.map(b => <option key={b.option_id}>{b.option_name}</option>)}
+              </select>
+            </div>
           )}
-          <input className="input" type="date" style={{ width: 150, height: 36 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <span style={{ color: "#9ca3af" }}>~</span>
-          <input className="input" type="date" style={{ width: 150, height: 36 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <input className="input" style={{ flex: 1, minWidth: 160, height: 36 }} placeholder="이름 / 전화번호" value={search} onChange={e => setSearch(e.target.value)} />
-          <button className="btn" style={{ height: 36 }} onClick={load}>조회</button>
-          <button className="btn secondary" style={{ height: 36 }} onClick={() => { setStartDate(today); setEndDate(today); setSearch(""); if (isAdminOrOwner) setBranch("전체"); }}>초기화</button>
+          {!isAdminOrOwner && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>지점</span>
+              <span style={{ fontSize: 14, color: "#374151", fontWeight: 600, height: 36, lineHeight: "36px" }}>{user?.branch_name}</span>
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>기간</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input className="input" type="date" style={{ width: 140, height: 36, fontSize: 13 }} value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <span style={{ color: "#9ca3af", fontSize: 13 }}>~</span>
+              <input className="input" type="date" style={{ width: 140, height: 36, fontSize: 13 }} value={endDate} onChange={e => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1, minWidth: 160 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>이름/전화번호</span>
+            <input className="input" style={{ height: 36, fontSize: 13 }} placeholder="이름 또는 전화번호" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <div style={{ display: "flex", gap: 6, alignSelf: "flex-end" }}>
+            <button className="btn" style={{ height: 36, fontSize: 13, padding: "0 16px" }} onClick={load}>조회</button>
+            <button className="btn secondary" style={{ height: 36, fontSize: 13, padding: "0 14px" }} onClick={() => { setStartDate(today); setEndDate(today); setSearch(""); if (isAdminOrOwner) setBranch("전체"); }}>초기화</button>
+          </div>
         </div>
       </div>
 
@@ -251,7 +276,7 @@ function CalendarInner() {
                     <td style={{ padding: "10px 12px", color: "#374151" }}>{r.phone || "-"}</td>
                     <td style={{ padding: "10px 12px", color: "#374151" }}>{purpose}</td>
                     <td style={{ padding: "10px 12px", color: "#374151" }}>{r.branch_name || "-"}</td>
-                    <td style={{ padding: "10px 12px", color: "#374151" }}>{r.event_type || "-"}</td>
+                    <td style={{ padding: "10px 12px", color: "#374151" }}>{SOURCE_KO[r.event_type] || r.event_type || "-"}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: getStatusColor(r.status) }}>{r.status || "-"}</span>
                     </td>
