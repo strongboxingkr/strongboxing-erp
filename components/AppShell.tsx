@@ -118,6 +118,13 @@ export default function AppShell({
 
   const loadPermissions = async (role: string) => {
     const res = await fetch("/api/permissions");
+
+    if (res.status === 401) {
+      localStorage.removeItem("user");
+      location.href = "/login";
+      return;
+    }
+
     const data = await res.json();
 
     const paths =
@@ -137,7 +144,6 @@ export default function AppShell({
     setOpenGroups(currentGroup ? [currentGroup.title] : ["홈"]);
 
     if (!paths.includes(pathname)) {
-      alert("접근 권한이 없습니다.");
       location.href = paths.includes("/dashboard")
         ? "/dashboard"
         : paths.includes("/mobile-branch")
