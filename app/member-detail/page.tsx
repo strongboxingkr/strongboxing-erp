@@ -810,177 +810,37 @@ export default function MemberDetailPage() {
           </div>
 
           {tab === "FILE" && (
-            <div
-              className="card"
-              style={{
-                borderRadius: 24,
-                marginBottom: 18,
-              }}
-            >
-              <h2
-                style={{
-                  marginTop: 0,
-                }}
-              >
-                입관서 / 회원자료
-              </h2>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "160px 1fr auto",
-                  gap: 12,
-                  marginBottom: 18,
-                }}
-              >
-                <select
-                  className="input"
-                  value={
-                    fileForm.file_type
-                  }
-                  onChange={(e) =>
-                    setFileForm({
-                      ...fileForm,
-                      file_type:
-                        e.target
-                          .value,
-                    })
-                  }
-                >
-                  <option>
-                    입관서
-                  </option>
-
-                  <option>
-                    개인정보동의서
-                  </option>
-
-                  <option>
-                    인바디
-                  </option>
-
-                  <option>
-                    회원사진
-                  </option>
-
-                  <option>
-                    기타
-                  </option>
+            <div className="card" style={{ borderRadius: 8, marginBottom: 12, padding: "16px 18px" }}>
+              {/* 파일 업로드 행 */}
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6, fontWeight: 600 }}>파일 추가</div>
+              <div style={{ display: "grid", gridTemplateColumns: "140px 1fr auto", gap: 8, alignItems: "center", marginBottom: 16 }}>
+                <select className="input" value={fileForm.file_type} onChange={(e) => setFileForm({ ...fileForm, file_type: e.target.value })} style={{ fontSize: 14, height: 36 }}>
+                  <option>입관서</option>
+                  <option>개인정보동의서</option>
+                  <option>인바디</option>
+                  <option>회원사진</option>
+                  <option>기타</option>
                 </select>
-
-                <input
-                  className="input"
-                  placeholder="메모"
-                  value={
-                    fileForm.memo
-                  }
-                  onChange={(e) =>
-                    setFileForm({
-                      ...fileForm,
-                      memo:
-                        e.target
-                          .value,
-                    })
-                  }
-                />
-
-                <label
-                  className="btn"
-                  style={{
-                    cursor:
-                      "pointer",
-                  }}
-                >
-                  {uploading
-                    ? "업로드중..."
-                    : "사진 업로드"}
-
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    hidden
-                    onChange={
-                      uploadFile
-                    }
-                  />
+                <input className="input" placeholder="메모" value={fileForm.memo} onChange={(e) => setFileForm({ ...fileForm, memo: e.target.value })} style={{ fontSize: 14, height: 36 }} />
+                <label className="btn" style={{ cursor: "pointer", height: 36, fontSize: 13, padding: "0 16px", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>
+                  {uploading ? "업로드중..." : "파일 업로드"}
+                  <input type="file" accept="image/*,.pdf" hidden onChange={uploadFile} />
                 </label>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fill,minmax(220px,1fr))",
-                  gap: 14,
-                }}
-              >
+              {/* 구분선 */}
+              <div style={{ borderTop: "1px solid #e5e7eb", marginBottom: 14 }} />
+
+              {/* 파일 목록 */}
+              {files.length === 0 && <div style={{ color: "#9ca3af", fontSize: 14 }}>업로드된 파일이 없습니다.</div>}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
                 {files.map((f) => (
-                  <a
-                    key={f.file_id}
-                    href={f.file_url}
-                    target="_blank"
-                    style={{
-                      background:
-                        "var(--panel2)",
-                      borderRadius: 18,
-                      padding: 14,
-                      textDecoration:
-                        "none",
-                      color: "var(--text)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 900,
-                        fontSize: 18,
-                      }}
-                    >
-                      {
-                        f.file_type
-                      }
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color:
-                          "#888",
-                        fontSize: 13,
-                      }}
-                    >
-                      {
-                        f.file_name
-                      }
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color:
-                          "#aaa",
-                        fontSize: 13,
-                        whiteSpace:
-                          "pre-wrap",
-                      }}
-                    >
-                      {f.memo}
-                    </div>
+                  <a key={f.file_id} href={f.file_url} target="_blank" style={{ display: "block", background: "var(--panel2)", border: "1px solid #e5e7eb", borderRadius: 8, padding: "10px 12px", textDecoration: "none", color: "var(--text)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#2563eb", background: "#eff6ff", display: "inline-block", padding: "1px 7px", borderRadius: 4, marginBottom: 6 }}>{f.file_type}</div>
+                    <div style={{ fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.file_name}</div>
+                    {f.memo && <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>{f.memo}</div>}
                   </a>
                 ))}
-
-                {files.length ===
-                  0 && (
-                  <div
-                    style={{
-                      color:
-                        "#888",
-                    }}
-                  >
-                    업로드된 파일이
-                    없습니다.
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -1061,170 +921,56 @@ export default function MemberDetailPage() {
             </div>
           )}
           {tab === "NOTE" && (
-            <div
-              className="card"
-              style={{
-                borderRadius: 24,
-                marginBottom: 18,
-              }}
-            >
-              <h2 style={{ marginTop: 0 }}>
-                상담 / 메모
-              </h2>
-
-              <textarea
-                className="input"
-                value={memo}
-                onChange={(e) =>
-                  setMemo(e.target.value)
-                }
-                placeholder="회원 메모"
-                style={{
-                  width: "100%",
-                  minHeight: 100,
-                }}
-              />
-
-              <button
-                className="btn"
-                onClick={saveMemo}
-                style={{
-                  marginTop: 10,
-                }}
-              >
-                메모 저장
-              </button>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "160px 1fr auto",
-                  gap: 12,
-                  marginTop: 20,
-                }}
-              >
-                <select
+            <div className="card" style={{ borderRadius: 8, marginBottom: 12, padding: "16px 18px" }}>
+              {/* 회원 메모 */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6, fontWeight: 600 }}>회원 메모</div>
+                <textarea
                   className="input"
-                  value={
-                    noteForm.note_type
-                  }
-                  onChange={(e) =>
-                    setNoteForm({
-                      ...noteForm,
-                      note_type:
-                        e.target.value,
-                    })
-                  }
-                >
-                  <option>
-                    상담
-                  </option>
-
-                  <option>
-                    문의
-                  </option>
-
-                  <option>
-                    주의사항
-                  </option>
-
-                  <option>
-                    기타
-                  </option>
-                </select>
-
-                <input
-                  className="input"
-                  placeholder="상담 내용 입력"
-                  value={
-                    noteForm.content
-                  }
-                  onChange={(e) =>
-                    setNoteForm({
-                      ...noteForm,
-                      content:
-                        e.target.value,
-                    })
-                  }
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  placeholder="회원 메모"
+                  style={{ width: "100%", minHeight: 72, fontSize: 14, resize: "vertical" }}
                 />
-
-                <button
-                  className="btn"
-                  onClick={addNote}
-                >
-                  추가
-                </button>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+                  <button className="btn secondary" onClick={saveMemo} style={{ fontSize: 13, padding: "5px 16px", height: 34 }}>메모 저장</button>
+                </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gap: 8,
-                  marginTop: 18,
-                }}
-              >
+              {/* 구분선 */}
+              <div style={{ borderTop: "1px solid #e5e7eb", marginBottom: 14 }} />
+
+              {/* 상담기록 추가 */}
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6, fontWeight: 600 }}>상담기록 추가</div>
+              <div style={{ display: "grid", gridTemplateColumns: "140px 1fr auto", gap: 8, alignItems: "center" }}>
+                <select className="input" value={noteForm.note_type} onChange={(e) => setNoteForm({ ...noteForm, note_type: e.target.value })} style={{ fontSize: 14, height: 36 }}>
+                  <option>상담</option>
+                  <option>문의</option>
+                  <option>주의사항</option>
+                  <option>기타</option>
+                </select>
+                <input className="input" placeholder="상담 내용 입력" value={noteForm.content} onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })} style={{ fontSize: 14, height: 36 }} />
+                <button className="btn" onClick={addNote} style={{ height: 36, fontSize: 13, padding: "0 16px", whiteSpace: "nowrap" }}>추가</button>
+              </div>
+
+              {/* 상담 목록 */}
+              <div style={{ marginTop: 14 }}>
+                {notes.length === 0 && <div style={{ color: "#9ca3af", fontSize: 14 }}>상담기록이 없습니다.</div>}
                 {notes.map((n) => (
-                  <div
-                    key={n.note_id}
-                    style={{
-                      background:
-                        "var(--panel2)",
-                      borderRadius: 12,
-                      padding: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 900,
-                      }}
-                    >
-                      {n.note_type}
+                  <div key={n.note_id} style={{ borderBottom: "1px solid #f3f4f6", padding: "10px 0" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#2563eb", background: "#eff6ff", padding: "1px 7px", borderRadius: 4 }}>{n.note_type}</span>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{n.created_at ? new Date(n.created_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""}</span>
                     </div>
-
-                    <div
-                      style={{
-                        marginTop: 6,
-                        whiteSpace:
-                          "pre-wrap",
-                      }}
-                    >
-                      {n.content}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#666",
-                        fontSize: 12,
-                      }}
-                    >
-                      {n.created_at
-                        ? new Date(
-                            n.created_at
-                          ).toLocaleString()
-                        : ""}
-                    </div>
+                    <div style={{ fontSize: 14, color: "#374151", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{n.content}</div>
                   </div>
                 ))}
-
-                {notes.length ===
-                  0 && (
-                  <div
-                    style={{
-                      color: "#888",
-                    }}
-                  >
-                    상담기록이
-                    없습니다.
-                  </div>
-                )}
               </div>
             </div>
           )}
           {tab === "INFO" && (
-            <div className="card" style={{ borderRadius: 14, marginBottom: 16, padding: "14px 16px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
+            <div className="card" style={{ borderRadius: 8, marginBottom: 12, padding: "16px 18px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "0 24px" }}>
                 <Info label="성별" value={data.member.gender || "-"} />
                 <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
                 <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
@@ -1542,24 +1288,11 @@ export default function MemberDetailPage() {
     </AppShell>
   );
 }
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value: any;
-}) {
+function Info({ label, value }: { label: string; value: any }) {
   return (
-    <div
-      style={{
-        background: "var(--panel2)",
-        borderRadius: 8,
-        padding: "8px 10px",
-        minHeight: 42,
-      }}
-    >
-      <div style={{ color: "#888", fontSize: 12 }}>{label}</div>
-      <div style={{ marginTop: 3, fontWeight: 800, fontSize: 13 }}>{value}</div>
+    <div style={{ padding: "6px 0", borderBottom: "1px solid #f3f4f6" }}>
+      <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 14, color: "#111827", wordBreak: "break-word" }}>{value}</div>
     </div>
   );
 }
