@@ -17,6 +17,7 @@ function AttendanceCalendar({
   onDeleted: () => void;
 }) {
   const now = new Date();
+  const todayStr = now.toLocaleDateString("sv-SE");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-based
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -24,7 +25,6 @@ function AttendanceCalendar({
   // 날짜별 출석 맵
   const byDate: Record<string, any[]> = {};
   checkins.forEach((c) => {
-    // checkin_time이 "2026-11-08 05:25:00" 형식이면 앞 10자리만 사용
     const raw: string = c.checkin_time || "";
     const d = raw.length >= 10 ? raw.slice(0, 10) : new Date(c.checkin_time).toLocaleDateString("sv-SE");
     if (!byDate[d]) byDate[d] = [];
@@ -42,8 +42,7 @@ function AttendanceCalendar({
     setSelectedDate(null);
   };
 
-  // 달력 생성
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
@@ -59,87 +58,118 @@ function AttendanceCalendar({
   const selectedCheckins = selectedDate ? (byDate[selectedDate] || []) : [];
 
   return (
-    <div className="card" style={{ borderRadius: 24, marginBottom: 18 }}>
+    <div className="card" style={{ borderRadius: 12, marginBottom: 18, padding: 0, overflow: "hidden" }}>
       {/* 헤더 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <h2 style={{ margin: 0, fontSize: 16 }}>출석 기록</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #e5e7eb" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "#888" }}>이번 달 {monthTotal}회</span>
-          <button onClick={prevMonth} style={btnStyle}>◀</button>
-          <span style={{ fontSize: 14, fontWeight: 700, minWidth: 80, textAlign: "center" }}>
+          <button onClick={prevMonth} style={btnStyle}>‹</button>
+          <span style={{ fontSize: 15, fontWeight: 700, minWidth: 72, textAlign: "center" }}>
             {year}.{pad(month + 1)}
           </span>
-          <button onClick={nextMonth} style={btnStyle}>▶</button>
+          <button onClick={nextMonth} style={btnStyle}>›</button>
         </div>
+        <span style={{ fontSize: 13, color: "#6b7280" }}>이번 달 출석 <strong style={{ color: "#2563eb" }}>{monthTotal}</strong>회</span>
       </div>
 
-      {/* 요일 헤더 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
-        {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
-          <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 700,
-            color: i === 0 ? "#ef4444" : i === 6 ? "#2563eb" : "#888", padding: "2px 0" }}>
-            {d}
-          </div>
-        ))}
-      </div>
-
-      {/* 날짜 셀 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-        {cells.map((day, i) => {
-          if (!day) return <div key={i} />;
-          const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
-          const records = byDate[dateStr] || [];
-          const hasAttendance = records.length > 0;
-          const isSelected = selectedDate === dateStr;
-          const dow = i % 7;
-          return (
-            <div
-              key={i}
-              onClick={() => setSelectedDate(isSelected ? null : dateStr)}
-              style={{
-                borderRadius: 8, padding: "6px 2px", textAlign: "center", cursor: hasAttendance ? "pointer" : "default",
-                background: isSelected ? "#2563eb" : hasAttendance ? "#dbeafe" : "transparent",
-                border: isSelected ? "2px solid #1d4ed8" : "2px solid transparent",
-                transition: "background 0.1s",
-              }}
-            >
-              <div style={{
-                fontSize: 13, fontWeight: hasAttendance ? 800 : 400,
-                color: isSelected ? "#fff" : dow === 0 ? "#ef4444" : dow === 6 ? "#2563eb" : hasAttendance ? "#1d4ed8" : "#374151",
-              }}>{day}</div>
-              {hasAttendance && (() => {
-                const inCnt = records.filter((r: any) => r.result === "SUCCESS").length;
-                const outCnt = records.filter((r: any) => r.result === "CHECK_OUT").length;
-                return (
-                  <div style={{ fontSize: 9, lineHeight: 1.4, marginTop: 1 }}>
-                    {inCnt > 0 && <div style={{ color: isSelected ? "#bfdbfe" : "#2563eb", fontWeight: 700 }}>입 {inCnt}</div>}
-                    {outCnt > 0 && <div style={{ color: isSelected ? "#fde68a" : "#d97706", fontWeight: 700 }}>출 {outCnt}</div>}
-                  </div>
-                );
-              })()}
+      <div style={{ padding: "0 8px 8px" }}>
+        {/* 요일 헤더 */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+          {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
+            <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600,
+              color: i === 0 ? "#ef4444" : i === 6 ? "#3b82f6" : "#9ca3af", padding: "10px 0 6px" }}>
+              {d}
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* 날짜 셀 */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderTop: "1px solid #f3f4f6" }}>
+          {cells.map((day, i) => {
+            if (!day) return (
+              <div key={i} style={{ borderRight: i % 7 !== 6 ? "1px solid #f3f4f6" : undefined, borderBottom: "1px solid #f3f4f6", minHeight: 52 }} />
+            );
+            const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
+            const records = byDate[dateStr] || [];
+            const hasAttendance = records.length > 0;
+            const isSelected = selectedDate === dateStr;
+            const isToday = dateStr === todayStr;
+            const dow = i % 7;
+            const inCnt = records.filter((r: any) => r.result === "SUCCESS").length;
+            const outCnt = records.filter((r: any) => r.result === "CHECK_OUT").length;
+            return (
+              <div
+                key={i}
+                onClick={() => hasAttendance && setSelectedDate(isSelected ? null : dateStr)}
+                style={{
+                  borderRight: dow !== 6 ? "1px solid #f3f4f6" : undefined,
+                  borderBottom: "1px solid #f3f4f6",
+                  minHeight: 52,
+                  padding: "5px 5px 4px",
+                  cursor: hasAttendance ? "pointer" : "default",
+                  background: isSelected ? "#eff6ff" : undefined,
+                  position: "relative",
+                }}
+              >
+                {/* 날짜 숫자 */}
+                <div style={{
+                  fontSize: 12,
+                  fontWeight: isToday ? 700 : 400,
+                  color: isToday ? "#fff" : dow === 0 ? "#ef4444" : dow === 6 ? "#3b82f6" : "#374151",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: isToday ? "#2563eb" : undefined,
+                  lineHeight: 1,
+                }}>
+                  {day}
+                </div>
+                {/* 출석 표시 */}
+                {hasAttendance && (
+                  <div style={{ marginTop: 2 }}>
+                    {inCnt > 0 && (
+                      <div style={{ fontSize: 10, color: isSelected ? "#1d4ed8" : "#2563eb", fontWeight: 600, lineHeight: 1.3 }}>
+                        입장 {inCnt}회
+                      </div>
+                    )}
+                    {outCnt > 0 && (
+                      <div style={{ fontSize: 10, color: "#d97706", fontWeight: 600, lineHeight: 1.3 }}>
+                        퇴장 {outCnt}회
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* 출석 점 표시 */}
+                {hasAttendance && !isSelected && (
+                  <div style={{ position: "absolute", bottom: 4, right: 5, width: 5, height: 5, borderRadius: "50%", background: "#2563eb" }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* 선택된 날짜 상세 */}
       {selectedDate && (
-        <div style={{ marginTop: 14, borderTop: "1px solid var(--border, #e5e7eb)", paddingTop: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#374151" }}>
-            {selectedDate} 출석 ({selectedCheckins.length}건)
+        <div style={{ borderTop: "1px solid #e5e7eb", padding: "12px 16px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#374151" }}>
+            {selectedDate} 출석 상세 ({selectedCheckins.length}건)
           </div>
-          <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 6 }}>
             {selectedCheckins.map((c) => (
               <div key={c.attendance_id} style={{
-                background: "var(--panel2, #f8fafc)", borderRadius: 10, padding: "10px 14px",
+                background: "#f8fafc", borderRadius: 8, padding: "10px 14px",
                 display: "flex", alignItems: "center", justifyContent: "space-between",
+                border: "1px solid #e5e7eb",
               }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>
                     {new Date(c.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
                   </div>
-                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-                    {c.result === "CHECK_OUT" ? "운동 종료" : c.result === "SUCCESS" ? "출석 완료" : c.result}
+                  <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                    {c.result === "CHECK_OUT" ? "운동 종료 (퇴장)" : c.result === "SUCCESS" ? "출석 완료 (입장)" : c.result}
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
@@ -149,8 +179,7 @@ function AttendanceCalendar({
                     </div>
                   )}
                   <button
-                    className="btn secondary"
-                    style={{ fontSize: 12, padding: "4px 10px", color: "#ef4444" }}
+                    style={{ padding: "3px 10px", fontSize: 12, border: "1px solid #fca5a5", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#ef4444" }}
                     onClick={async () => {
                       if (!confirm("이 출석 기록을 삭제할까요?")) return;
                       const res = await apiFetch("/api/attendance/delete", {
@@ -175,16 +204,150 @@ function AttendanceCalendar({
       )}
 
       {checkins.length === 0 && (
-        <div style={{ color: "#888", marginTop: 12 }}>출석 기록이 없습니다.</div>
+        <div style={{ color: "#9ca3af", padding: "20px 16px", fontSize: 14 }}>출석 기록이 없습니다.</div>
       )}
+
+      {/* 월별 출석 상세 목록 */}
+      {(() => {
+        const monthPrefix = `${year}-${pad(month + 1)}`;
+        // 이번 달 출석 기록만, 최신순
+        const monthCheckins = checkins
+          .filter(c => {
+            const raw: string = c.checkin_time || "";
+            const d = raw.length >= 10 ? raw.slice(0, 10) : new Date(c.checkin_time).toLocaleDateString("sv-SE");
+            return d.startsWith(monthPrefix);
+          })
+          .slice()
+          .sort((a, b) => new Date(b.checkin_time).getTime() - new Date(a.checkin_time).getTime());
+
+        if (monthCheckins.length === 0) return null;
+
+        // 날짜별로 그룹핑해서 입장/퇴장 쌍으로 표시
+        const grouped: Record<string, { ins: any[]; outs: any[] }> = {};
+        monthCheckins.forEach(c => {
+          const raw: string = c.checkin_time || "";
+          const d = raw.length >= 10 ? raw.slice(0, 10) : new Date(c.checkin_time).toLocaleDateString("sv-SE");
+          if (!grouped[d]) grouped[d] = { ins: [], outs: [] };
+          if (c.result === "CHECK_OUT") grouped[d].outs.push(c);
+          else grouped[d].ins.push(c);
+        });
+
+        const rows: Array<{ dateStr: string; inTime: string; outTime: string }> = [];
+        Object.entries(grouped)
+          .sort(([a], [b]) => b.localeCompare(a))
+          .forEach(([dateStr, { ins, outs }]) => {
+            const max = Math.max(ins.length, outs.length) || 1;
+            for (let i = 0; i < max; i++) {
+              const inRec = ins[i];
+              const outRec = outs[i];
+              rows.push({
+                dateStr,
+                inTime: inRec ? new Date(inRec.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "—",
+                outTime: outRec ? new Date(outRec.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "—",
+              });
+            }
+          });
+
+        return (
+          <div style={{ borderTop: "1px solid #e5e7eb" }}>
+            <div style={{ padding: "10px 16px 6px", fontSize: 13, fontWeight: 600, color: "#6b7280" }}>
+              {year}.{pad(month + 1)} 출석 상세 내역
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                    <th style={{ padding: "8px 16px", textAlign: "left", color: "#9ca3af", fontWeight: 600 }}>날짜</th>
+                    <th style={{ padding: "8px 16px", textAlign: "left", color: "#9ca3af", fontWeight: 600 }}>입장 시간</th>
+                    <th style={{ padding: "8px 16px", textAlign: "left", color: "#9ca3af", fontWeight: 600 }}>퇴장 시간</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, idx) => (
+                    <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                      <td style={{ padding: "10px 16px", color: "#374151", whiteSpace: "nowrap" }}>{row.dateStr}</td>
+                      <td style={{ padding: "10px 16px", color: "#2563eb", whiteSpace: "nowrap" }}>{row.inTime}</td>
+                      <td style={{ padding: "10px 16px", color: row.outTime === "—" ? "#d1d5db" : "#374151", whiteSpace: "nowrap" }}>{row.outTime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
 const btnStyle: React.CSSProperties = {
   background: "none", border: "1px solid #e2e8f0", borderRadius: 6,
-  padding: "2px 8px", cursor: "pointer", fontSize: 13, color: "#374151",
+  padding: "3px 10px", cursor: "pointer", fontSize: 15, color: "#374151",
 };
+
+// 변경이력 행 컴포넌트
+function HistoryRow({ datetime, typeLabel, memo, performer, hasDetail, beforeValue, afterValue, detail }: {
+  datetime: string; typeLabel: string; memo: string; performer: string | null;
+  hasDetail: boolean; beforeValue?: any; afterValue?: any; detail?: any;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
+        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "#6b7280", fontSize: 13 }}>{datetime}</td>
+        <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
+          <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: "#f1f5f9", color: "#374151", fontSize: 12, fontWeight: 600 }}>
+            {typeLabel}
+          </span>
+        </td>
+        <td style={{ padding: "12px 16px", color: "#374151" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ wordBreak: "break-all" }}>{memo || "-"}</span>
+            {hasDetail && (
+              <button onClick={() => setExpanded(v => !v)} style={{ flexShrink: 0, padding: "2px 7px", fontSize: 11, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#6b7280" }}>
+                {expanded ? "닫기" : "상세"}
+              </button>
+            )}
+          </div>
+        </td>
+        <td style={{ padding: "12px 16px", color: "#6b7280", fontSize: 13, whiteSpace: "nowrap" }}>
+          {performer || <span style={{ color: "#d1d5db" }}>기록 없음</span>}
+        </td>
+      </tr>
+      {expanded && hasDetail && (
+        <tr style={{ borderBottom: "1px solid #f3f4f6", background: "#f8fafc" }}>
+          <td colSpan={4} style={{ padding: "10px 16px 12px 32px", fontSize: 13, color: "#374151" }}>
+            {beforeValue && <div><span style={{ color: "#9ca3af" }}>변경 전: </span>{typeof beforeValue === "object" ? JSON.stringify(beforeValue, null, 2) : String(beforeValue)}</div>}
+            {afterValue && <div style={{ marginTop: 2 }}><span style={{ color: "#9ca3af" }}>변경 후: </span>{typeof afterValue === "object" ? JSON.stringify(afterValue, null, 2) : String(afterValue)}</div>}
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+// 변경이력 타입 한글 매핑 (실제 DB 값 기준)
+const historyTypeLabel: Record<string, string> = {
+  REGISTER: "회원 등록",
+  UPDATE: "회원정보 수정",
+  HOLD_RELEASE: "휴회·재개",
+  NOTE: "상담 메모",
+  // 추후 추가될 수 있는 타입
+  PAYMENT: "결제 등록",
+  PAYMENT_UPDATE: "결제 수정",
+  PAYMENT_CANCEL: "결제 취소",
+  REFUND: "환불",
+  PAYMENT_DELETE: "결제 삭제",
+  PASS_REGISTER: "회원권 등록",
+  PASS_EXTEND: "회원권 연장",
+  REST: "휴회",
+  RESUME: "휴회 재개",
+  BULK_EXTEND: "기간 일괄 연장",
+  RENEWAL: "재등록",
+};
+
+// 출석 기록에 해당하는 타입 (변경이력에서 숨김 — 화면 표시만 제외)
+const ATT_TYPES = new Set(["ATTENDANCE"]);
 // ──────────────────────────────────────────────────────
 
 export default function MemberDetailPage() {
@@ -210,6 +373,7 @@ export default function MemberDetailPage() {
   const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -626,33 +790,31 @@ export default function MemberDetailPage() {
             </div>
           </div>
 
-          <div
-            className="card"
-            style={{
-              borderRadius: 14,
-              marginBottom: 10,
-              padding: "8px 12px",
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {[
-              ["INFO", "기본정보"],
-              ["PAY", "결제내역"],
-              ["ATT", "출석기록"],
-              ["NOTE", "상담/메모"],
-              ["FILE", "입관서/파일"],
-              ["HISTORY", "변경이력"],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                className={tab === key ? "btn" : "btn secondary"}
-                onClick={() => setTab(key)}
-              >
-                {label}
-              </button>
-            ))}
+          <div style={{ overflowX: "auto", borderBottom: "1px solid #e5e7eb", marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 0, minWidth: "max-content" }}>
+              {[
+                ["INFO", "기본정보"],
+                ["PAY", "결제내역"],
+                ["ATT", "출석기록"],
+                ["NOTE", "상담/메모"],
+                ["FILE", "입관서/파일"],
+                ["HISTORY", "변경이력"],
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    padding: "10px 16px", fontSize: 14, fontWeight: tab === key ? 700 : 400,
+                    color: tab === key ? "#2563eb" : "#4b5563",
+                    borderBottom: tab === key ? "2px solid #2563eb" : "2px solid transparent",
+                    whiteSpace: "nowrap", transition: "color 0.15s",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {tab === "FILE" && (
@@ -841,152 +1003,86 @@ export default function MemberDetailPage() {
           )}
 
           {tab === "PAY" && (
-            <div
-              className="card"
-              style={{
-                borderRadius: 24,
-                marginBottom: 18,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ margin: 0 }}>결제내역</h2>
-                <button className="btn" style={{ fontSize: 13, padding: "6px 14px" }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" }); setAddPayModal(true); }}>+ 결제 추가</button>
+            <div className="card" style={{ borderRadius: 12, marginBottom: 18, padding: 0, overflow: "visible" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", borderBottom: "1px solid #e5e7eb" }}>
+                <span style={{ fontWeight: 700, fontSize: 15 }}>결제내역</span>
+                <button className="btn" style={{ fontSize: 13, padding: "5px 14px", borderRadius: 6 }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" }); setAddPayModal(true); }}>+ 결제 추가</button>
               </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 1fr 120px 120px",
-                  gap: 12,
-                  padding: "10px 12px",
-                  color: "#888",
-                  fontWeight: 700,
-                  borderBottom:
-                    "1px solid #374151",
-                }}
-              >
-                <div>결제일</div>
-                <div>상품</div>
-                <div>금액</div>
-                <div>수단</div>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 8,
-                  marginTop: 10,
-                }}
-              >
-                {payments.map((p) => {
-                  const isCancelled = String(p.memo || "").startsWith("[취소]");
-                  return (
-                  <div
-                    key={p.payment_id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "110px 1fr 110px 100px 120px",
-                      gap: 10,
-                      background: isCancelled ? "rgba(239,68,68,0.07)" : "var(--panel2)",
-                      borderRadius: 12,
-                      padding: 12,
-                      alignItems: "center",
-                      opacity: isCancelled ? 0.6 : 1,
-                    }}
-                  >
-                    <div style={{ fontSize: 13 }}>
-                      {p.payment_date?.slice(0, 10)}
-                    </div>
-                    <div style={{ fontSize: 13 }}>
-                      {p.product_name || "-"}
-                      {isCancelled && <span style={{ marginLeft: 6, color: "#ef4444", fontWeight: 700, fontSize: 11 }}>취소됨</span>}
-                    </div>
-                    <div style={{ fontWeight: 900 }}>
-                      {isCancelled ? <s style={{ color: "#ef4444" }}>{money(p.refund_amount)}</s> : money(p.final_amount)}
-                    </div>
-                    <div style={{ fontSize: 13 }}>
-                      {p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method}
-                    </div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {!isCancelled && (
-                        <>
-                          <button
-                            className="btn secondary"
-                            style={{ fontSize: 11, padding: "3px 8px" }}
-                            onClick={() => {
-                              setEditPayment(p);
-                              setEditPayForm({
-                                product_name: p.product_name || "",
-                                final_amount: String(p.final_amount || ""),
-                                payment_method: p.payment_method || "CARD",
-                                payment_date: p.payment_date?.slice(0, 10) || "",
-                                memo: p.memo || "",
-                              });
-                            }}
-                          >
-                            수정
-                          </button>
-                          <button
-                            className="btn secondary"
-                            style={{ fontSize: 11, padding: "3px 8px", color: "#ef4444" }}
-                            onClick={async () => {
-                              if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
-                              const res = await apiFetch("/api/payments/cancel", {
-                                method: "POST",
-                                body: JSON.stringify({ payment_id: p.payment_id }),
-                              });
-                              const json = await res.json();
-                              if (json.success) load();
-                              else alert(json.message || "취소 실패");
-                            }}
-                          >
-                            취소
-                          </button>
-                          {/* 환불: pass_type 있는 결제(회원권)에만 표시 */}
-                          {p.pass_type && (
-                            <button
-                              className="btn secondary"
-                              style={{ fontSize: 11, padding: "3px 8px", color: "#7c3aed" }}
-                              onClick={() => {
-                                setRefundTarget(p);
-                                setRefundForm({ refund_amount: "", refund_reason: "" });
-                              }}
-                            >
-                              환불
-                            </button>
-                          )}
-                          <button
-                            className="btn"
-                            style={{ fontSize: 11, padding: "3px 8px", background: "#ef4444" }}
-                            onClick={async () => {
-                              if (!confirm(`${p.product_name} 결제를 완전 삭제할까요?\n삭제 후 복구 불가합니다.`)) return;
-                              const res = await apiFetch(`/api/payments/delete?payment_id=${p.payment_id}`, { method: "DELETE" });
-                              const json = await res.json();
-                              if (json.success) load();
-                              else alert(json.message || "삭제 실패");
-                            }}
-                          >
-                            삭제
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  );
-                })}
-
-                {payments.length ===
-                  0 && (
-                  <div
-                    style={{
-                      color: "#888",
-                    }}
-                  >
-                    결제내역이
-                    없습니다.
-                  </div>
-                )}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                      <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>결제일</th>
+                      <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>상품</th>
+                      <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>금액</th>
+                      <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>결제수단</th>
+                      <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.length === 0 && (
+                      <tr><td colSpan={5} style={{ padding: "24px 16px", color: "#9ca3af", textAlign: "center" }}>결제내역이 없습니다.</td></tr>
+                    )}
+                    {payments.map((p) => {
+                      const isCancelled = String(p.memo || "").startsWith("[취소]");
+                      const methodLabel = p.payment_method === "CARD" ? "카드" : p.payment_method === "CASH" ? "현금" : p.payment_method === "TRANSFER" ? "계좌이체" : p.payment_method;
+                      return (
+                        <tr key={p.payment_id} style={{ borderBottom: "1px solid #f3f4f6", opacity: isCancelled ? 0.6 : 1, background: isCancelled ? "#fef2f2" : undefined }}>
+                          <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "#374151" }}>{p.payment_date?.slice(0, 10)}</td>
+                          <td style={{ padding: "12px 16px", color: "#111827" }}>
+                            {p.product_name || "-"}
+                            {isCancelled && <span style={{ marginLeft: 6, color: "#ef4444", fontSize: 11, fontWeight: 600 }}>취소됨</span>}
+                          </td>
+                          <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            {isCancelled ? <s style={{ color: "#ef4444" }}>{money(p.refund_amount)}</s> : money(p.final_amount)}
+                          </td>
+                          <td style={{ padding: "12px 16px", color: "#374151", whiteSpace: "nowrap" }}>{methodLabel}</td>
+                          <td style={{ padding: "12px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                            {!isCancelled && (
+                              <div style={{ display: "inline-flex", gap: 6, alignItems: "center", position: "relative" }}>
+                                <button
+                                  style={{ padding: "4px 10px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#374151" }}
+                                  onClick={() => { setEditPayment(p); setEditPayForm({ product_name: p.product_name || "", final_amount: String(p.final_amount || ""), payment_method: p.payment_method || "CARD", payment_date: p.payment_date?.slice(0, 10) || "", memo: p.memo || "" }); }}
+                                >수정</button>
+                                <div style={{ position: "relative" }}>
+                                  <button
+                                    style={{ padding: "4px 8px", fontSize: 13, border: "1px solid #d1d5db", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#374151" }}
+                                    onClick={() => setOpenMenuId(openMenuId === p.payment_id ? null : p.payment_id)}
+                                  >⋯</button>
+                                  {openMenuId === p.payment_id && (
+                                    <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", zIndex: 100, minWidth: 120, overflow: "hidden" }}>
+                                      <button style={{ width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#374151" }}
+                                        onClick={async () => {
+                                          setOpenMenuId(null);
+                                          if (!confirm(`${p.product_name} 결제를 취소할까요?`)) return;
+                                          const res = await apiFetch("/api/payments/cancel", { method: "POST", body: JSON.stringify({ payment_id: p.payment_id }) });
+                                          const json = await res.json();
+                                          if (json.success) load(); else alert(json.message || "취소 실패");
+                                        }}>결제 취소</button>
+                                      {p.pass_type && (
+                                        <button style={{ width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#374151" }}
+                                          onClick={() => { setOpenMenuId(null); setRefundTarget(p); setRefundForm({ refund_amount: "", refund_reason: "" }); }}>환불</button>
+                                      )}
+                                      <div style={{ height: 1, background: "#f3f4f6" }} />
+                                      <button style={{ width: "100%", padding: "10px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#dc2626" }}
+                                        onClick={async () => {
+                                          setOpenMenuId(null);
+                                          if (!confirm(`${p.product_name} 결제를 완전 삭제할까요?\n삭제 후 복구 불가합니다.`)) return;
+                                          const res = await apiFetch(`/api/payments/delete?payment_id=${p.payment_id}`, { method: "DELETE" });
+                                          const json = await res.json();
+                                          if (json.success) load(); else alert(json.message || "삭제 실패");
+                                        }}>삭제</button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1170,87 +1266,57 @@ export default function MemberDetailPage() {
             </div>
           )}
 
-          {tab === "HISTORY" && (
-            <div
-              className="card"
-              style={{
-                borderRadius: 24,
-                marginBottom: 18,
-              }}
-            >
-              <h2 style={{ marginTop: 0 }}>
-                변경이력
-              </h2>
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                {histories.map((h) => (
-                  <div
-                    key={h.history_id}
-                    style={{
-                      background: "var(--panel2)",
-                      borderRadius: 14,
-                      padding: 14,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 900,
-                        fontSize: 15,
-                      }}
-                    >
-                      {h.history_type ||
-                        h.action_type ||
-                        "변경"}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#aaa",
-                        whiteSpace:
-                          "pre-wrap",
-                      }}
-                    >
-                      {h.memo ||
-                        h.action_memo ||
-                        "-"}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#666",
-                        fontSize: 12,
-                      }}
-                    >
-                      {h.created_at
-                        ? new Date(
-                            h.created_at
-                          ).toLocaleString()
-                        : ""}
-                    </div>
-                  </div>
-                ))}
-
-                {histories.length ===
-                  0 && (
-                  <div
-                    style={{
-                      color: "#888",
-                    }}
-                  >
-                    변경이력이
-                    없습니다.
-                  </div>
-                )}
+          {tab === "HISTORY" && (() => {
+            const visibleHistories = histories.filter(h => {
+              const t = (h.history_type || h.action_type || "").toUpperCase();
+              return !ATT_TYPES.has(t);
+            });
+            return (
+              <div className="card" style={{ borderRadius: 12, marginBottom: 18, padding: 0, overflow: "visible" }}>
+                <div style={{ padding: "14px 18px", borderBottom: "1px solid #e5e7eb" }}>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>변경이력</span>
+                  <span style={{ marginLeft: 8, fontSize: 13, color: "#9ca3af" }}>일반 입장·퇴장은 출석기록 탭에서 확인</span>
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                        <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>일시</th>
+                        <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>구분</th>
+                        <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>변경 내용</th>
+                        <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>처리자</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleHistories.length === 0 && (
+                        <tr><td colSpan={4} style={{ padding: "24px 16px", color: "#9ca3af", textAlign: "center" }}>변경이력이 없습니다.</td></tr>
+                      )}
+                      {visibleHistories.map((h) => {
+                        const rawType = h.history_type || h.action_type || "";
+                        const typeLabel = historyTypeLabel[rawType] || rawType || "변경";
+                        const memo = h.memo || h.action_memo || "";
+                        const performer = h.created_by || null;
+                        const hasDetail = h.old_value || h.new_value;
+                        return (
+                          <HistoryRow
+                            key={h.history_id}
+                            datetime={h.created_at ? new Date(h.created_at).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""}
+                            typeLabel={typeLabel}
+                            memo={memo}
+                            performer={performer}
+                            hasDetail={hasDetail}
+                            beforeValue={h.old_value}
+                            afterValue={h.new_value}
+                            detail={h.action_memo}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </>
       )}
       {/* 결제 추가 모달 */}
