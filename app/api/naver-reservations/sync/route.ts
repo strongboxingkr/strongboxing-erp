@@ -501,6 +501,7 @@ export async function GET(req: Request) {
             ? status
             : (lockedStatuses.includes(existingStatus) ? existingStatus : status);
 
+          const safeCalPhone = (!phone && calendarRows[0].phone) ? calendarRows[0].phone : phone;
           await pool.query(
             `
             UPDATE calendar_events
@@ -521,7 +522,7 @@ export async function GET(req: Request) {
               eventType,
               `${titlePrefix} - ${customer_name} [${reservation_product}]`,
               customer_name,
-              phone,
+              safeCalPhone,
               startDateTime,
               memo,
               keepStatus,
