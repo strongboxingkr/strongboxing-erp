@@ -191,7 +191,7 @@ export default function AppShell({
   if (!user || !checked) return null;
 
   if (embed) {
-    return <div style={{ padding: 0, background: "#fff" }}>{children}</div>;
+    return <div style={{ padding: 0, margin: 0, background: "#fff", overflow: "hidden" }}>{children}</div>;
   }
 
   return (

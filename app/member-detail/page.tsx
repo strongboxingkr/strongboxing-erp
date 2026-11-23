@@ -1398,14 +1398,15 @@ export default function MemberDetailPage() {
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}
         >
-          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 940, height: "88vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 940, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid #e5e7eb" }}>
               <span style={{ fontWeight: 700, fontSize: 15 }}>회원 수정</span>
               <button onClick={() => setShowEditModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}>✕</button>
             </div>
             <iframe
               src={`/members?member_id=${data.member.member_id}&embed=1`}
-              style={{ flex: 1, border: "none", width: "100%" }}
+              style={{ flex: 1, border: "none", width: "100%", overflow: "hidden" }}
+              scrolling="yes"
               onLoad={(e) => {
                 const iframe = e.currentTarget;
                 const handler = (ev: MessageEvent) => {
