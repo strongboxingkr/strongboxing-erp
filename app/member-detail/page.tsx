@@ -209,7 +209,10 @@ export default function MemberDetailPage() {
   const [refundForm, setRefundForm] = useState({ refund_amount: "", refund_reason: "" });
   const [refundSubmitting, setRefundSubmitting] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const [uploading, setUploading] =
     useState(false);
@@ -280,6 +283,7 @@ export default function MemberDetailPage() {
 
   useEffect(() => {
     apiFetch("/api/settings?option_type=PRODUCT").then(r => r.json()).then(d => setProducts(d.rows || []));
+    apiFetch("/api/settings?option_type=BRANCH").then(r => r.json()).then(d => setBranches(d.rows || []));
   }, []);
 
   const uploadFile = async (
@@ -557,7 +561,31 @@ export default function MemberDetailPage() {
               )}
               <button className="btn secondary"
                 style={{ fontSize: 12, padding: "3px 12px", height: 28, marginLeft: 4 }}
-                onClick={() => setShowEditModal(true)}>
+                onClick={() => {
+                  const m = data.member;
+                  setEditForm({
+                    branch_name: m.branch_name || "",
+                    name: m.name || "",
+                    phone: m.phone || "",
+                    short_phone: m.short_phone || "",
+                    gender: m.gender || "",
+                    birth_date: m.birth_date?.slice(0,10) || "",
+                    locker_number: m.locker_number || "",
+                    coach_name: m.coach_name || "",
+                    product_name: m.product_name || "",
+                    pass_type: m.pass_type || "PERIOD",
+                    start_date: m.start_date?.slice(0,10) || "",
+                    end_date: m.end_date?.slice(0,10) || "",
+                    remaining_count: m.remaining_count ?? 0,
+                    has_sms: m.has_sms ?? 0,
+                    has_exit_sms: m.has_exit_sms ?? 0,
+                    has_sportswear: m.has_sportswear ?? 0,
+                    has_locker: m.has_locker ?? 0,
+                    locker_end_date: m.locker_end_date?.slice(0,10) || "",
+                    notes: m.notes || "",
+                  });
+                  setShowEditModal(true);
+                }}>
                 수정
               </button>
               <span style={{ fontSize: 13, color: "#9ca3af" }}>
@@ -1392,33 +1420,82 @@ export default function MemberDetailPage() {
         </div>
       )}
 
-      {/* 회원 수정 iframe 모달 */}
-      {showEditModal && data?.member && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}
-        >
-          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 940, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid #e5e7eb" }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>회원 수정</span>
-              <button onClick={() => setShowEditModal(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}>✕</button>
+      {/* 회원 수정 인라인 모달 */}
+      {showEditModal && editForm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 860, maxHeight: "90vh", overflowY: "auto", padding: 28 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ fontWeight: 700, fontSize: 17 }}>회원 수정</span>
+              <button onClick={() => setShowEditModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#6b7280" }}>✕</button>
             </div>
-            <iframe
-              src={`/members?member_id=${data.member.member_id}&embed=1`}
-              style={{ flex: 1, border: "none", width: "100%", overflow: "hidden" }}
-              scrolling="yes"
-              onLoad={(e) => {
-                const iframe = e.currentTarget;
-                const handler = (ev: MessageEvent) => {
-                  if (ev.data?.type === "MEMBER_SAVED") {
-                    setShowEditModal(false);
-                    window.removeEventListener("message", handler);
-                    location.reload();
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
+              <select className="input" value={editForm.branch_name} onChange={e => setEditForm({...editForm, branch_name: e.target.value})}>
+                {branches.map((b: any) => <option key={b.option_id} value={b.option_name}>{b.option_name}</option>)}
+              </select>
+              <input className="input" placeholder="이름" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+              <input className="input" placeholder="전화번호" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+              <input className="input" placeholder="단축번호" value={editForm.short_phone} onChange={e => setEditForm({...editForm, short_phone: e.target.value})} />
+              <select className="input" value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})}>
+                <option value="">성별</option><option value="남">남</option><option value="여">여</option>
+              </select>
+              <input className="input" type="date" value={editForm.birth_date} onChange={e => setEditForm({...editForm, birth_date: e.target.value})} />
+              <input className="input" placeholder="락카번호" value={editForm.locker_number} onChange={e => setEditForm({...editForm, locker_number: e.target.value})} />
+              <input className="input" placeholder="담당자" value={editForm.coach_name} onChange={e => setEditForm({...editForm, coach_name: e.target.value})} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
+              <select className="input" value={editForm.product_name} onChange={e => setEditForm({...editForm, product_name: e.target.value})}>
+                <option value="">회원권 선택</option>
+                {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+              </select>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>시작일</div>
+                <input className="input" type="date" value={editForm.start_date} onChange={e => {
+                  const newStart = e.target.value;
+                  if (editForm.end_date) {
+                    const diff = new Date(editForm.end_date).getTime() - new Date(editForm.start_date).getTime();
+                    const newEnd = new Date(new Date(newStart).getTime() + diff).toISOString().slice(0,10);
+                    setEditForm({...editForm, start_date: newStart, end_date: newEnd, locker_end_date: editForm.locker_end_date ? newEnd : ""});
+                  } else {
+                    setEditForm({...editForm, start_date: newStart});
                   }
-                };
-                window.addEventListener("message", handler);
-              }}
-            />
+                }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>만료일</div>
+                <input className="input" type="date" value={editForm.end_date} onChange={e => setEditForm({...editForm, end_date: e.target.value, locker_end_date: editForm.locker_end_date ? e.target.value : ""})} />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>잔여횟수</div>
+                <input className="input" type="number" value={editForm.remaining_count} onChange={e => setEditForm({...editForm, remaining_count: Number(e.target.value)})} />
+              </div>
+            </div>
+            {editForm.has_locker === 1 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>락커 종료일</div>
+                <input className="input" type="date" style={{ width: 200 }} value={editForm.locker_end_date} onChange={e => setEditForm({...editForm, locker_end_date: e.target.value})} />
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 16, marginBottom: 12, padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, flexWrap: "wrap" }}>
+              {[["has_sms","입장 문자"], ["has_exit_sms","운동 종료 문자"], ["has_sportswear","운동복 대여"], ["has_locker","락카 사용"]].map(([key, label]) => (
+                <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={!!editForm[key]} onChange={e => setEditForm({...editForm, [key]: e.target.checked ? 1 : 0})} />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <textarea className="input" rows={3} placeholder="메모" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: "100%", marginBottom: 16 }} />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn" disabled={editSaving} onClick={async () => {
+                setEditSaving(true);
+                const res = await apiFetch("/api/members/edit", { method: "POST", body: JSON.stringify({ ...editForm, member_id: data.member.member_id }) });
+                const json = await res.json();
+                setEditSaving(false);
+                if (json.success) { setShowEditModal(false); location.reload(); }
+                else alert(json.message || "저장 실패");
+              }}>{editSaving ? "저장 중..." : "수정 저장"}</button>
+              <button className="btn secondary" onClick={() => setShowEditModal(false)}>취소</button>
+            </div>
           </div>
         </div>
       )}
