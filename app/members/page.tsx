@@ -1121,146 +1121,135 @@ ${
 
       {showExtendForm && extendMember && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 16 }} onClick={() => setShowExtendForm(false)}>
-          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 540, maxHeight: "92vh", overflow: "auto", boxShadow: "0 8px 40px rgba(0,0,0,.2)" }} onClick={e => e.stopPropagation()}>
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>회원권 재등록</div>
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>{extendMember.name} · 현재: {extendMember.product_name}</div>
-            </div>
-            <button onClick={() => setShowExtendForm(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
-          </div>
-          <div style={{ padding: "16px 20px" }}>
+          <div style={{ background: "#fff", borderRadius: 10, width: "100%", maxWidth: 800, maxHeight: "90vh", overflow: "auto", boxShadow: "0 8px 40px rgba(0,0,0,.18)" }} onClick={e => e.stopPropagation()}>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>상품 선택</div>
-              <select
-                className="input"
-                value={reregForm.product_name}
-                onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}
-              >
-                <option value="">상품 선택</option>
-                {products.map((p: any) => (
-                  <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제일</div>
-              <input
-                className="input"
-                type="date"
-                value={reregForm.payment_date}
-                onChange={(e) => setReregForm({ ...reregForm, payment_date: e.target.value })}
-              />
-            </div>
-            {(() => {
-              const selProduct = products.find((p: any) => p.option_name === reregForm.product_name);
-              const isDaily = selProduct?.option_value === "DAILY";
-              return isDaily ? (
-                <div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>이용일 <span style={{ color: "#f97316" }}>(일일권 사용 날짜)</span></div>
-                  <input
-                    className="input"
-                    type="date"
-                    value={(reregForm as any).use_date || reregForm.payment_date}
-                    onChange={(e) => setReregForm({ ...reregForm, use_date: e.target.value } as any)}
-                  />
-                </div>
-              ) : (
-                <div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>시작일 <span style={{ color: "#2563eb" }}>(만료일 이후 이어붙이기 가능)</span></div>
-                  <input
-                    className="input"
-                    type="date"
-                    value={(reregForm as any).start_date || reregForm.payment_date}
-                    onChange={(e) => setReregForm({ ...reregForm, start_date: e.target.value } as any)}
-                  />
-                </div>
-              );
-            })()}
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>결제수단</div>
-              <select
-                className="input"
-                value={reregForm.payment_method}
-                onChange={(e) => setReregForm({ ...reregForm, payment_method: e.target.value })}
-              >
-                <option value="CARD">카드</option>
-                <option value="CASH">현금</option>
-                <option value="TRANSFER">계좌이체</option>
-              </select>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>실결제금액</div>
-              <input
-                className="input"
-                type="number"
-                placeholder="0"
-                value={reregForm.final_amount}
-                onChange={(e) => setReregForm({ ...reregForm, final_amount: e.target.value, amount: e.target.value })}
-                style={{ fontWeight: 700, color: "var(--accent)" }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>메모</div>
-            <input
-              className="input"
-              placeholder="메모"
-              value={reregForm.memo}
-              onChange={(e) => setReregForm({ ...reregForm, memo: e.target.value })}
-            />
-          </div>
-
-          {extendMember.locker_no && (
-            <div style={{ marginTop: 12, padding: "10px 14px", background: "var(--card-bg, #1a1a2e)", borderRadius: 10, border: "1px solid var(--border)" }}>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
-                현재 락커: <strong>{extendMember.locker_no}</strong>
-                {extendMember.locker_end_date
-                  ? <span style={{ marginLeft: 8 }}>락커 종료일: {String(extendMember.locker_end_date).slice(0, 10)}</span>
-                  : extendMember.end_date
-                    ? <span style={{ marginLeft: 8, color: "var(--muted)" }}>회원권 종료일: {extendMember.end_date.slice(0, 10)}</span>
-                    : null
-                }
+            {/* 헤더 */}
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>회원권 재등록</div>
+                <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>{extendMember.name} · 현재: {extendMember.product_name}</div>
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
-                <input
-                  type="checkbox"
-                  checked={!!(reregForm as any).extend_locker}
-                  onChange={(e) => setReregForm({ ...reregForm, extend_locker: e.target.checked } as any)}
-                />
-                락커 기간도 함께 연장
-              </label>
-              {(reregForm as any).extend_locker && (() => {
-                const selProd = products.find((p: any) => p.option_name === reregForm.product_name);
-                const durationMonths = Number(selProd?.duration_months || 0);
-                const startDate = (reregForm as any).start_date || reregForm.payment_date;
-                const computedEnd = durationMonths > 0 ? addMonths(startDate, durationMonths) : (reregForm as any).end_date || "";
-                const displayEnd = (reregForm as any).locker_end_date || computedEnd;
-                return (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
-                      락커 종료일 <span style={{ color: "#f97316" }}>(변경 후: {displayEnd || "미정"})</span>
-                    </div>
-                    <input
-                      className="input"
-                      type="date"
-                      value={displayEnd}
-                      onChange={(e) => setReregForm({ ...reregForm, locker_end_date: e.target.value } as any)}
-                    />
-                  </div>
-                );
-              })()}
+              <button onClick={() => setShowExtendForm(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer", lineHeight: 1 }}>✕</button>
             </div>
-          )}
 
-          <div style={{ display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" }}>
-            <button className="btn secondary" style={{ height: 38 }} onClick={() => setShowExtendForm(false)}>취소</button>
-            <button className="btn" style={{ height: 38 }} onClick={saveRereg}>재등록 저장</button>
-          </div>
-          </div>
+            {/* 폼 본문 */}
+            <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+
+              {/* 상품 선택 — 전체 너비 */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>상품 선택 <span style={{ color: "#dc2626" }}>*</span></div>
+                <select className="input" style={{ height: 38, fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                  <option value="">상품 선택</option>
+                  {products.map((p: any) => (
+                    <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 시작일 / 결제일 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {(() => {
+                  const selProduct = products.find((p: any) => p.option_name === reregForm.product_name);
+                  const isDaily = selProduct?.option_value === "DAILY";
+                  return isDaily ? (
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>이용일</div>
+                      <input className="input" type="date" style={{ height: 38, fontSize: 14 }}
+                        value={(reregForm as any).use_date || reregForm.payment_date}
+                        onChange={(e) => setReregForm({ ...reregForm, use_date: e.target.value } as any)} />
+                      <div style={{ fontSize: 11, color: "#f97316", marginTop: 3 }}>일일권 사용 날짜</div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>시작일</div>
+                      <input className="input" type="date" style={{ height: 38, fontSize: 14 }}
+                        value={(reregForm as any).start_date || reregForm.payment_date}
+                        onChange={(e) => setReregForm({ ...reregForm, start_date: e.target.value } as any)} />
+                      <div style={{ fontSize: 11, color: "#6b7280", marginTop: 3 }}>만료일 이후 날짜 선택 시 이어붙이기됩니다.</div>
+                    </div>
+                  );
+                })()}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>결제일</div>
+                  <input className="input" type="date" style={{ height: 38, fontSize: 14 }}
+                    value={reregForm.payment_date}
+                    onChange={(e) => setReregForm({ ...reregForm, payment_date: e.target.value })} />
+                </div>
+              </div>
+
+              {/* 실결제금액 / 결제수단 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>실결제금액 <span style={{ color: "#dc2626" }}>*</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input className="input" type="number" placeholder="0" style={{ height: 38, fontSize: 14, fontWeight: 700, color: "var(--accent)", flex: 1 }}
+                      value={reregForm.final_amount}
+                      onChange={(e) => setReregForm({ ...reregForm, final_amount: e.target.value, amount: e.target.value })} />
+                    <span style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>원</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>결제수단</div>
+                  <select className="input" style={{ height: 38, fontSize: 14 }} value={reregForm.payment_method} onChange={(e) => setReregForm({ ...reregForm, payment_method: e.target.value })}>
+                    <option value="CARD">카드</option>
+                    <option value="CASH">현금</option>
+                    <option value="TRANSFER">계좌이체</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 메모 — 전체 너비 */}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>메모</div>
+                <input className="input" placeholder="메모 (선택)" style={{ height: 38, fontSize: 14 }}
+                  value={reregForm.memo}
+                  onChange={(e) => setReregForm({ ...reregForm, memo: e.target.value })} />
+              </div>
+
+              {/* 락커 연장 (있을 때만) */}
+              {extendMember.locker_no && (
+                <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>
+                    현재 락커: <strong>{extendMember.locker_no}</strong>
+                    {extendMember.locker_end_date
+                      ? <span style={{ marginLeft: 8 }}>락커 종료일: {String(extendMember.locker_end_date).slice(0, 10)}</span>
+                      : extendMember.end_date
+                        ? <span style={{ marginLeft: 8, color: "#9ca3af" }}>회원권 종료일: {extendMember.end_date.slice(0, 10)}</span>
+                        : null
+                    }
+                  </div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
+                    <input type="checkbox" checked={!!(reregForm as any).extend_locker}
+                      onChange={(e) => setReregForm({ ...reregForm, extend_locker: e.target.checked } as any)} />
+                    락커 기간도 함께 연장
+                  </label>
+                  {(reregForm as any).extend_locker && (() => {
+                    const selProd = products.find((p: any) => p.option_name === reregForm.product_name);
+                    const durationMonths = Number(selProd?.duration_months || 0);
+                    const startDate = (reregForm as any).start_date || reregForm.payment_date;
+                    const computedEnd = durationMonths > 0 ? addMonths(startDate, durationMonths) : (reregForm as any).end_date || "";
+                    const displayEnd = (reregForm as any).locker_end_date || computedEnd;
+                    return (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>
+                          락커 종료일 <span style={{ color: "#f97316" }}>(변경 후: {displayEnd || "미정"})</span>
+                        </div>
+                        <input className="input" type="date" style={{ height: 38, fontSize: 14 }}
+                          value={displayEnd}
+                          onChange={(e) => setReregForm({ ...reregForm, locker_end_date: e.target.value } as any)} />
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            {/* 푸터 버튼 */}
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button className="btn secondary" style={{ height: 38, fontSize: 14, padding: "0 18px" }} onClick={() => setShowExtendForm(false)}>취소</button>
+              <button className="btn" style={{ height: 38, fontSize: 14, padding: "0 18px" }} onClick={saveRereg}>재등록 저장</button>
+            </div>
+
           </div>
         </div>
       )}
