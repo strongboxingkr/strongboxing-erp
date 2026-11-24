@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     startupImage: [],
   },
   icons: {
-    apple: "/apple-touch-icon-v2.png",
+    apple: "/apple-touch-icon-v3.png",
   },
 };
 
@@ -29,8 +29,6 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
       </head>
       <body>{children}</body>
     </html>
