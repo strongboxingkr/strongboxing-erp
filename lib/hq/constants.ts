@@ -4,7 +4,7 @@ export const BRANCHES = [
     name: "개봉점",
     phone: "02-2678-1234",
     address: "서울시 구로구 개봉동",
-    instagram: "strongboxing_gaebong",
+    instagram: "strongboxing.gaebong",
     hours: "월-금 13:00~23:00",
   },
   {
@@ -12,7 +12,7 @@ export const BRANCHES = [
     name: "신정점",
     phone: "02-2643-1234",
     address: "서울시 양천구 신정동",
-    instagram: "strongboxing_sinjeong",
+    instagram: "strongboxing.sinjeong",
     hours: "월-금 10:00~24:00 / 토 10:00~16:00",
   },
   {
