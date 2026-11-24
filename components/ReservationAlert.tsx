@@ -4,144 +4,89 @@ import { useEffect, useState } from "react";
 
 const today = new Date().toISOString().slice(0, 10);
 
+const SOURCE_LABEL: Record<string, string> = {
+  NAVER: "네이버", naver: "네이버", "네이버예약": "네이버",
+  HOMEPAGE: "홈페이지", homepage: "홈페이지",
+};
+
+const STATUS_COLOR: Record<string, string> = {
+  예약확정: "#16a34a", 예약접수: "#2563eb", 취소: "#ef4444", 노쇼: "#6b7280",
+};
+
 export default function ReservationAlert() {
   const [rows, setRows] = useState<any[]>([]);
   const [visible, setVisible] = useState(true);
 
-  const getUser = () => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  };
-
   const load = async () => {
-    const user = getUser();
-
-    let url = "/api/naver-reservations";
-
-    if (user && user.role !== "ADMIN" && user.role !== "OWNER") {
-      url += `?branch_name=${encodeURIComponent(user.branch_name)}`;
-    }
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const now = new Date();
-
-const todayRows = (data.rows || []).filter((r: any) => {
-    if (
-        r.reservation_date?.slice(0, 10) !== today ||
-        r.status === "취소" ||
-        r.status === "노쇼"
-    ) {
-        return false;
-    }
-
-    if (!r.reservation_time) {
-        return true;
-    }
-
     try {
-        const [hour, minute] = r.reservation_time
-        .replace("시", "")
-        .replace("분", "")
-        .split(":")
-        .map(Number);
-
-        const reservationDate = new Date();
-        reservationDate.setHours(hour || 0);
-        reservationDate.setMinutes(minute || 0);
-        reservationDate.setSeconds(0);
-
-        const diffMs = now.getTime() - reservationDate.getTime();
-
-        const diffMinutes = diffMs / 1000 / 60;
-
-        return diffMinutes <= 5;
-    } catch {
-        return true;
-    }
-});
-
-    setRows(todayRows);
+      const savedUser = localStorage.getItem("user");
+      const user = savedUser ? JSON.parse(savedUser) : null;
+      let url = "/api/naver-reservations";
+      if (user && user.role !== "ADMIN" && user.role !== "OWNER") {
+        url += `?branch_name=${encodeURIComponent(user.branch_name)}`;
+      }
+      const res = await fetch(url);
+      const data = await res.json();
+      const todayRows = (data.rows || []).filter((r: any) =>
+        r.reservation_date?.slice(0, 10) === today &&
+        r.status !== "취소" && r.status !== "노쇼"
+      );
+      setRows(todayRows);
+    } catch {}
   };
 
   useEffect(() => {
     load();
-
-    const timer = setInterval(() => {
-      load();
-    }, 30000);
-
+    const timer = setInterval(load, 60000);
     return () => clearInterval(timer);
   }, []);
 
-  if (!visible || rows.length === 0) {
-    return null;
-  }
+  if (!visible || rows.length === 0) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        right: 20,
-        bottom: 20,
-        width: 360,
-        zIndex: 9999,
-        background: "#111827",
-        borderRadius: 18,
-        padding: 16,
-        boxShadow: "0 0 30px rgba(0,0,0,0.4)",
-        border: "1px solid #374151",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 12,
-        }}
-      >
-        <div style={{ fontSize: 20, fontWeight: 900 }}>
-          오늘 예약 {rows.length}건
+    <div style={{
+      position: "fixed", right: 20, bottom: 20, width: 340, zIndex: 9999,
+      background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.12)", overflow: "hidden",
+    }}>
+      {/* 헤더 */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "12px 16px", borderBottom: "1px solid #f3f4f6", background: "#f8fafc",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16 }}>📅</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>
+            {today} 예약 {rows.length}건
+          </span>
         </div>
-
-        <button
-          className="btn secondary"
-          onClick={() => setVisible(false)}
-        >
-          닫기
-        </button>
+        <button onClick={() => setVisible(false)} style={{
+          border: "none", background: "none", cursor: "pointer",
+          fontSize: 18, color: "#9ca3af", lineHeight: 1, padding: "2px 4px",
+        }}>×</button>
       </div>
 
-      <div style={{ display: "grid", gap: 10 }}>
-        {rows.slice(0, 5).map((r) => (
-          <div
-            key={r.reservation_id}
-            style={{
-              padding: 12,
-              borderRadius: 12,
-              background: "#1f2937",
-              borderLeft: "5px solid #2ee59d",
-            }}
-          >
-            <div style={{ fontWeight: 900, fontSize: 18 }}>
-              {r.customer_name}
+      {/* 목록 */}
+      <div style={{ maxHeight: 320, overflowY: "auto", padding: "8px 10px", display: "grid", gap: 6 }}>
+        {rows.map((r) => (
+          <div key={r.reservation_id} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "8px 10px", borderRadius: 8, background: "#f8fafc",
+            border: "1px solid #f3f4f6",
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#111827" }}>{r.customer_name}</div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
+                {r.branch_name} · {r.reservation_time || "-"}
+                {r.source && <> · {SOURCE_LABEL[r.source] || r.source}</>}
+              </div>
             </div>
-
-            <div style={{ color: "#aaa", marginTop: 4 }}>
-              {r.branch_name} / {r.reservation_time || "-"}
-            </div>
-
-            <div
-              style={{
-                color: "#2ee59d",
-                marginTop: 4,
-                fontWeight: 900,
-              }}
-            >
-              {r.status}
-            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+              color: STATUS_COLOR[r.status] || "#374151",
+              background: (STATUS_COLOR[r.status] || "#374151") + "18",
+              whiteSpace: "nowrap",
+            }}>{r.status}</span>
           </div>
         ))}
       </div>
