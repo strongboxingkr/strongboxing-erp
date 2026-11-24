@@ -442,9 +442,12 @@ export async function GET(req: Request) {
         const reservationId = sameReservationRows[0].reservation_id;
         const existing = sameReservationRows[0];
 
-        // 수동 입력 전화번호 보호: 메일 파싱 phone이 비었거나 마스킹된 번호면 기존 phone 유지
+        // 수동 입력값 보호: 메일 파싱값이 마스킹/비어있으면 기존값 유지
         const isMasked = (p: string) => !p || p.includes("*");
         const safePhone = (isMasked(phone) && existing.phone) ? existing.phone : phone;
+        // 이름: 메일 파싱값이 마스킹("미확인" 포함)이면 기존 이름 유지
+        const isNameMasked = !customer_name || customer_name === "미확인" || customer_name.includes("*");
+        const safeName = (isNameMasked && existing.customer_name) ? existing.customer_name : customer_name;
 
         // 운영 메모 보존: 기존 memo에서 ---MAIL--- 앞 운영 메모 추출 후 새 메일 텍스트 앞에 붙이기
         const MAIL_SEP = "---MAIL---";
@@ -473,7 +476,7 @@ export async function GET(req: Request) {
           `,
           [
             branch_name,
-            customer_name,
+            safeName,
             safePhone,
             reservation_date,
             reservation_time,
@@ -509,6 +512,8 @@ export async function GET(req: Request) {
 
           const isMaskedCal = (p: string) => !p || p.includes("*");
           const safeCalPhone = (isMaskedCal(phone) && calendarRows[0].phone) ? calendarRows[0].phone : phone;
+          const isCalNameMasked = !customer_name || customer_name === "미확인" || customer_name.includes("*");
+          const safeCalName = (isCalNameMasked && calendarRows[0].customer_name) ? calendarRows[0].customer_name : customer_name;
           await pool.query(
             `
             UPDATE calendar_events
@@ -527,8 +532,8 @@ export async function GET(req: Request) {
             [
               branch_name,
               eventType,
-              `${titlePrefix} - ${customer_name} [${reservation_product}]`,
-              customer_name,
+              `${titlePrefix} - ${safeCalName} [${reservation_product}]`,
+              safeCalName,
               safeCalPhone,
               startDateTime,
               memo,
