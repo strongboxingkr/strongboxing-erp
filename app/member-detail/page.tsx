@@ -312,40 +312,87 @@ function PayActions({ payment, openMenuId, setOpenMenuId, onEdit, onCancel, onRe
   );
 }
 
+// 변경된 필드만 추출해서 읽기 좋게 표시
+const FIELD_LABEL: Record<string, string> = {
+  name: "이름", phone: "전화번호", gender: "성별", birth_date: "생년월일",
+  product_name: "상품", start_date: "시작일", end_date: "종료일",
+  remaining_count: "잔여 횟수", status: "상태", branch_name: "지점",
+  coach_name: "담당자", locker_no: "락커", locker_number: "락커",
+  locker_end_date: "락커 종료일", memo: "메모", pass_type: "권종",
+  has_sms: "입장 문자", has_exit_sms: "퇴장 문자", has_locker: "락커 여부",
+  emergency_contact: "비상연락처", address: "주소",
+};
+const STATUS_KO: Record<string, string> = { ACTIVE: "정상", EXPIRED: "만료", REST: "휴회" };
+function formatVal(k: string, v: any): string {
+  if (v === null || v === undefined || v === "") return "(없음)";
+  if (k === "status") return STATUS_KO[String(v)] || String(v);
+  if (typeof v === "boolean" || v === 0 || v === 1) return v ? "예" : "아니오";
+  if (typeof v === "string" && v.length === 10 && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  return String(v);
+}
+function diffHistory(before: any, after: any): { label: string; from: string; to: string }[] {
+  if (!before || !after || typeof before !== "object" || typeof after !== "object") return [];
+  const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
+  return keys
+    .filter(k => FIELD_LABEL[k] && String(before[k]) !== String(after[k]))
+    .map(k => ({ label: FIELD_LABEL[k], from: formatVal(k, before[k]), to: formatVal(k, after[k]) }));
+}
+
 // 변경이력 행 컴포넌트
-function HistoryRow({ datetime, typeLabel, memo, performer, hasDetail, beforeValue, afterValue, detail }: {
+function HistoryRow({ datetime, typeLabel, memo, performer, hasDetail, beforeValue, afterValue }: {
   datetime: string; typeLabel: string; memo: string; performer: string | null;
   hasDetail: boolean; beforeValue?: any; afterValue?: any; detail?: any;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const diffs = expanded ? diffHistory(beforeValue, afterValue) : [];
   return (
     <>
       <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
-        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", color: "#6b7280", fontSize: 13 }}>{datetime}</td>
-        <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
-          <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: "#f1f5f9", color: "#374151", fontSize: 12, fontWeight: 600 }}>
+        <td style={{ padding: "10px 14px", whiteSpace: "nowrap", color: "#6b7280", fontSize: 13 }}>{datetime}</td>
+        <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
+          <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 4, background: "#f1f5f9", color: "#374151", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
             {typeLabel}
           </span>
         </td>
-        <td style={{ padding: "12px 16px", color: "#374151" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ wordBreak: "break-all" }}>{memo || "-"}</span>
+        <td style={{ padding: "10px 14px", color: "#374151", minWidth: 120 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13 }}>{memo || typeLabel}</span>
             {hasDetail && (
-              <button onClick={() => setExpanded(v => !v)} style={{ flexShrink: 0, padding: "2px 7px", fontSize: 11, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#6b7280" }}>
+              <button onClick={() => setExpanded(v => !v)} style={{ flexShrink: 0, padding: "2px 7px", fontSize: 11, border: "1px solid #d1d5db", borderRadius: 4, background: "#fff", cursor: "pointer", color: "#6b7280", whiteSpace: "nowrap" }}>
                 {expanded ? "닫기" : "상세"}
               </button>
             )}
           </div>
         </td>
-        <td style={{ padding: "12px 16px", color: "#6b7280", fontSize: 13, whiteSpace: "nowrap" }}>
-          {performer || <span style={{ color: "#d1d5db" }}>기록 없음</span>}
+        <td style={{ padding: "10px 14px", color: "#6b7280", fontSize: 13, whiteSpace: "nowrap" }}>
+          {performer || <span style={{ color: "#d1d5db" }}>-</span>}
         </td>
       </tr>
       {expanded && hasDetail && (
         <tr style={{ borderBottom: "1px solid #f3f4f6", background: "#f8fafc" }}>
-          <td colSpan={4} style={{ padding: "10px 16px 12px 32px", fontSize: 13, color: "#374151" }}>
-            {beforeValue && <div><span style={{ color: "#9ca3af" }}>변경 전: </span>{typeof beforeValue === "object" ? JSON.stringify(beforeValue, null, 2) : String(beforeValue)}</div>}
-            {afterValue && <div style={{ marginTop: 2 }}><span style={{ color: "#9ca3af" }}>변경 후: </span>{typeof afterValue === "object" ? JSON.stringify(afterValue, null, 2) : String(afterValue)}</div>}
+          <td colSpan={4} style={{ padding: "10px 16px 12px" }}>
+            {diffs.length > 0 ? (
+              <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "3px 10px 3px 0", color: "#9ca3af", fontWeight: 600, fontSize: 11, whiteSpace: "nowrap" }}>항목</th>
+                    <th style={{ textAlign: "left", padding: "3px 10px 3px 0", color: "#9ca3af", fontWeight: 600, fontSize: 11 }}>변경 전</th>
+                    <th style={{ textAlign: "left", padding: "3px 0", color: "#9ca3af", fontWeight: 600, fontSize: 11 }}>변경 후</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diffs.map((d, i) => (
+                    <tr key={i}>
+                      <td style={{ padding: "2px 10px 2px 0", color: "#374151", fontWeight: 600, whiteSpace: "nowrap" }}>{d.label}</td>
+                      <td style={{ padding: "2px 10px 2px 0", color: "#6b7280", wordBreak: "break-word" }}>{d.from}</td>
+                      <td style={{ padding: "2px 0", color: "#111827", fontWeight: 500, wordBreak: "break-word" }}>{d.to}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div style={{ fontSize: 13, color: "#6b7280" }}>{memo || "상세 내용 없음"}</div>
+            )}
           </td>
         </tr>
       )}
@@ -770,7 +817,7 @@ export default function MemberDetailPage() {
                 <SumItem label="담당자" value={data.member.staff_name || "-"} />
               </div>
 
-              <div style={{ width: 1, background: "#e5e7eb", alignSelf: "stretch", flexShrink: 0 }} />
+              <div className="sum-divider" style={{ width: 1, background: "#e5e7eb", alignSelf: "stretch", flexShrink: 0 }} />
 
               {/* 현재 회원권 */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", alignItems: "center" }}>
@@ -1011,12 +1058,12 @@ export default function MemberDetailPage() {
                   <span style={{ marginLeft: 8, fontSize: 13, color: "#9ca3af" }}>일반 입장·퇴장은 출석기록 탭에서 확인</span>
                 </div>
                 <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <table style={{ width: "100%", minWidth: 480, borderCollapse: "collapse", fontSize: 14 }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
                         <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>일시</th>
                         <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>구분</th>
-                        <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>변경 내용</th>
+                        <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, minWidth: 140 }}>변경 내용</th>
                         <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, whiteSpace: "nowrap" }}>처리자</th>
                       </tr>
                     </thead>

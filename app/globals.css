@@ -584,6 +584,9 @@ tr:hover td {
   .pay-actions-pc { display: none !important; }
   .pay-actions-mobile { display: flex !important; }
 
+  /* 회원 상세 요약 패널: 세로 구분선 모바일 숨김 */
+  .sum-divider { display: none !important; }
+
   .calendar-big .react-calendar__tile {
     min-height: 60px;
     font-size: 13px;
