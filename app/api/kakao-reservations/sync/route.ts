@@ -185,9 +185,15 @@ function detectStatus(subject: string) {
 }
 
 export async function POST(request: Request) {
-  const user = await getUserFromRequest(request);
-  if (!user || !isAdminOrOwner(user)) {
-    return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization") || "";
+  const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+  if (!isCron) {
+    const user = await getUserFromRequest(request);
+    if (!user || !isAdminOrOwner(user)) {
+      return NextResponse.json({ error: "권한 없음" }, { status: 403 });
+    }
   }
 
   let totalNew = 0;
