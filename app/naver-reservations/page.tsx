@@ -107,6 +107,18 @@ export default function NaverReservationsPage() {
     }
   };
 
+  const syncKakao = async () => {
+    const res = await apiFetch("/api/kakao-reservations/sync", { method: "POST" });
+    const data = await res.json();
+    if (data.ok) {
+      const errMsg = data.errors?.length ? `\n오류: ${data.errors.join(", ")}` : "";
+      alert(`카카오 동기화 완료!\n신규: ${data.new}건\n업데이트: ${data.updated}건\n스킵: ${data.skipped}건${errMsg}`);
+      loadReservations(user);
+    } else {
+      alert("카카오 동기화 실패");
+    }
+  };
+
   // 상태+메모+전화번호 저장 (문자 없음)
   const updateStatus = async (r: any, status: string, opsMemo: string, phone: string) => {
     if (status === "노쇼" && !confirm("노쇼 처리하시겠습니까?")) return false;
@@ -279,6 +291,7 @@ ${r.customer_name}님 예약이 확정되었습니다.
         <div style={{ display: "flex", gap: 6 }}>
           <button className="btn secondary" style={{ height: 36, fontSize: 13 }} onClick={() => loadReservations(user)}>새로고침</button>
           <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={syncGmail}>메일 동기화</button>
+          <button className="btn" style={{ height: 36, fontSize: 13, background: "#FEE500", color: "#111" }} onClick={syncKakao}>카카오 동기화</button>
         </div>
       </div>
 
