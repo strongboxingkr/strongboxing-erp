@@ -389,6 +389,12 @@ export async function GET(req: Request) {
 
       const requested_at = pickRequestedAt(fullText);
 
+      // 취소 메일은 스킵 — 관장이 직접 취소 처리
+      if (status === "취소" || status === "예약취소") {
+        skippedCount++;
+        continue;
+      }
+
       if (!reservation_date || !reservation_time) {
         skippedCount++;
         continue;

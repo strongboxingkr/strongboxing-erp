@@ -228,6 +228,12 @@ export async function POST(request: Request) {
       const reservation_product = pickProduct(fullText);
       const status = detectStatus(subject);
 
+      // 취소 메일은 스킵 — 관장이 직접 취소 처리
+      if (status === "취소" || status === "예약취소") {
+        totalSkipped++;
+        continue;
+      }
+
       if (!reservation_date || !reservation_time) {
         totalSkipped++;
         continue;
