@@ -104,6 +104,15 @@ export async function POST(req: Request) {
       if (todayIn.length === 0) {
         // 입장으로 대신 처리 (아래 CHECK_IN 로직으로 fall-through)
       } else {
+        // 오늘 이미 퇴장 기록 있으면 중복 방지
+        const [todayOut]: any = await pool.query(
+          `SELECT attendance_id FROM attendance WHERE member_id = ? AND result = 'CHECK_OUT' AND DATE(checkin_time) = ? LIMIT 1`,
+          [member.member_id, todayText]
+        );
+        if (todayOut.length > 0) {
+          return NextResponse.json({ success: true, result: "CHECK_OUT", message: "이미 퇴실 처리됐습니다.", member });
+        }
+
         if (Number(member.checkout_sms_enabled || 0) === 1 && member.phone) {
           await sendCheckoutSms(member);
         }
