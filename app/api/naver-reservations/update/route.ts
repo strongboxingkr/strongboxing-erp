@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json();
-    const { reservation_id, status, memo, sms_message, phone } = body;
+    const { reservation_id, status, memo, sms_message, phone, customer_name } = body;
 
     const [beforeRows]: any = await pool.query(
       `
@@ -77,6 +77,13 @@ export async function POST(req: Request) {
       await pool.query(
         `UPDATE naver_reservations SET phone = ? WHERE reservation_id = ?`,
         [cleanPhone(phone), reservation_id]
+      );
+    }
+
+    if (customer_name !== undefined && customer_name.trim()) {
+      await pool.query(
+        `UPDATE naver_reservations SET customer_name = ? WHERE reservation_id = ?`,
+        [customer_name.trim(), reservation_id]
       );
     }
 

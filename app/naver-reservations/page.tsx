@@ -57,6 +57,8 @@ export default function NaverReservationsPage() {
   const [branches, setBranches] = useState<any[]>([]);
   const [branch, setBranch] = useState("전체");
   const [selected, setSelected] = useState<any>(null);
+  const [editName, setEditName] = useState("");
+  const [savingName, setSavingName] = useState(false);
   const [editPhone, setEditPhone] = useState("");
   const [editOpsMemo, setEditOpsMemo] = useState("");
   const [search, setSearch] = useState("");
@@ -151,6 +153,28 @@ export default function NaverReservationsPage() {
     }
   };
 
+  // 이름만 저장
+  const saveName = async () => {
+    if (!selected || !editName.trim()) return;
+    setSavingName(true);
+    try {
+      const res = await apiFetch("/api/naver-reservations/update", {
+        method: "POST",
+        body: JSON.stringify({ reservation_id: selected.reservation_id, status: selected.status, memo: selected.memo || "", customer_name: editName.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadReservations(user);
+        setSelected({ ...selected, customer_name: editName.trim() });
+        alert("이름 저장 완료");
+      } else {
+        alert(data.message || "저장 실패");
+      }
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   // 연락처만 저장
   const savePhone = async () => {
     if (!selected || !editPhone.trim()) return;
@@ -181,6 +205,7 @@ export default function NaverReservationsPage() {
     setSelected(r);
     const parsed = parseMemo(r.memo || "");
     setEditOpsMemo(parsed.opsMemo);
+    setEditName(r.customer_name || "");
     setEditPhone(r.phone || "");
   };
 
@@ -439,6 +464,24 @@ ${r.customer_name}님 예약이 확정되었습니다.
                     <div style={{ fontWeight: 600, fontSize: 14, color: "#111827" }}>{val}</div>
                   </div>
                 ))}
+              </div>
+
+              {/* 이름 보완 */}
+              <div style={{ marginBottom: 14 }}>
+                <div className="field-label">이름</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input className="input" style={{ height: 36, fontSize: 13, flex: 1 }}
+                    placeholder="이름 입력"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                  <button className="btn secondary" style={{ height: 36, fontSize: 13, whiteSpace: "nowrap" }} disabled={savingName} onClick={saveName}>
+                    {savingName ? "저장 중" : "저장"}
+                  </button>
+                </div>
+                {(selected.customer_name?.includes("*") || selected.customer_name === "미확인") && (
+                  <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>이름이 마스킹됨 — 직접 입력 후 저장하세요</div>
+                )}
               </div>
 
               {/* 연락처 보완 */}
