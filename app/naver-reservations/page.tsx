@@ -291,7 +291,6 @@ ${r.customer_name}님 예약이 확정되었습니다.
         <div style={{ display: "flex", gap: 6 }}>
           <button className="btn secondary" style={{ height: 36, fontSize: 13 }} onClick={() => loadReservations(user)}>새로고침</button>
           <button className="btn" style={{ height: 36, fontSize: 13 }} onClick={syncGmail}>메일 동기화</button>
-          <button className="btn" style={{ height: 36, fontSize: 13, background: "#FEE500", color: "#111" }} onClick={syncKakao}>카카오 동기화</button>
         </div>
       </div>
 
