@@ -53,7 +53,7 @@ function AttendanceCalendar({
   const pad = (n: number) => String(n).padStart(2, "0");
   const monthTotal = Object.entries(byDate).filter(([d]) =>
     d.startsWith(`${year}-${pad(month + 1)}`)
-  ).reduce((s, [, arr]) => s + arr.length, 0);
+  ).reduce((s, [, arr]) => s + arr.filter((c) => c.result === "SUCCESS").length, 0);
 
   const selectedCheckins = selectedDate ? (byDate[selectedDate] || []) : [];
 
