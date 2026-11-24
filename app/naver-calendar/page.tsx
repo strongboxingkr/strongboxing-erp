@@ -57,12 +57,20 @@ const parseMemo = (raw: string) => {
 
 const extractInquiry = (mailPart: string) => {
   if (!mailPart) return "";
-  const m = mailPart.match(/요청사항[^\n]*\n+([\s\S]*?)(?:\n{2,}|$)/);
-  if (!m) return "";
-  const text = m[1].trim();
-  if (text.includes("고객센터") || text.includes("Copyright") || text.includes("이용약관")) return "";
-  if (text.length < 2 || text === "-") return "";
-  return text.slice(0, 300);
+  // "요청사항" 또는 "문의사항" — 같은 줄 또는 다음 줄에 내용이 있는 경우 모두 추출
+  const patterns = [
+    /(?:요청사항|문의사항)\s*[:：]?\s*([^\n]{2,})/,          // 같은 줄
+    /(?:요청사항|문의사항)[^\n]*\n+([\s\S]*?)(?:\n{2,}|$)/,  // 다음 줄
+  ];
+  for (const pattern of patterns) {
+    const m = mailPart.match(pattern);
+    if (!m) continue;
+    const text = m[1].trim();
+    if (text.includes("고객센터") || text.includes("Copyright") || text.includes("이용약관")) continue;
+    if (text.length < 2 || text === "-") continue;
+    return text.slice(0, 300);
+  }
+  return "";
 };
 
 const formatDateHeader = (dateKey: string) => {
