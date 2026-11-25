@@ -164,6 +164,23 @@ export default function DirectorDashboardPage() {
     loadData(u);
   }, []);
 
+  // 최근 입장 10초 자동 갱신
+  useEffect(() => {
+    if (!user) return;
+    const refreshAttendance = async () => {
+      const branchParam = isAdminOrOwner(user.role)
+        ? (selBranch && selBranch !== "전체" ? `?branch_name=${encodeURIComponent(selBranch)}` : "")
+        : (user.branch_name ? `?branch_name=${encodeURIComponent(user.branch_name)}` : "");
+      try {
+        const res = await apiFetch(`/api/attendance/live${branchParam}`);
+        const data = await res.json();
+        if (data.rows) setAttendance(data.rows);
+      } catch {}
+    };
+    const timer = setInterval(refreshAttendance, 10000);
+    return () => clearInterval(timer);
+  }, [user, selBranch]);
+
   const handleBranchChange = (b: string) => {
     setSelBranch(b);
     loadData(user, b);
