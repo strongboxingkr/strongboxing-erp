@@ -102,6 +102,8 @@ export default function AttendanceMonitorPage() {
     const tb = b.checkin_time || b.checkout_time || "";
     return new Date(tb).getTime() - new Date(ta).getTime();
   });
+  // 현재 헬스장 내 인원: 입장했지만 퇴장 기록 없는 회원
+  const inGymCount = [...mergedMap.values()].filter((r) => r.checkin_time && !r.checkout_time).length;
 
   return (
     <div style={{
@@ -211,8 +213,8 @@ export default function AttendanceMonitorPage() {
             <div style={{ fontSize: 13, color: "#64748b" }}>퇴장</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 40, fontWeight: 900, color: "#f8fafc" }}>{rows.length}</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>전체</div>
+            <div style={{ fontSize: 40, fontWeight: 900, color: "#f8fafc" }}>{inGymCount}</div>
+            <div style={{ fontSize: 13, color: "#64748b" }}>현재 내장</div>
           </div>
         </div>
       </div>
