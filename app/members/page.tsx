@@ -1003,7 +1003,7 @@ ${
                   </div>
                   <div className="em-field">
                     <label className="em-label">잔여횟수</label>
-                    <input type="number" placeholder="0" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value) })} />
+                    <input type="number" placeholder="0" value={form.remaining_count} onChange={(e) => setForm({ ...form, remaining_count: Number(e.target.value), payment_changed: true } as any)} />
                   </div>
                 </div>
 

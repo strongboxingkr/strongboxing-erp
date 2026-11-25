@@ -112,7 +112,7 @@ export async function POST(req: Request) {
           [
             finalBranch, finalName, phone || oldMember.phone, phoneLast4, finalCheckinCode,
             product_name || oldMember.product_name, pass_type || oldMember.pass_type,
-            remaining_count ?? oldMember.remaining_count, finalStartDate, finalEndDate, finalStatus,
+            body.payment_changed ? (remaining_count ?? oldMember.remaining_count) : oldMember.remaining_count, finalStartDate, finalEndDate, finalStatus,
             memo ?? oldMember.memo, finalLockerNo, member_no ?? oldMember.member_no, finalGender,
             toDate(birth_date || oldMember.birth_date), emergency_contact ?? oldMember.emergency_contact,
             address ?? oldMember.address, toDate(join_date || oldMember.join_date),
