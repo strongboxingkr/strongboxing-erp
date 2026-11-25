@@ -6,6 +6,8 @@ const RESULT_LABEL: Record<string, { text: string; color: string }> = {
   SUCCESS: { text: "입장", color: "#22c55e" },
   CHECK_OUT: { text: "퇴장", color: "#3b82f6" },
   EXPIRED: { text: "만료", color: "#ef4444" },
+  EXPIRED_ENTRY: { text: "입장(만료)", color: "#f97316" },
+  NO_COUNT_ENTRY: { text: "입장(횟수없음)", color: "#f97316" },
   REST: { text: "휴회", color: "#f59e0b" },
   DUPLICATE: { text: "중복", color: "#a855f7" },
   NO_COUNT: { text: "횟수없음", color: "#ef4444" },

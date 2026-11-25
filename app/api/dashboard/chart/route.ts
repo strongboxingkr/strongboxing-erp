@@ -18,7 +18,7 @@ export async function GET(req: Request) {
        FROM payments
        WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
        ${branchFilter}
-       GROUP BY DATE(payment_date)
+       GROUP BY DATE(payment_date), DATE_FORMAT(DATE(payment_date), '%m/%d')
        ORDER BY DATE(payment_date)`,
       params
     );

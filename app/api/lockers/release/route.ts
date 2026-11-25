@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     if (lockerRows.length > 0 && lockerRows[0].member_id) {
       await pool.query(
-        `UPDATE members SET locker_no = NULL WHERE member_id = ? AND locker_no = ?`,
+        `UPDATE members SET locker_no = NULL, has_locker = 0 WHERE member_id = ? AND locker_no = ?`,
         [lockerRows[0].member_id, lockerRows[0].locker_no]
       );
     }

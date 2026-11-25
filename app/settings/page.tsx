@@ -13,8 +13,9 @@ const optionTypes = [
 ];
 
 export default function SettingsPage() {
+  const [user, setUser] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
-  const [selectedType, setSelectedType] = useState("BRANCH");
+  const [selectedType, setSelectedType] = useState("PASS_PRODUCT");
   const [autoSms, setAutoSms] = useState<any>(null);
   const [alertPhones, setAlertPhones] = useState<any[]>([]);
   const [alertPhoneForm, setAlertPhoneForm] = useState({ branch: "", phone: "" });
@@ -44,7 +45,12 @@ export default function SettingsPage() {
     setAlertPhones(data.rows || []);
   };
 
-  useEffect(() => { loadAutoSms(); loadAlertPhones(); }, []);
+  useEffect(() => {
+    const saved = localStorage.getItem("user");
+    if (saved) setUser(JSON.parse(saved));
+    loadAutoSms();
+    loadAlertPhones();
+  }, []);
 
   const [form, setForm] = useState({
     option_name: "",
@@ -123,10 +129,12 @@ export default function SettingsPage() {
     }
   };
 
+  const isDirectorOnly = user?.role === "DIRECTOR";
+
   return (
     <AppShell title="설정관리">
       {/* 자동 SMS 설정 */}
-      <div className="card" style={{ marginBottom: 16 }}>
+      {!isDirectorOnly && <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontWeight: 900, fontSize: 16 }}>만료 7일 전 자동 SMS</div>
@@ -160,10 +168,10 @@ export default function SettingsPage() {
             INSERT INTO settings_options (option_type, option_name, option_value, use_yn, sort_order) VALUES ('AUTO_SMS', '만료 7일 전 자동 SMS', 'OFF', 'Y', 1);
           </div>
         )}
-      </div>
+      </div>}
 
       {/* 예약 알림 수신 번호 */}
-      <div className="card" style={{ marginBottom: 16 }}>
+      {!isDirectorOnly && <div className="card" style={{ marginBottom: 16 }}>
         <h2 style={{ marginBottom: 12 }}>📢 예약 알림 수신 번호</h2>
         <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14 }}>
           예약 캘린더에서 '관장에게 예약 알림' 발송 시 수신할 지점별 번호를 설정합니다.<br />
@@ -253,13 +261,15 @@ export default function SettingsPage() {
             else alert(data.message || "추가 실패");
           }}>추가</button>
         </div>
-      </div>
+      </div>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>설정 분류</h2>
 
         <div className="row" style={{ flexWrap: "wrap" }}>
-          {optionTypes.map((type) => (
+          {optionTypes
+            .filter((type) => !isDirectorOnly || type.value === "PASS_PRODUCT")
+            .map((type) => (
             <button
               key={type.value}
               className={selectedType === type.value ? "btn" : "btn secondary"}

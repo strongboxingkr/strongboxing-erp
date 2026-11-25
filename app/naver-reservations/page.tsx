@@ -36,6 +36,14 @@ const getSourceInfo = (r: any) => {
   return { label: "네이버", color: "#22c55e" };
 };
 
+function displayCustomerName(row: { branch_name?: string; customer_name?: string }, source: string) {
+  const name = row.customer_name || "-";
+  const prefix = "[" + row.branch_name + "] ";
+  return source === "홈페이지" && row.branch_name && name.startsWith(prefix)
+    ? name.slice(prefix.length).trim() || "-"
+    : name;
+}
+
 // memo 파싱: 운영메모(---MAIL--- 앞) + 메일 구조화 필드 분리
 function parseMemo(raw: string) {
   const sep = "---MAIL---";
@@ -436,8 +444,8 @@ ${r.customer_name}님 예약이 확정되었습니다.
                   <td style={{ color: "#374151" }}>{r.reservation_time || "-"}</td>
                   {isAdminOrOwner && <td style={{ color: "#374151" }}>{r.branch_name || "-"}</td>}
                   <td style={{ fontWeight: 600 }}>
-                    {r.customer_name || "-"}
-                    <span style={{ marginLeft: 5, fontSize: 11, color: source.color, fontWeight: 500 }}>{source.label}</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0 5px", alignItems: "baseline", whiteSpace: "normal" }}><span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{displayCustomerName(r, source.label)}</span>
+                    <span style={{ fontSize: 11, color: source.color, fontWeight: 500 }}>{source.label}</span></div>
                   </td>
                   <td style={{ color: r.phone ? "#6B7280" : "#ef4444" }}>{r.phone || "미입력"}</td>
                   <td className="col-wrap" style={{ color: "#374151" }}>{r.reservation_product || "-"}</td>
@@ -458,7 +466,7 @@ ${r.customer_name}님 예약이 확정되었습니다.
               <div key={r.reservation_id} className="res-card" onClick={() => openModal(r)}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>{r.customer_name || "-"} <span style={{ fontSize: 11, color: source.color }}>{source.label}</span></div>
+                    <div style={{ fontWeight: 700 }}>{displayCustomerName(r, source.label)} <span style={{ fontSize: 11, color: source.color }}>{source.label}</span></div>
                     <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{r.branch_name} · {r.reservation_date?.slice(0, 10)} {r.reservation_time}</div>
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: getStatusColor(r.status), whiteSpace: "nowrap" }}>● {r.status}</span>

@@ -277,8 +277,8 @@ export default function NaverCalendarPage() {
         ) : (
           <span style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{user?.branch_name}</span>
         )}
-        <button className="btn secondary" style={{ height: 36, fontSize: 13 }} onClick={() => setValue(new Date())}>오늘</button>
-        <button className="btn secondary" style={{ height: 36, fontSize: 13 }} onClick={loadReservations}>새로고침</button>
+        <button className="btn secondary" style={{ height: 36, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setValue(new Date())}>오늘</button>
+        <button className="btn secondary" style={{ height: 36, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "auto" }} onClick={loadReservations}>새로고침</button>
       </div>
 
       {/* 메인 레이아웃 */}

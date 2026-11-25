@@ -48,6 +48,7 @@ const makeDefaultForm = () => ({
   checkout_sms_enabled: 0,
   has_uniform: 0,
   has_locker: 0,
+  payment_date_new: today,
 });
 
 export default function MembersPage() {
@@ -63,6 +64,7 @@ export default function MembersPage() {
   const [returnToDetail, setReturnToDetail] = useState(false);
   const [embedMode, setEmbedMode] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [availableLockers, setAvailableLockers] = useState<any[]>([]);
 
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -996,14 +998,14 @@ ${
                       } else {
                         const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
                         const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-                        const newEndDate = form.pass_type === "PERIOD" ? addMonths(newStart, months) : form.end_date;
+                        const newEndDate = form.pass_type === "DAILY" ? newStart : addMonths(newStart, months);
                         setForm({ ...form, start_date: newStart, end_date: newEndDate, locker_end_date: newEndDate } as any);
                       }
                     }} />
                   </div>
                   <div className="em-field">
                     <label className="em-label">만료일</label>
-                    <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, locker_end_date: (form as any).locker_end_date !== undefined ? e.target.value : undefined } as any)} />
+                    <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value, locker_end_date: e.target.value } as any)} />
                   </div>
                   <div className="em-field">
                     <label className="em-label">잔여횟수</label>
@@ -1046,11 +1048,64 @@ ${
                       운동복 대여
                     </label>
                     <label className="em-opt-label">
-                      <input type="checkbox" checked={Number(form.has_locker) === 1} onChange={(e) => setForm({ ...form, has_locker: e.target.checked ? 1 : 0 })} />
+                      <input type="checkbox" checked={Number(form.has_locker) === 1} onChange={async (e) => {
+                        const checked = e.target.checked;
+                        setForm({ ...form, has_locker: checked ? 1 : 0, locker_no: checked ? form.locker_no : "" });
+                        if (checked) {
+                          const branchName = form.branch_name || user?.branch_name || "";
+                          const res = await apiFetch(`/api/lockers?branch_name=${encodeURIComponent(branchName)}`);
+                          if (res.success) setAvailableLockers(res.rows.filter((r: any) => !r.member_id));
+                        } else {
+                          setAvailableLockers([]);
+                        }
+                      }} />
                       라커 사용
                     </label>
                   </div>
                 </div>
+
+                {Number(form.has_locker) === 1 && availableLockers.length > 0 && (() => {
+                  const branchName = form.branch_name || user?.branch_name || "";
+                  const isCheolsan = branchName.includes("철산");
+                  const zones = isCheolsan
+                    ? ["A", "B"]
+                    : [...new Set(availableLockers.map((l: any) => l.locker_zone || ""))];
+                  return (
+                    <div style={{ marginTop: 10, padding: "12px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 8 }}>빈 락커 선택</div>
+                      {zones.map((zone) => {
+                        const zoneLockers = isCheolsan
+                          ? availableLockers.filter((l: any) => (l.locker_zone || "") === zone)
+                          : availableLockers.filter((l: any) => (l.locker_zone || "") === zone);
+                        if (zoneLockers.length === 0) return null;
+                        return (
+                          <div key={zone} style={{ marginBottom: 8 }}>
+                            {(isCheolsan || zones.length > 1) && <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{zone}구역</div>}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                              {zoneLockers.map((l: any) => (
+                                <button key={l.locker_id} type="button"
+                                  style={{ padding: "4px 10px", fontSize: 12, borderRadius: 6, border: "1px solid var(--line)", background: form.locker_no === String(l.locker_no) ? "var(--accent)" : "var(--panel)", color: form.locker_no === String(l.locker_no) ? "#fff" : "var(--fg)", cursor: "pointer" }}
+                                  onClick={() => setForm({ ...form, locker_no: String(l.locker_no) })}>
+                                  {l.locker_no}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {form.locker_no && (
+                        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>선택: <strong>{form.locker_no}번</strong></span>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>|</span>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>라커 만료일</span>
+                          <input type="date" style={{ fontSize: 12, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--panel)", color: "var(--fg)" }}
+                            value={(form as any).locker_end_date || form.end_date}
+                            onChange={(e) => setForm({ ...form, locker_end_date: e.target.value } as any)} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* ── 메모 ── */}
@@ -1083,7 +1138,7 @@ ${
                     </div>
                     <div className="em-field">
                       <label className="em-label">결제일</label>
-                      <input type="date" value={(form as any).payment_date_new || ""} onChange={(e) => setForm({ ...form, payment_date_new: e.target.value, payment_changed: true } as any)} />
+                      <input type="date" value={(form as any).payment_date_new || today} onChange={(e) => setForm({ ...form, payment_date_new: e.target.value, payment_changed: true } as any)} />
                     </div>
                   </div>
                 </div>
@@ -1555,7 +1610,7 @@ ${
                 </div>
 
                 <div style={{ fontSize: 12, color: m.locker_no ? "#e2e8f0" : "#4b5563" }}>
-                  {m.locker_no || "없음"}
+                  {m.locker_no ? (m.locker_zone ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "없음"}
                 </div>
 
                 <div style={{ fontSize: 12, color: "#9ca3af" }}>{m.checkin_code || "-"}</div>

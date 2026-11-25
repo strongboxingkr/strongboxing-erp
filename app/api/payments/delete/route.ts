@@ -193,6 +193,7 @@ export async function DELETE(req: Request) {
         message: `이 결제에 환불 기록 ${error.cnt}건이 연결되어 있습니다. 환불 기록을 먼저 확인해 주세요.`,
       }, { status: 409 });
     }
-    return NextResponse.json({ success: false, message: "결제 삭제 실패", error });
+    console.error("결제 삭제 실패:", error);
+    return NextResponse.json({ success: false, message: error?.sqlMessage || error?.message || "결제 삭제 실패" });
   }
 }

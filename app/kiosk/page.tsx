@@ -21,7 +21,16 @@ export default function KioskPage() {
     const data = await res.json();
     if (data.success) {
       setMember(data.member);
-      setMessage(type === "CHECK_OUT" ? `${data.member?.name || ""}님 퇴실 완료!` : `${data.member?.name || data.guest_name || ""}님 입장 완료!`);
+      const name = data.member?.name || data.guest_name || "";
+      if (type === "CHECK_OUT") {
+        setMessage(`${name}님 퇴실 완료!`);
+      } else if (data.result === "EXPIRED_ENTRY") {
+        setMessage(`${name}님 입장 완료 (⚠️ 만료된 회원)`);
+      } else if (data.result === "NO_COUNT_ENTRY") {
+        setMessage(`${name}님 입장 완료 (⚠️ 횟수 소진)`);
+      } else {
+        setMessage(`${name}님 입장 완료!`);
+      }
     } else {
       setMember(null);
       setMessage(data.message || "출석 실패");

@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       checkout_sms_enabled,
       has_uniform,
       has_locker,
+      locker_end_date,
     } = body;
 
     if (!name || !phone || !checkin_code || !branch_name) {
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
            VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE member_id=VALUES(member_id), member_name=VALUES(member_name),
              gender=VALUES(gender), start_date=VALUES(start_date), end_date=VALUES(end_date)`,
-          [branch_name, locker_no, memberId, name, gender || null, start_date || null, end_date || null]
+          [branch_name, locker_no, memberId, name, gender || null, start_date || null, locker_end_date || end_date || null]
         );
       }
 

@@ -33,10 +33,11 @@ export async function POST(req: Request) {
       success: true,
       message: "회원 삭제 완료",
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("회원 삭제 오류:", error);
     return NextResponse.json({
       success: false,
-      error,
+      message: error?.message || "회원 삭제 실패",
     });
   }
 }

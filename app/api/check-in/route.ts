@@ -224,12 +224,13 @@ export async function POST(req: Request) {
         conn.query(`UPDATE members SET status = 'EXPIRED' WHERE member_id = ?`, [member.member_id])
       );
 
-      await saveAttendance(member, "EXPIRED", memo || "만료된 회원");
+      await saveAttendance(member, "SUCCESS", memo || "만료 회원 입장");
 
       return NextResponse.json({
-        success: false,
-        result: "EXPIRED",
-        message: "기간만료 회원",
+        success: true,
+        result: "EXPIRED_ENTRY",
+        message: "만료된 회원입니다",
+        warn: "만료된 회원입니다. 재등록을 안내해주세요.",
         member: {
           member_id: member.member_id,
           name: member.name,
@@ -238,6 +239,7 @@ export async function POST(req: Request) {
           product_name: member.product_name,
           pass_type: member.pass_type,
           end_date: member.end_date,
+          remaining_count: member.remaining_count,
         },
       });
     }
@@ -339,12 +341,23 @@ export async function POST(req: Request) {
 
     if (member.pass_type === "COUNT") {
       if (remainingCount <= 0) {
-        await saveAttendance(member, "NO_COUNT", memo || "남은 횟수 없음");
+        await saveAttendance(member, "SUCCESS", memo || "횟수 소진 회원 입장");
 
         return NextResponse.json({
-          success: false,
-          result: "NO_COUNT",
-          message: "남은 횟수 없음",
+          success: true,
+          result: "NO_COUNT_ENTRY",
+          message: "횟수를 모두 사용한 회원입니다",
+          warn: "남은 횟수가 없습니다. 재등록을 안내해주세요.",
+          member: {
+            member_id: member.member_id,
+            name: member.name,
+            branch_name: member.branch_name,
+            phone: member.phone,
+            product_name: member.product_name,
+            pass_type: member.pass_type,
+            remaining_count: 0,
+            end_date: member.end_date,
+          },
         });
       }
 

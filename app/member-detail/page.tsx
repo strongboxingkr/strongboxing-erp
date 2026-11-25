@@ -874,7 +874,7 @@ export default function MemberDetailPage() {
                 <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30 }}
                   onClick={() => {
                     const m = data.member;
-                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_no || "", coach_name: m.staff_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.attendance_sms_enabled ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_uniform ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.memo || "" });
+                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", checkin_code: m.checkin_code || "", member_no: m.member_no || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_no || "", coach_name: m.staff_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.attendance_sms_enabled ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_uniform ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.memo || "" });
                     setShowEditModal(true);
                   }}>회원정보 수정</button>
               </div>
@@ -1585,32 +1585,55 @@ export default function MemberDetailPage() {
       {showEditModal && editForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false); }}>
-          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 860, maxHeight: "90vh", overflowY: "auto", padding: 28 }}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 900, maxHeight: "90vh", overflowY: "auto", padding: 28 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <span style={{ fontWeight: 700, fontSize: 17 }}>회원 수정</span>
               <button onClick={() => setShowEditModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#6b7280" }}>✕</button>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
-              <select className="input" value={editForm.branch_name} onChange={e => setEditForm({...editForm, branch_name: e.target.value})}>
-                {branches.map((b: any) => <option key={b.option_id} value={b.option_name}>{b.option_name}</option>)}
-              </select>
-              <input className="input" placeholder="이름" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
-              <input className="input" placeholder="전화번호" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
-              <input className="input" placeholder="단축번호" value={editForm.short_phone} onChange={e => setEditForm({...editForm, short_phone: e.target.value})} />
-              <select className="input" value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})}>
-                <option value="">성별</option><option value="남">남</option><option value="여">여</option>
-              </select>
-              <input className="input" type="date" value={editForm.birth_date} onChange={e => setEditForm({...editForm, birth_date: e.target.value})} />
-              <input className="input" placeholder="락카번호" value={editForm.locker_number} onChange={e => setEditForm({...editForm, locker_number: e.target.value})} />
-              <input className="input" placeholder="담당자" value={editForm.coach_name} onChange={e => setEditForm({...editForm, coach_name: e.target.value})} />
+
+            {/* 기본 정보 */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>기본 정보</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>지점</div>
+                <select className="input" value={editForm.branch_name} onChange={e => setEditForm({...editForm, branch_name: e.target.value})}>
+                  {branches.map((b: any) => <option key={b.option_id} value={b.option_name}>{b.option_name}</option>)}
+                </select>
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>이름 *</div>
+                <input className="input" placeholder="이름" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>전화번호</div>
+                <input className="input" placeholder="전화번호" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>출석번호</div>
+                <input className="input" placeholder="출석번호" value={editForm.checkin_code} onChange={e => setEditForm({...editForm, checkin_code: e.target.value})} />
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>성별</div>
+                <select className="input" value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})}>
+                  <option value="">성별</option><option value="남">남</option><option value="여">여</option>
+                </select>
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>생년월일</div>
+                <input className="input" type="date" value={editForm.birth_date} onChange={e => setEditForm({...editForm, birth_date: e.target.value})} />
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>라커번호</div>
+                <input className="input" placeholder="미지정" value={editForm.locker_number} onChange={e => setEditForm({...editForm, locker_number: e.target.value})} />
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>담당자</div>
+                <input className="input" placeholder="담당 직원명" value={editForm.coach_name} onChange={e => setEditForm({...editForm, coach_name: e.target.value})} />
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
-              <select className="input" value={editForm.product_name} onChange={e => setEditForm({...editForm, product_name: e.target.value})}>
-                <option value="">회원권 선택</option>
-                {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
-              </select>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>시작일</div>
+
+            {/* 회원권 정보 */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>회원권 정보</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>회원권</div>
+                <select className="input" value={editForm.product_name} onChange={e => setEditForm({...editForm, product_name: e.target.value})}>
+                  <option value="">선택</option>
+                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                </select>
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>시작일</div>
                 <input className="input" type="date" value={editForm.start_date} onChange={e => {
                   const newStart = e.target.value;
                   if (editForm.end_date) {
@@ -1622,30 +1645,35 @@ export default function MemberDetailPage() {
                   }
                 }} />
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>만료일</div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>만료일</div>
                 <input className="input" type="date" value={editForm.end_date} onChange={e => setEditForm({...editForm, end_date: e.target.value, locker_end_date: editForm.locker_end_date ? e.target.value : ""})} />
               </div>
-              <div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>잔여횟수</div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>잔여횟수</div>
                 <input className="input" type="number" value={editForm.remaining_count} onChange={e => setEditForm({...editForm, remaining_count: Number(e.target.value)})} />
               </div>
             </div>
             {editForm.has_locker === 1 && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>락커 종료일</div>
+                <div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>라커 종료일</div>
                 <input className="input" type="date" style={{ width: 200 }} value={editForm.locker_end_date} onChange={e => setEditForm({...editForm, locker_end_date: e.target.value})} />
               </div>
             )}
-            <div style={{ display: "flex", gap: 16, marginBottom: 12, padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, flexWrap: "wrap" }}>
-              {[["has_sms","입장 문자"], ["has_exit_sms","운동 종료 문자"], ["has_sportswear","운동복 대여"], ["has_locker","락카 사용"]].map(([key, label]) => (
+
+            {/* 이용 옵션 */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>이용 옵션</div>
+            <div style={{ display: "flex", gap: 20, marginBottom: 16, padding: "10px 14px", border: "1px solid #e5e7eb", borderRadius: 10, flexWrap: "wrap" }}>
+              {[["has_sms","입장 문자"], ["has_exit_sms","운동 종료 문자"], ["has_sportswear","운동복 대여"], ["has_locker","라카 사용"]].map(([key, label]) => (
                 <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
                   <input type="checkbox" checked={!!editForm[key]} onChange={e => setEditForm({...editForm, [key]: e.target.checked ? 1 : 0})} />
                   {label}
                 </label>
               ))}
             </div>
-            <textarea className="input" rows={3} placeholder="메모" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: "100%", marginBottom: 16 }} />
+
+            {/* 메모 */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>메모</div>
+            <textarea className="input" rows={3} placeholder="특이사항, 참고 내용" value={editForm.notes} onChange={e => setEditForm({...editForm, notes: e.target.value})} style={{ width: "100%", marginBottom: 16 }} />
+
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn" disabled={editSaving} onClick={async () => {
                 setEditSaving(true);
@@ -1654,7 +1682,7 @@ export default function MemberDetailPage() {
                   branch_name: editForm.branch_name,
                   name: editForm.name,
                   phone: editForm.phone,
-                  short_phone: editForm.short_phone,
+                  checkin_code: editForm.checkin_code,
                   gender: editForm.gender,
                   birth_date: editForm.birth_date,
                   locker_no: editForm.locker_number,
@@ -1667,8 +1695,8 @@ export default function MemberDetailPage() {
                   remaining_count: editForm.remaining_count,
                   has_uniform: editForm.has_sportswear,
                   has_locker: editForm.has_locker,
-                  attendance_sms_enabled: editForm.has_sms,
-                  has_exit_sms: editForm.has_exit_sms,
+                  checkin_sms_enabled: editForm.has_sms,
+                  checkout_sms_enabled: editForm.has_exit_sms,
                   memo: editForm.notes,
                   payment_changed: false,
                 };

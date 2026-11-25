@@ -117,7 +117,7 @@ function pickHomepageReservationNo(text: string) {
 
 function pickHomepageReservation(subject: string, text: string) {
   const subjectMatch = subject.match(
-      /\[홈페이지예약\]\[([^\]]+)\]\[([^\]]+)\]\s*([^/]+)\s*\/\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/
+      /\[홈페이지예약\](?:\[(?:방문 상담|일일 체험)\])?\[([^\]]+)\]\[([^\]]+)\]\s*([^/]+)\s*\/\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/
     );
 
   const reservation_no =
