@@ -449,6 +449,9 @@ export default function MemberDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [showReregModal, setShowReregModal] = useState(false);
+  const [reregForm, setReregForm] = useState<any>({ product_name: "", final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), start_date: "", end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
+  const [reregSaving, setReregSaving] = useState(false);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const [uploading, setUploading] =
@@ -795,12 +798,21 @@ export default function MemberDetailPage() {
               )}
               <span style={{ fontSize: 13, color: "#6b7280" }}>{data.member.branch_name}</span>
               <span style={{ fontSize: 13, color: "#6b7280" }}>{data.member.phone}</span>
-              <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30, marginLeft: "auto" }}
-                onClick={() => {
-                  const m = data.member;
-                  setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_number || "", coach_name: m.coach_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.has_sms ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_sportswear ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.notes || "" });
-                  setShowEditModal(true);
-                }}>회원정보 수정</button>
+              <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+                <button className="btn" style={{ fontSize: 12, padding: "4px 14px", height: 30, background: "#2563eb" }}
+                  onClick={() => {
+                    const m = data.member;
+                    const today = new Date().toISOString().slice(0,10);
+                    setReregForm({ product_name: m.product_name || "", final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: today, start_date: m.end_date ? m.end_date.slice(0,10) : today, end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
+                    setShowReregModal(true);
+                  }}>재등록</button>
+                <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30 }}
+                  onClick={() => {
+                    const m = data.member;
+                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_number || "", coach_name: m.coach_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.has_sms ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_sportswear ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.notes || "" });
+                    setShowEditModal(true);
+                  }}>회원정보 수정</button>
+              </div>
             </div>
 
             {/* 구분선 */}
@@ -1259,6 +1271,103 @@ export default function MemberDetailPage() {
               >
                 {refundSubmitting ? "처리 중..." : "환불 확인"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 재등록 모달 */}
+      {showReregModal && data?.member && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowReregModal(false); }}>
+          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 600, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(0,0,0,.18)" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>회원권 재등록</div>
+                <div style={{ fontSize: 13, color: "#6b7280", marginTop: 2 }}>{data.member.name} · 현재: {data.member.product_name} · 만료: {data.member.end_date?.slice(0,10) || "-"}</div>
+              </div>
+              <button onClick={() => setShowReregModal(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer" }}>✕</button>
+            </div>
+            <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>상품 선택 <span style={{ color: "#dc2626" }}>*</span></div>
+                <select className="input" value={reregForm.product_name} onChange={e => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                  <option value="">상품 선택</option>
+                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                </select>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>시작일</div>
+                  <input className="input" type="date" value={reregForm.start_date} onChange={e => setReregForm({ ...reregForm, start_date: e.target.value })} />
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 3 }}>만료일 이후 선택 시 이어붙이기됩니다.</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>결제일</div>
+                  <input className="input" type="date" value={reregForm.payment_date} onChange={e => setReregForm({ ...reregForm, payment_date: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>실결제금액 <span style={{ color: "#dc2626" }}>*</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input className="input" type="number" placeholder="0" style={{ fontWeight: 700 }} value={reregForm.final_amount} onChange={e => setReregForm({ ...reregForm, final_amount: e.target.value, amount: e.target.value })} />
+                    <span style={{ fontSize: 13, color: "#6b7280", whiteSpace: "nowrap" }}>원</span>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>결제수단</div>
+                  <select className="input" value={reregForm.payment_method} onChange={e => setReregForm({ ...reregForm, payment_method: e.target.value })}>
+                    <option value="CARD">카드</option>
+                    <option value="CASH">현금</option>
+                    <option value="TRANSFER">계좌이체</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>메모 <span style={{ fontWeight: 400, color: "#9ca3af" }}>(선택)</span></div>
+                <textarea className="input" placeholder="메모" rows={2} style={{ resize: "vertical" }} value={reregForm.memo} onChange={e => setReregForm({ ...reregForm, memo: e.target.value })} />
+              </div>
+              {data.member.locker_no && (
+                <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>현재 락커: <strong>{data.member.locker_no}</strong></div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
+                    <input type="checkbox" checked={reregForm.extend_locker} onChange={e => setReregForm({ ...reregForm, extend_locker: e.target.checked })} />
+                    락커 기간도 함께 연장
+                  </label>
+                </div>
+              )}
+            </div>
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8, flexShrink: 0 }}>
+              <button className="btn secondary" style={{ height: 38, fontSize: 14, padding: "0 18px" }} onClick={() => setShowReregModal(false)}>취소</button>
+              <button className="btn" style={{ height: 38, fontSize: 14, padding: "0 18px" }} disabled={reregSaving} onClick={async () => {
+                if (!reregForm.product_name) { alert("상품을 선택해주세요"); return; }
+                if (!reregForm.final_amount) { alert("결제금액을 입력해주세요"); return; }
+                setReregSaving(true);
+                const m = data.member;
+                const payload: any = {
+                  member_id: m.member_id,
+                  branch_name: m.branch_name,
+                  payment_date: reregForm.payment_date,
+                  start_date: reregForm.start_date || reregForm.payment_date,
+                  payment_method: reregForm.payment_method,
+                  product_name: reregForm.product_name,
+                  amount: Number(reregForm.final_amount),
+                  discount_amount: 0,
+                  final_amount: Number(reregForm.final_amount),
+                  memo: reregForm.memo,
+                  payment_purpose: "PASS",
+                };
+                if (reregForm.extend_locker && m.locker_no) {
+                  payload.extend_locker = true;
+                  payload.locker_end_date = reregForm.locker_end_date || reregForm.start_date || reregForm.payment_date;
+                }
+                const res = await apiFetch("/api/payments/add", { method: "POST", body: JSON.stringify(payload) });
+                const json = await res.json();
+                setReregSaving(false);
+                if (json.success) { alert("재등록 완료!"); setShowReregModal(false); location.reload(); }
+                else alert(json.message || "재등록 실패");
+              }}>{reregSaving ? "처리 중..." : "재등록 저장"}</button>
             </div>
           </div>
         </div>
