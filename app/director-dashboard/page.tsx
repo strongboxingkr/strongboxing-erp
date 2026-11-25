@@ -367,7 +367,7 @@ export default function DirectorDashboardPage() {
               <span className="dir-card-title">오늘 출석</span>
               <span className="dir-card-sub">총 {attendance.length}명</span>
             </div>
-            <Link href="/attendance" style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
+            <Link href="/attendance-monitor" style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
               전체 보기 →
             </Link>
           </div>
@@ -389,7 +389,7 @@ export default function DirectorDashboardPage() {
               ))}
               {attendance.length > 5 && (
                 <div style={{ padding: "8px 20px", fontSize: 12, color: "#9ca3af", borderTop: "1px solid #f3f4f6" }}>
-                  외 {attendance.length - 5}명 — <Link href="/attendance" style={{ color: "#1d4ed8", fontWeight: 600 }}>전체 보기</Link>
+                  외 {attendance.length - 5}명 — <Link href="/attendance-monitor" style={{ color: "#1d4ed8", fontWeight: 600 }}>전체 보기</Link>
                 </div>
               )}
             </>
