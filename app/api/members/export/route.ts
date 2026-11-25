@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     let sql = `
       SELECT
         m.member_id, m.name, m.phone, m.birth_date, m.gender, m.address,
-        m.product_name, m.start_date, m.end_date, m.remaining_count,
+        m.product_name, m.weekly_limit, m.pass_type, m.start_date, m.end_date, m.remaining_count,
         m.status, m.locker_no, m.has_uniform, m.member_no, m.staff_name,
         m.memo, m.join_date, m.attendance_sms_enabled, m.branch_name,
         l.locker_zone,
@@ -60,6 +60,7 @@ export async function GET(req: Request) {
         주소: m.address || "",
         전화번호: m.phone || "",
         프로그램: m.product_name || "",
+        주N회: m.weekly_limit != null ? String(m.weekly_limit) : "",
         시작일: m.start_date ? String(m.start_date).slice(0, 10) : "",
         종료일: endDate,
         최종방문일: lastVisit,

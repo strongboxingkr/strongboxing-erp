@@ -122,17 +122,37 @@ export async function POST(req: Request) {
         statusRaw === "정지" || statusRaw === "휴회" || statusRaw === "REST" ? "REST" :
         statusRaw === "만료" || statusRaw === "EXPIRED" ? "EXPIRED" : "ACTIVE";
 
+      const productName = String(getValue(row, ["프로그램", "상품", "회원권", "product_name"])).trim();
+      const remainingCount = Number(getValue(row, ["잔여횟수", "남은횟수", "remaining_count"]) || 0);
+      const remainDaysRaw = String(getValue(row, ["잔여일", "남은일"]) || "").trim();
+      // 횟수제한: "주2회" 형태 or 숫자 (우리 엑셀 다운로드 형식)
+      const weeklyLimitRaw = String(getValue(row, ["횟수제한", "주N회", "주회", "weekly_limit"]) || "").trim();
+      let weeklyLimit: number | null = null;
+      if (weeklyLimitRaw) {
+        const wm = weeklyLimitRaw.match(/(\d+)/);
+        weeklyLimit = wm ? Math.min(parseInt(wm[1]), 7) : null;
+      }
+      // pass_type 추론: 잔여횟수 필드가 채워져 있으면 COUNT, 잔여일 필드가 채워져 있으면 PERIOD
+      let passType: string;
+      const hasRemainingCount = getValue(row, ["잔여횟수", "남은횟수", "remaining_count"]) !== "";
+      const hasRemainDays = remainDaysRaw !== "";
+      if (hasRemainingCount) {
+        passType = "COUNT";
+      } else if (hasRemainDays) {
+        passType = "PERIOD";
+      } else {
+        passType = weeklyLimit !== null ? "COUNT" : "PERIOD";
+      }
+
       // 중복 체크: 중복이면 업데이트, 없으면 신규 등록
       if (dupRows.length > 0) {
         // 이미 존재하는 회원 → 상품/날짜/횟수/상태 업데이트 (재등록 처리)
         const existingId = dupRows[0].member_id;
-        const productName = String(getValue(row, ["프로그램", "상품", "회원권", "product_name"])).trim();
-        const remainingCount = Number(getValue(row, ["잔여횟수", "남은횟수", "remaining_count"]) || 0);
-        const passType = remainingCount > 0 ? "COUNT" : "PERIOD";
         await pool.query(
           `UPDATE members SET
             product_name = COALESCE(NULLIF(?, ''), product_name),
             pass_type = ?,
+            weekly_limit = ?,
             remaining_count = ?,
             start_date = COALESCE(?, start_date),
             end_date = COALESCE(?, end_date),
@@ -141,6 +161,7 @@ export async function POST(req: Request) {
           [
             productName || null,
             passType,
+            weeklyLimit,
             remainingCount,
             toDate(getValue(row, ["시작일", "등록일", "start_date"])),
             toDate(getValue(row, ["종료일", "만료일", "end_date"])),
@@ -164,11 +185,6 @@ export async function POST(req: Request) {
 
       const nextMemberNo = String(noRows[0].next_member_no);
 
-      const productName = String(getValue(row, ["프로그램", "상품", "회원권", "product_name"])).trim();
-      const remainingCount = Number(getValue(row, ["잔여횟수", "남은횟수", "remaining_count"]) || 0);
-
-      const passType = remainingCount > 0 ? "COUNT" : "PERIOD";
-
       await pool.query(
         `
         INSERT INTO members (
@@ -180,6 +196,7 @@ export async function POST(req: Request) {
           checkin_code,
           product_name,
           pass_type,
+          weekly_limit,
           remaining_count,
           start_date,
           end_date,
@@ -193,7 +210,7 @@ export async function POST(req: Request) {
           checkin_sms_enabled,
           checkout_sms_enabled
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           branchName,
@@ -204,6 +221,7 @@ export async function POST(req: Request) {
           checkinCode,
           productName || null,
           passType,
+          weeklyLimit,
           remainingCount,
           toDate(getValue(row, ["시작일", "등록일", "start_date"])),
           toDate(getValue(row, ["종료일", "만료일", "end_date"])),
@@ -214,7 +232,7 @@ export async function POST(req: Request) {
           toDate(getValue(row, ["생년월일", "생일", "birth_date"])),
           toDate(getValue(row, ["가입일", "join_date"])) || toDate(getValue(row, ["시작일", "등록일", "start_date"])),
           String(getValue(row, ["담당자", "staff_name"]) || "") || null,
-          0,
+          getValue(row, ["문자수신", "checkin_sms_enabled"]) === "1" || getValue(row, ["문자수신", "checkin_sms_enabled"]) === 1 ? 1 : 0,
           0,
         ]
       );
