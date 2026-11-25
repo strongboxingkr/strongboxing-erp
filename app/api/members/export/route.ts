@@ -67,7 +67,7 @@ export async function GET(req: Request) {
         잔여일: remainDays,
         잔여횟수: m.remaining_count != null ? String(m.remaining_count) : "",
         옷: m.has_uniform === 1 || m.has_uniform === "1" || m.has_uniform === true ? "O" : "X",
-        락카: m.locker_no ? (m.locker_zone && m.locker_zone !== "A" ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "X",
+        락카: m.locker_no ? (m.locker_zone ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "X",
         "NO ": "",
         회원번호: m.member_no || m.phone?.slice(-4) || "",
         회원번호1: "",
