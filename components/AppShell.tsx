@@ -164,13 +164,7 @@ export default function AppShell({
         const newest = data.rows?.[0];
         if (newest && newest.attendance_id !== lastCheckinId.current) {
           if (lastCheckinId.current !== 0) {
-            if (!monitorWin.current || monitorWin.current.closed) {
-              monitorWin.current = window.open(
-                "/attendance-monitor",
-                "strong-monitor",
-                "width=1400,height=900,menubar=no,toolbar=no,location=no,status=no"
-              );
-            }
+            // 모니터 창 자동 열기 비활성화
           }
           lastCheckinId.current = newest.attendance_id;
         }
