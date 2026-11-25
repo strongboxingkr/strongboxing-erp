@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ success: true, member: rows[0] });
-  } catch (error) {
-    return NextResponse.json({ success: false, error });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error?.message || "DB 오류", error: String(error) });
   }
 }
