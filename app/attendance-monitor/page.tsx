@@ -281,29 +281,34 @@ export default function AttendanceMonitorPage() {
           {successRows.length === 0 ? (
             <div style={{ padding: 24, color: "#334155", fontSize: 14, textAlign: "center" }}>아직 출석이 없습니다</div>
           ) : (
-            successRows.map((r, i) => (
+            successRows.map((r, i) => {
+              const today = new Date().toISOString().slice(0, 10);
+              const isExpired = r.end_date && r.end_date.slice(0, 10) < today && r.pass_type === "PERIOD";
+              const noCount = r.pass_type === "COUNT" && (r.remaining_count ?? 1) <= 0;
+              const isAlert = isExpired || noCount;
+              return (
               <div key={r.member_id} style={{
                 display: "grid",
                 gridTemplateColumns: "28px 1fr 44px 80px 44px 44px",
                 alignItems: "center",
                 padding: "9px 12px",
                 borderBottom: "1px solid #0a0f1e",
-                background: i === 0 ? "#1e293b" : "transparent",
+                background: isAlert ? "rgba(239,68,68,0.15)" : i === 0 ? "#1e293b" : "transparent",
                 fontSize: 13,
               }}>
-                <span style={{ color: "#475569" }}>{successRows.length - i}</span>
+                <span style={{ color: isAlert ? "#ef4444" : "#475569" }}>{successRows.length - i}</span>
                 <span
                   onClick={() => r.member_id && openMemberModal(r.member_id)}
-                  style={{ fontWeight: 700, color: r.checkout_time ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: r.member_id ? "pointer" : "default" }}
+                  style={{ fontWeight: 700, color: isAlert ? "#f87171" : r.checkout_time ? "#3b82f6" : "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: r.member_id ? "pointer" : "default" }}
                 >
-                  {r.name || "미등록"}
+                  {r.name || "미등록"}{isAlert && <span style={{ marginLeft: 5, fontSize: 10, background: "#ef4444", color: "#fff", borderRadius: 3, padding: "1px 4px" }}>{isExpired ? "만료" : "잔여없음"}</span>}
                 </span>
                 <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 13, textAlign: "center", letterSpacing: 1 }}>
                   {r.phone ? r.phone.slice(-4) : "-"}
                 </span>
-                <span style={{ color: "#475569", fontSize: 12 }}>
+                <span style={{ color: isAlert ? "#f87171" : "#475569", fontSize: 12 }}>
                   {r.pass_type === "COUNT"
-                    ? <span style={{ color: "#f59e0b" }}>{r.remaining_count}회 남음</span>
+                    ? <span style={{ color: noCount ? "#f87171" : "#f59e0b" }}>{r.remaining_count}회 남음</span>
                     : (r.end_date?.slice(0, 10) || "-")}
                 </span>
                 <span style={{ color: "#22c55e", textAlign: "right" }}>
@@ -313,8 +318,8 @@ export default function AttendanceMonitorPage() {
                   {fmt(r.checkout_time)}
                 </span>
               </div>
-            ))
-          )}
+            )}))
+          }
         </div>
       </div>
     </div>

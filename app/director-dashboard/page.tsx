@@ -444,12 +444,21 @@ export default function DirectorDashboardPage() {
                 const time = a.checkin_time
                   ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
                   : "";
+                const today = new Date().toISOString().slice(0, 10);
+                const isExpired = a.end_date && a.end_date.slice(0, 10) < today && a.pass_type === "PERIOD";
+                const noCount = a.pass_type === "COUNT" && (a.remaining_count ?? 1) <= 0;
+                const isAlert = isExpired || noCount;
                 return (
-                  <div key={i} className="dir-att-row">
-                    <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 20, textAlign: "right" }}>{i + 1}</span>
-                    <span style={{ fontWeight: 600, color: "#111827", flex: 1 }}>{a.name}</span>
-                    {a.branch_name && <span style={{ fontSize: 11, color: "#9ca3af" }}>{a.branch_name}</span>}
-                    <span style={{ color: "#6b7280", fontSize: 12, minWidth: 44, textAlign: "right" }}>{time}</span>
+                  <div key={i} className="dir-att-row" style={isAlert ? { background: "#fef2f2" } : undefined}>
+                    <span style={{ fontSize: 11, color: isAlert ? "#ef4444" : "#9ca3af", minWidth: 20, textAlign: "right" }}>{i + 1}</span>
+                    <span style={{ fontWeight: 600, color: isAlert ? "#dc2626" : "#111827", flex: 1 }}>{a.name}</span>
+                    {isAlert && (
+                      <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700, background: "#fee2e2", padding: "1px 5px", borderRadius: 4, whiteSpace: "nowrap" }}>
+                        {isExpired ? "만료" : "잔여없음"}
+                      </span>
+                    )}
+                    {a.branch_name && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>{a.branch_name}</span>}
+                    <span style={{ color: isAlert ? "#ef4444" : "#6b7280", fontSize: 12, minWidth: 44, textAlign: "right" }}>{time}</span>
                   </div>
                 );
               })}
