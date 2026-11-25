@@ -809,7 +809,7 @@ export default function MemberDetailPage() {
                 <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30 }}
                   onClick={() => {
                     const m = data.member;
-                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_number || "", coach_name: m.coach_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.has_sms ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_sportswear ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.notes || "" });
+                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", short_phone: m.short_phone || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_no || "", coach_name: m.staff_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.attendance_sms_enabled ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_uniform ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.memo || "" });
                     setShowEditModal(true);
                   }}>회원정보 수정</button>
               </div>
@@ -1441,7 +1441,30 @@ export default function MemberDetailPage() {
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn" disabled={editSaving} onClick={async () => {
                 setEditSaving(true);
-                const res = await apiFetch("/api/members/update", { method: "POST", body: JSON.stringify({ ...editForm, member_id: data.member.member_id, payment_changed: false }) });
+                const payload = {
+                  member_id: data.member.member_id,
+                  branch_name: editForm.branch_name,
+                  name: editForm.name,
+                  phone: editForm.phone,
+                  short_phone: editForm.short_phone,
+                  gender: editForm.gender,
+                  birth_date: editForm.birth_date,
+                  locker_no: editForm.locker_number,
+                  locker_end_date: editForm.locker_end_date,
+                  staff_name: editForm.coach_name,
+                  product_name: editForm.product_name,
+                  pass_type: editForm.pass_type,
+                  start_date: editForm.start_date,
+                  end_date: editForm.end_date,
+                  remaining_count: editForm.remaining_count,
+                  has_uniform: editForm.has_sportswear,
+                  has_locker: editForm.has_locker,
+                  attendance_sms_enabled: editForm.has_sms,
+                  has_exit_sms: editForm.has_exit_sms,
+                  memo: editForm.notes,
+                  payment_changed: false,
+                };
+                const res = await apiFetch("/api/members/update", { method: "POST", body: JSON.stringify(payload) });
                 const json = await res.json();
                 setEditSaving(false);
                 if (json.success) { setShowEditModal(false); location.reload(); }
