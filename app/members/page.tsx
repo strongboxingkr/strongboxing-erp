@@ -1058,49 +1058,12 @@ ${
                 </div>
               </div>
 
-              {/* ── 결제 정보 ── */}
-              <div style={{ marginBottom: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 6, borderBottom: "1px solid var(--line)", marginBottom: 14 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: ".05em", textTransform: "uppercase" }}>결제 정보 (선택)</span>
-                  {isEdit && (
-                    <div style={{ display: "flex", gap: 6, marginLeft: 4 }}>
-                      <button type="button" className={`em-pay-tab${(form as any).payMode !== "add" ? " active" : ""}`} onClick={() => setForm({ ...form, payMode: "edit" } as any)}>기존 수정</button>
-                      <button type="button" className={`em-pay-tab${(form as any).payMode === "add" ? " active" : ""}`} onClick={() => setForm({ ...form, payMode: "add" } as any)}>+ 추가 결제</button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 추가 결제 모드 */}
-                {isEdit && (form as any).payMode === "add" && (
-                  <div style={{ background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, padding: "14px 16px" }}>
-                    <div className="em-grid4" style={{ marginBottom: 10 }}>
-                      <div className="em-field" style={{ gridColumn: "span 2" }}>
-                        <label className="em-label">상품·내용</label>
-                        <input placeholder="예: 핸드랩, 주3회 차액" value={(form as any).add_product_name || ""} onChange={(e) => setForm({ ...form, add_product_name: e.target.value } as any)} />
-                      </div>
-                      <div className="em-field">
-                        <label className="em-label">결제금액</label>
-                        <input type="number" placeholder="금액 (원)" value={(form as any).add_payment_amount || ""} onChange={(e) => setForm({ ...form, add_payment_amount: e.target.value } as any)} />
-                      </div>
-                      <div className="em-field">
-                        <label className="em-label">결제일</label>
-                        <input type="date" value={(form as any).add_payment_date || today} onChange={(e) => setForm({ ...form, add_payment_date: e.target.value } as any)} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="em-label">결제수단</div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        {[["CARD", "카드"], ["CASH", "현금"], ["TRANSFER", "계좌이체"]].map(([v, l]) => (
-                          <button key={v} type="button" className={`em-method-btn${(form as any).add_payment_method === v ? " active" : ""}`} onClick={() => setForm({ ...form, add_payment_method: v } as any)}>{l}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>※ 수정 저장 시 별도 결제 건으로 추가됩니다</div>
+              {/* ── 결제 정보 (신규 등록 시에만) ── */}
+              {!isEdit && (
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ paddingBottom: 6, borderBottom: "1px solid var(--line)", marginBottom: 14 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", letterSpacing: ".05em", textTransform: "uppercase" }}>결제 정보 (선택)</span>
                   </div>
-                )}
-
-                {/* 기존 결제 수정 모드 */}
-                {(!isEdit || (form as any).payMode !== "add") && (
                   <div className="em-grid3">
                     <div className="em-field">
                       <label className="em-label">결제금액</label>
@@ -1119,8 +1082,14 @@ ${
                       <input type="date" value={(form as any).payment_date_new || ""} onChange={(e) => setForm({ ...form, payment_date_new: e.target.value, payment_changed: true } as any)} />
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+              {/* 수정 모드: 결제·재등록은 상세 페이지에서 */}
+              {isEdit && (
+                <div style={{ padding: "10px 14px", background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, color: "#6b7280" }}>
+                  💡 결제 수정·재등록은 <strong style={{ color: "#2563eb", cursor: "pointer" }} onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}>회원 상세</strong>에서 할 수 있어요.
+                </div>
+              )}
             </div>
 
             {/* ── 하단 버튼 (고정) ── */}
