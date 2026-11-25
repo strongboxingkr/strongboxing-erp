@@ -15,7 +15,7 @@ export async function GET(req: Request) {
               start_date, end_date, remaining_count, checkin_code,
               has_uniform, has_locker, locker_no, status, memo,
               member_no, gender, birth_date, join_date, emergency_contact, address, staff_name,
-              attendance_sms_enabled
+              attendance_sms_enabled, checkin_sms_enabled, checkout_sms_enabled
        FROM members WHERE member_id = ? LIMIT 1`,
       [member_id]
     );
