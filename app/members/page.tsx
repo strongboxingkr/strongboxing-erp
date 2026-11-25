@@ -268,7 +268,8 @@ export default function MembersPage() {
       address: m.address || "",
       join_date: m.join_date?.slice(0, 10) || "",
       staff_name: m.staff_name || "",
-      checkin_sms_enabled: m.checkin_sms_enabled || 0,
+      checkin_sms_enabled: m.checkin_sms_enabled ?? m.attendance_sms_enabled ?? 0,
+      attendance_sms_enabled: m.checkin_sms_enabled ?? m.attendance_sms_enabled ?? 0,
       checkout_sms_enabled: m.checkout_sms_enabled || 0,
       has_uniform: m.has_uniform || 0,
       has_locker: m.has_locker || 0,
@@ -1031,7 +1032,7 @@ ${
                   <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>문자 알림 설정</div>
                   <div className="em-opt-row">
                     <label className="em-opt-label">
-                      <input type="checkbox" checked={Number(form.checkin_sms_enabled) === 1} onChange={(e) => setForm({ ...form, checkin_sms_enabled: e.target.checked ? 1 : 0 })} />
+                      <input type="checkbox" checked={Number(form.checkin_sms_enabled) === 1} onChange={(e) => setForm({ ...form, checkin_sms_enabled: e.target.checked ? 1 : 0, attendance_sms_enabled: e.target.checked ? 1 : 0 } as any)} />
                       입장 문자
                     </label>
                     <label className="em-opt-label">
