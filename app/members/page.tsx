@@ -83,6 +83,10 @@ export default function MembersPage() {
   const [showBulkExtend, setShowBulkExtend] = useState(false);
   const [bulkExtendDays, setBulkExtendDays] = useState("1");
   const [bulkExtendBranch, setBulkExtendBranch] = useState("");
+  const [bulkExtendDirection, setBulkExtendDirection] = useState("+");
+  const [bulkExtendBaseDate, setBulkExtendBaseDate] = useState(today);
+  const [bulkExtendExcludeHold, setBulkExtendExcludeHold] = useState(false);
+  const [bulkExtendExcludeNotStarted, setBulkExtendExcludeNotStarted] = useState(false);
 
   const [extendForm, setExtendForm] = useState({
     months: 1,
@@ -1305,64 +1309,98 @@ ${
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9999,
           display: "flex", alignItems: "center", justifyContent: "center"
         }}>
-          <div className="card" style={{ width: 360, borderRadius: 20, padding: 28 }}>
-            <h2 style={{ marginTop: 0, fontSize: 18 }}>유효회원 기간 일괄 연장</h2>
-            <p style={{ color: "#666", fontSize: 13, marginTop: -8 }}>
-              기간권(DATE)이고 현재 유효한 회원의 만료일을 일괄 연장합니다.
+          <div className="card" style={{ width: 420, borderRadius: 16, padding: 28 }}>
+            <h2 style={{ marginTop: 0, fontSize: 18, textAlign: "center", marginBottom: 20 }}>- 기간일괄연장 -</h2>
+
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 13 }}>
+              <tbody>
+                <tr>
+                  <td style={{ background: "#f3f4f6", padding: "10px 14px", fontWeight: 600, width: 72, verticalAlign: "top", border: "1px solid #e5e7eb" }}>구분</td>
+                  <td style={{ padding: "10px 14px", border: "1px solid #e5e7eb" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <input type="checkbox" checked readOnly /> 티켓기간
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <input type="checkbox" checked={bulkExtendExcludeHold} onChange={e => setBulkExtendExcludeHold(e.target.checked)} />
+                      정지중인 티켓은 제외
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <input type="checkbox" checked={bulkExtendExcludeNotStarted} onChange={e => setBulkExtendExcludeNotStarted(e.target.checked)} />
+                      미시작 사용권은 제외
+                    </label>
+                  </td>
+                </tr>
+                {isAdminOrOwner && (
+                  <tr>
+                    <td style={{ background: "#f3f4f6", padding: "10px 14px", fontWeight: 600, border: "1px solid #e5e7eb" }}>지점</td>
+                    <td style={{ padding: "10px 14px", border: "1px solid #e5e7eb" }}>
+                      <select className="input" style={{ width: "100%" }} value={bulkExtendBranch} onChange={e => setBulkExtendBranch(e.target.value)}>
+                        <option value="">지점을 선택하세요</option>
+                        <option value="철산점">철산점</option>
+                        <option value="목동점">목동점</option>
+                        <option value="신정점">신정점</option>
+                        <option value="개봉점">개봉점</option>
+                      </select>
+                    </td>
+                  </tr>
+                )}
+                {!isAdminOrOwner && (
+                  <tr>
+                    <td style={{ background: "#f3f4f6", padding: "10px 14px", fontWeight: 600, border: "1px solid #e5e7eb" }}>지점</td>
+                    <td style={{ padding: "10px 14px", border: "1px solid #e5e7eb" }}><strong>{user?.branch_name}</strong></td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={{ background: "#f3f4f6", padding: "10px 14px", fontWeight: 600, verticalAlign: "top", border: "1px solid #e5e7eb" }}>조정일</td>
+                  <td style={{ padding: "10px 14px", border: "1px solid #e5e7eb" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, color: "#555", width: 44 }}>기준일 :</span>
+                      <input type="date" className="input" style={{ flex: 1 }} value={bulkExtendBaseDate} onChange={e => setBulkExtendBaseDate(e.target.value)} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, color: "#555", width: 44 }}>조정일 :</span>
+                      <select className="input" style={{ width: 60 }} value={bulkExtendDirection} onChange={e => setBulkExtendDirection(e.target.value)}>
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                      </select>
+                      <input type="number" className="input" min={1} style={{ width: 70 }} value={bulkExtendDays} onChange={e => setBulkExtendDays(e.target.value)} />
+                      <span style={{ fontSize: 13 }}>일</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#888", lineHeight: 1.6 }}>
+                      ※ 기간을 연장시켜줄 경우는 + 선택하고 줄여줄 경우는 - 를 선택합니다.<br/>
+                      ※ 선택된 조정일 만큼 체크된 기간이 유효회원을 기준으로 변경 적용됩니다.<br/>
+                      ※ 선택한 기준일에 당시의 유효회원을 기준으로 적용됩니다.
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p style={{ color: "#ef4444", fontSize: 12, textAlign: "center", marginBottom: 16 }}>
+              ※ 유효회원 전체가 적용되니 신중하게 체크하시고 변경하시기 바랍니다.
             </p>
-
-            {isAdminOrOwner && (
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 13, fontWeight: 600 }}>지점 선택</label>
-                <select
-                  className="input"
-                  style={{ width: "100%", marginTop: 6 }}
-                  value={bulkExtendBranch}
-                  onChange={e => setBulkExtendBranch(e.target.value)}
-                >
-                  <option value="">지점을 선택하세요</option>
-                  <option value="철산점">철산점</option>
-                  <option value="목동점">목동점</option>
-                  <option value="신정점">신정점</option>
-                  <option value="개봉점">개봉점</option>
-                </select>
-              </div>
-            )}
-
-            {!isAdminOrOwner && (
-              <div style={{ marginBottom: 14, fontSize: 13, color: "#555" }}>
-                지점: <strong>{user?.branch_name}</strong>
-              </div>
-            )}
-
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 13, fontWeight: 600 }}>연장 일수</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  style={{ width: 100 }}
-                  value={bulkExtendDays}
-                  onChange={e => setBulkExtendDays(e.target.value)}
-                />
-                <span style={{ fontSize: 13 }}>일</span>
-              </div>
-            </div>
 
             <div style={{ display: "flex", gap: 10 }}>
               <button
                 className="btn"
-                style={{ flex: 1, background: "#f97316", color: "#fff" }}
+                style={{ flex: 1, background: "#374151", color: "#fff" }}
                 onClick={async () => {
                   const targetBranch = isAdminOrOwner ? bulkExtendBranch : user?.branch_name;
                   if (!targetBranch) { alert("지점을 선택해주세요"); return; }
                   const days = parseInt(bulkExtendDays);
-                  if (!days || days <= 0) { alert("연장 일수를 입력해주세요"); return; }
-                  if (!confirm(`${targetBranch} 유효회원 만료일을 ${days}일 연장하시겠습니까?`)) return;
+                  if (!days || days <= 0) { alert("조정일을 입력해주세요"); return; }
+                  const actualDays = bulkExtendDirection === "-" ? -days : days;
+                  const label = bulkExtendDirection === "+" ? `${days}일 연장` : `${days}일 단축`;
+                  if (!confirm(`${targetBranch} 유효회원 만료일을 ${label}하시겠습니까?`)) return;
                   const res = await apiFetch("/api/members/bulk-extend", {
                     method: "POST",
-                    body: JSON.stringify({ branch_name: targetBranch, days }),
+                    body: JSON.stringify({
+                      branch_name: targetBranch,
+                      days: actualDays,
+                      base_date: bulkExtendBaseDate,
+                      exclude_hold: bulkExtendExcludeHold,
+                      exclude_not_started: bulkExtendExcludeNotStarted,
+                    }),
                   });
                   const data = await res.json();
                   if (data.success) {
@@ -1370,11 +1408,11 @@ ${
                     setShowBulkExtend(false);
                     loadMembers(user);
                   } else {
-                    alert(data.message || "연장 실패");
+                    alert(data.message || "변경 실패");
                   }
                 }}
               >
-                연장하기
+                일괄변경
               </button>
               <button className="btn" style={{ flex: 1 }} onClick={() => setShowBulkExtend(false)}>
                 취소
