@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       has_uniform,
       has_locker,
       locker_end_date,
+      weekly_limit,
     } = body;
 
     if (!name || !phone || !checkin_code || !branch_name) {
@@ -104,13 +105,14 @@ export async function POST(req: Request) {
       const [result]: any = await conn.query(
         `INSERT INTO members (
           branch_name, name, phone, emergency_contact, checkin_code, product_name, pass_type,
-          remaining_count, start_date, end_date, status, memo, locker_no, member_no, gender,
+          weekly_limit, remaining_count, start_date, end_date, status, memo, locker_no, member_no, gender,
           birth_date, address, join_date, staff_name, checkin_sms_enabled, checkout_sms_enabled,
           has_uniform, has_locker
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           branch_name, name, phone, emergency_contact || null, checkin_code,
-          product_name || null, pass_type || "PERIOD", remaining_count || 0,
+          product_name || null, pass_type || "PERIOD",
+          weekly_limit ?? null, remaining_count || 0,
           start_date || null, end_date || null, memo || "", locker_no || null,
           finalMemberNo, gender || null, birth_date || null, address || null,
           join_date || start_date || null, staff_name || null,

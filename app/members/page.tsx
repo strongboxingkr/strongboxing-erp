@@ -31,6 +31,7 @@ const makeDefaultForm = () => ({
   checkin_code: "",
   pass_type: "PERIOD",
   product_name: "",
+  weekly_limit: null as number | null,
   remaining_count: 0,
   start_date: today,
   end_date: addMonths(today, 1),
@@ -255,6 +256,7 @@ export default function MembersPage() {
       checkin_code: m.checkin_code || "",
       pass_type: m.pass_type || "PERIOD",
       product_name: m.product_name || "",
+      weekly_limit: m.weekly_limit ?? null,
       remaining_count: m.remaining_count || 0,
       start_date: m.start_date?.slice(0, 10) || today,
       end_date: m.end_date?.slice(0, 10) || today,
@@ -301,31 +303,43 @@ export default function MembersPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleProductChange = (productName: string) => {
+  const calcFromProductAndLimit = (productName: string, weeklyLimit: number | null, startDate: string) => {
     const product = products.find((p) => p.option_name === productName);
-    const passType = product?.option_value || "PERIOD";
     const monthMatch = productName.match(/(\d+)\s*개월/);
     const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-    const countValue = Number(product?.count_value || 0);
-    // "주N회" 패턴: 주간 횟수 × 개월 × 4주로 총 횟수 계산
-    const weeklyMatch = productName.match(/주\s*(\d+)\s*회/);
-    const countMatch = productName.match(/(\d+)\s*회/);
-    const countFromName = weeklyMatch
-      ? parseInt(weeklyMatch[1]) * months * 4
-      : countMatch ? parseInt(countMatch[1]) : 0;
-    const finalCount = countValue || countFromName;
-    const countMonths = passType === "COUNT" ? (monthMatch ? months : Math.ceil(finalCount / 12) || 1) : 0;
+    const isDaily = product?.option_value === "DAILY";
+    const isCount = !isDaily && weeklyLimit !== null;
+    const passType = isDaily ? "DAILY" : isCount ? "COUNT" : "PERIOD";
+    const remaining = isCount ? (weeklyLimit! * months * 4) : 0;
+    const endDate = isDaily ? startDate : addMonths(startDate, months);
+    return { passType, remaining, endDate };
+  };
 
+  const handleProductChange = (productName: string) => {
+    const weeklyLimit = (form as any).weekly_limit ?? null;
+    const { passType, remaining, endDate } = calcFromProductAndLimit(productName, weeklyLimit, form.start_date);
     setForm({
       ...form,
       product_name: productName,
       pass_type: passType,
-      remaining_count: passType === "COUNT" ? finalCount || form.remaining_count || 12 : 0,
-      end_date:
-        passType === "PERIOD"
-          ? addMonths(form.start_date, months)
-          : addMonths(form.start_date, countMonths),
-    });
+      weekly_limit: weeklyLimit,
+      remaining_count: remaining,
+      end_date: endDate,
+      locker_end_date: endDate,
+    } as any);
+  };
+
+  const handleWeeklyLimitChange = (val: string) => {
+    const weeklyLimit = val === "" ? null : Number(val);
+    const { passType, remaining, endDate } = calcFromProductAndLimit(form.product_name, weeklyLimit, form.start_date);
+    setForm({
+      ...form,
+      weekly_limit: weeklyLimit,
+      pass_type: passType,
+      remaining_count: remaining,
+      end_date: endDate,
+      locker_end_date: endDate,
+    } as any);
   };
 
   const saveMember = async () => {
@@ -982,12 +996,23 @@ ${
                 <div className="em-section-title">회원권 정보</div>
                 <div className="em-grid4" style={{ marginBottom: 12 }}>
                   <div className="em-field">
-                    <label className="em-label">회원권</label>
+                    <label className="em-label">프로그램</label>
                     <select value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
                       <option value="">선택</option>
-                      {products.map((p) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                      {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                     </select>
                   </div>
+                  {form.pass_type !== "DAILY" && (
+                  <div className="em-field">
+                    <label className="em-label">횟수제한</label>
+                    <select value={(form as any).weekly_limit ?? ""} onChange={(e) => handleWeeklyLimitChange(e.target.value)}>
+                      <option value="">제한없음</option>
+                      <option value="1">주1회</option>
+                      <option value="2">주2회</option>
+                      <option value="3">주3회</option>
+                    </select>
+                  </div>
+                  )}
                   <div className="em-field">
                     <label className="em-label">시작일</label>
                     <input type="date" value={form.start_date} onChange={(e) => {
@@ -997,9 +1022,7 @@ ${
                         const newEndDate = new Date(new Date(newStart).getTime() + diffMs).toISOString().slice(0, 10);
                         setForm({ ...form, start_date: newStart, end_date: newEndDate, locker_end_date: (form as any).locker_end_date ? newEndDate : (form as any).locker_end_date } as any);
                       } else {
-                        const monthMatch = form.product_name?.match(/(\d+)\s*개월/);
-                        const months = monthMatch ? parseInt(monthMatch[1]) : 1;
-                        const newEndDate = form.pass_type === "DAILY" ? newStart : addMonths(newStart, months);
+                        const { endDate: newEndDate } = calcFromProductAndLimit(form.product_name, (form as any).weekly_limit ?? null, newStart);
                         setForm({ ...form, start_date: newStart, end_date: newEndDate, locker_end_date: newEndDate } as any);
                       }
                     }} />
@@ -1600,7 +1623,11 @@ ${
                   </div>
                 )}
 
-                <div style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.product_name || <span style={{ color: "#555" }}>미등록</span>}</div>
+                <div style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {m.product_name
+                    ? (m.weekly_limit ? `주${m.weekly_limit}회 · ${m.product_name}` : m.product_name)
+                    : <span style={{ color: "#555" }}>미등록</span>}
+                </div>
 
                 <div style={{ fontSize: 11, color: "#9ca3af" }}>
                   {m.start_date?.slice(0, 10) || "-"} ~ {m.end_date?.slice(0, 10) || "-"}

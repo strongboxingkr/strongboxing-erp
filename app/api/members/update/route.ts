@@ -32,6 +32,7 @@ export async function POST(req: Request) {
       address,
       join_date,
       staff_name,
+      weekly_limit,
       attendance_sms_enabled,
       checkin_sms_enabled,
       checkout_sms_enabled,
@@ -105,13 +106,14 @@ export async function POST(req: Request) {
       async (conn) => {
         await conn.query(
           `UPDATE members SET branch_name=?,name=?,phone=?,phone_last4=?,checkin_code=?,product_name=?,
-           pass_type=?,remaining_count=?,start_date=?,end_date=?,status=?,memo=?,locker_no=?,member_no=?,
+           pass_type=?,weekly_limit=?,remaining_count=?,start_date=?,end_date=?,status=?,memo=?,locker_no=?,member_no=?,
            gender=?,birth_date=?,emergency_contact=?,address=?,join_date=?,staff_name=?,
            attendance_sms_enabled=?,checkin_sms_enabled=?,checkout_sms_enabled=?,has_uniform=?,has_locker=?
            WHERE member_id=?`,
           [
             finalBranch, finalName, phone || oldMember.phone, phoneLast4, finalCheckinCode,
             product_name || oldMember.product_name, pass_type || oldMember.pass_type || "PERIOD",
+            Object.prototype.hasOwnProperty.call(body, "weekly_limit") ? (weekly_limit ?? null) : oldMember.weekly_limit,
             body.payment_changed ? (remaining_count ?? oldMember.remaining_count) : oldMember.remaining_count, finalStartDate, finalEndDate, finalStatus,
             memo ?? oldMember.memo, finalLockerNo, member_no ?? oldMember.member_no, finalGender,
             toDate(birth_date || oldMember.birth_date), emergency_contact ?? oldMember.emergency_contact,
