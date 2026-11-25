@@ -272,7 +272,7 @@ export default function MembersPage() {
       checkout_sms_enabled: m.checkout_sms_enabled || 0,
       has_uniform: m.has_uniform || 0,
       has_locker: m.has_locker || 0,
-      locker_end_date: m.locker_end_date?.slice(0, 10) || "",
+      locker_end_date: m.locker_end_date?.slice(0, 10) || m.end_date?.slice(0, 10) || "",
       // 최근 결제 채우기
       payment_amount: latestPayment ? String(latestPayment.final_amount) : "",
       payment_method_new: latestPayment?.payment_method || "CARD",
