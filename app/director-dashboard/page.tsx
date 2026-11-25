@@ -239,7 +239,7 @@ export default function DirectorDashboardPage() {
         .dir-two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-two-col { grid-template-columns:1fr; } }
         /* 출석 섹션: 최근입장(좁음) + 출석목록(넓음) */
-        .dir-att-col { display:grid; grid-template-columns:2fr 3fr; gap:14px; margin-bottom:14px; align-items:start; }
+        .dir-att-col { display:grid; grid-template-columns:3fr 2fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-att-col { grid-template-columns:1fr; } }
         /* 최근 입장 회원 카드 */
         .dir-latest-name { font-size:28px; font-weight:800; color:#0f2044; margin:4px 0; }
@@ -428,13 +428,42 @@ export default function DirectorDashboardPage() {
             const time = latest.checkin_time
               ? new Date(latest.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
               : "";
+            const remaining = latest.pass_type === "COUNT"
+              ? (latest.remaining_count != null ? `잔여 ${latest.remaining_count}회` : null)
+              : latest.end_date
+                ? `${latest.end_date.slice(0, 10)} 까지`
+                : null;
             return (
-              <div style={{ padding: "20px 20px 24px" }}>
-                <div style={{ fontSize: 11, color: "#10b981", fontWeight: 700, letterSpacing: ".06em", marginBottom: 4 }}>입장</div>
-                <div className="dir-latest-name">{latest.name}</div>
-                <div className="dir-latest-time">{time}</div>
-                {latest.product_name && <div className="dir-latest-product">{latest.product_name}</div>}
-                {latest.branch_name && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>{latest.branch_name}</div>}
+              <div style={{ padding: "24px 24px 28px" }}>
+                <div style={{ fontSize: 11, color: "#10b981", fontWeight: 700, letterSpacing: ".06em", marginBottom: 10 }}>최근 입장</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 4 }}>{latest.name}</div>
+                <div style={{ fontSize: 15, color: "#6b7280", marginBottom: 12 }}>{time}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {latest.product_name && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>이용권</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{latest.product_name}</span>
+                    </div>
+                  )}
+                  {remaining && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>{latest.pass_type === "COUNT" ? "잔여" : "만료"}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: latest.pass_type === "COUNT" && (latest.remaining_count ?? 0) <= 2 ? "#ef4444" : "#111827" }}>{remaining}</span>
+                    </div>
+                  )}
+                  {latest.phone && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>연락처</span>
+                      <span style={{ fontSize: 13, color: "#374151" }}>{latest.phone}</span>
+                    </div>
+                  )}
+                  {latest.branch_name && (
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>지점</span>
+                      <span style={{ fontSize: 13, color: "#374151" }}>{latest.branch_name}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })()}
@@ -456,7 +485,7 @@ export default function DirectorDashboardPage() {
           ) : attendance.length === 0 ? (
             <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 출석 없음</div>
           ) : (
-            <div style={{ maxHeight: 320, overflowY: "auto" }}>
+            <div style={{ maxHeight: 480, overflowY: "auto" }}>
               {attendance.map((a: any, i: number) => {
                 const time = a.checkin_time
                   ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
