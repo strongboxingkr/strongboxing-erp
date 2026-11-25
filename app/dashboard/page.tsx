@@ -220,7 +220,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 지점별 현황 + 확인할 일 */}
-      <div style={{ display: "grid", gridTemplateColumns: branch === "전체" && branchSales.length > 0 ? "1fr 280px" : "1fr", gap: 14, marginBottom: 14, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: branch === "전체" && branchSales.length > 0 ? "1fr 280px" : "1fr", gap: 14, marginBottom: 14, alignItems: "stretch" }}>
 
         {/* 지점별 현황 표 */}
         {branch === "전체" && branchSales.length > 0 && (
