@@ -190,9 +190,8 @@ export default function DirectorDashboardPage() {
         .dir-card-title { font-size:13px; font-weight:700; color:#111827; }
         .dir-card-sub { font-size:11px; color:#9ca3af; }
 
-        /* ── 6 KPI ── */
-        /* 매출 카드(처음 2개)에 더 넓은 공간 배정, 금액이 한 줄로 유지되도록 */
-        .dir-kpi6 { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; margin-bottom:14px; }
+        /* ── 5 KPI ── */
+        .dir-kpi6 { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; margin-bottom:14px; }
         @media(max-width:1100px){ .dir-kpi6 { grid-template-columns:repeat(3,1fr); } }
         @media(max-width:640px){  .dir-kpi6 { grid-template-columns:repeat(2,1fr); } }
         .dir-kpi-card { background:#fff; border:1px solid #e2e5eb; border-radius:10px; padding:16px 18px; box-shadow:0 1px 4px rgba(0,0,0,.06); min-width:0; }
@@ -219,9 +218,16 @@ export default function DirectorDashboardPage() {
         .resv-source { font-size:11px; color:#9ca3af; white-space:nowrap; }
         .resv-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; flex-shrink:0; }
 
-        /* ── 오늘 출석 / 공지·일정 ── */
+        /* ── 2열 그리드 ── */
         .dir-two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-two-col { grid-template-columns:1fr; } }
+        /* 출석 섹션: 최근입장(좁음) + 출석목록(넓음) */
+        .dir-att-col { display:grid; grid-template-columns:2fr 3fr; gap:14px; margin-bottom:14px; align-items:start; }
+        @media(max-width:720px){ .dir-att-col { grid-template-columns:1fr; } }
+        /* 최근 입장 회원 카드 */
+        .dir-latest-name { font-size:28px; font-weight:800; color:#0f2044; margin:4px 0; }
+        .dir-latest-time { font-size:14px; color:#9ca3af; }
+        .dir-latest-product { font-size:13px; color:#374151; margin-top:6px; }
         .dir-att-row { display:flex; justify-content:space-between; align-items:center; padding:9px 20px; border-bottom:1px solid #f3f4f6; font-size:13px; }
         .dir-att-row:last-child { border-bottom:none; }
         /* 공지·일정 카드 */
@@ -257,17 +263,12 @@ export default function DirectorDashboardPage() {
         <button className="dir-refresh-btn" onClick={() => loadData(user, selBranch)}>↻ 새로고침</button>
       </div>
 
-      {/* ── 6개 KPI ── */}
+      {/* ── 5개 KPI (이번달 매출 제거) ── */}
       <div className="dir-kpi6">
         <div className="dir-kpi-card main">
           <div className="dir-kpi-label">오늘 매출</div>
           <div className="dir-kpi-num lg">{loading ? "—" : money(summary?.today_sales)}</div>
           <div className="dir-kpi-sub">오늘 기준</div>
-        </div>
-        <div className="dir-kpi-card main">
-          <div className="dir-kpi-label">이번달 매출</div>
-          <div className="dir-kpi-num lg">{loading ? "—" : money(summary?.month_sales)}</div>
-          <div className="dir-kpi-sub">이번달 기준</div>
         </div>
         <div className="dir-kpi-card">
           <div className="dir-kpi-label">활성 회원</div>
@@ -291,111 +292,58 @@ export default function DirectorDashboardPage() {
         </div>
       </div>
 
-      {/* ── 오늘 예약 ── */}
-      <div className="dir-card">
-        <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="dir-dot" style={{ background: "#0f2044" }} />
-            <span className="dir-card-title">오늘 예약</span>
-            {reservations !== null && (
-              <span className="dir-card-sub">
-                {reservations.filter(r => !["CANCELLED","NOSHOW"].includes(r.status)).length}건 예정
-                {reservations.filter(r => ["CANCELLED","NOSHOW"].includes(r.status)).length > 0 &&
-                  ` · 취소/노쇼 ${reservations.filter(r => ["CANCELLED","NOSHOW"].includes(r.status)).length}건`}
-              </span>
-            )}
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <Link href="/naver-calendar" style={{ textDecoration: "none" }}>
-              <button className="dir-hdr-btn" style={{ border: "1px solid #0f2044", background: "#0f2044", color: "#fff" }}>
-                + 예약 등록
-              </button>
-            </Link>
-            <Link href="/naver-calendar" style={{ textDecoration: "none" }}>
-              <button className="dir-hdr-btn" style={{ border: "1px solid #e2e5eb", background: "#fff", color: "#374151" }}>
-                캘린더 보기
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {reservErr ? (
-          <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 13, color: "#dc2626" }}>예약 조회 실패</span>
-            <button
-              onClick={() => loadReservations(
-                isAdminOrOwner(user?.role)
-                  ? (selBranch !== "전체" ? selBranch : undefined)
-                  : user?.branch_name
-              )}
-              style={{ height: 28, padding: "0 10px", fontSize: 12, border: "1px solid #e2e5eb", borderRadius: 5, background: "#fff", cursor: "pointer" }}
-            >재시도</button>
-          </div>
-        ) : reservations === null ? (
-          <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>불러오는 중...</div>
-        ) : reservations.length === 0 ? (
-          <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 예정된 예약이 없습니다</div>
-        ) : (
-          reservations.map((r: any) => {
-            const st = STATUS_STYLE[r.status] || { bg: "#f3f4f6", color: "#6b7280", label: r.status };
-            const isClosed = r.status === "CANCELLED" || r.status === "NOSHOW";
-            return (
-              <Link key={r.reservation_id} href={`/naver-calendar?id=${r.reservation_id}`} style={{ textDecoration: "none" }}>
-                <div className="resv-row" style={{ opacity: isClosed ? 0.5 : 1 }}>
-                  <span className="resv-time">{(r.reservation_time || "").slice(0, 5)}</span>
-                  <span className="resv-name">{r.customer_name}</span>
-                  <span className="resv-product">{r.reservation_product || "—"}</span>
-                  {r.source_type && (
-                    <span className="resv-source">
-                      {r.source_type === "NAVER" ? "네이버" : r.source_type === "MANUAL" ? "수동" : r.source_type}
-                    </span>
-                  )}
-                  <span className="resv-badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                </div>
-              </Link>
-            );
-          })
-        )}
-      </div>
-
-      {/* ── 오늘 출석 + 전체 지점 출석 ── */}
+      {/* ── 예약 현황 + 공지·일정 나란히 ── */}
       <div className="dir-two-col">
+        {/* 예약 현황 */}
         <div className="dir-card" style={{ marginBottom: 0 }}>
           <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div className="dir-dot" style={{ background: "#0f2044" }} />
-              <span className="dir-card-title">오늘 출석</span>
-              <span className="dir-card-sub">총 {attendance.length}명</span>
-            </div>
-            <Link href="/attendance-monitor" style={{ fontSize: 12, color: "#1d4ed8", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
-              전체 보기 →
-            </Link>
-          </div>
-          {loading ? (
-            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
-          ) : attendance.length === 0 ? (
-            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 출석 없음</div>
-          ) : (
-            <>
-              {attendance.slice(0, 5).map((a: any, i: number) => (
-                <div key={i} className="dir-att-row">
-                  <span style={{ fontWeight: 600, color: "#111827" }}>{a.name}</span>
-                  <span style={{ color: "#9ca3af", fontSize: 12 }}>
-                    {a.checkin_time
-                      ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
-                      : ""}
-                  </span>
-                </div>
-              ))}
-              {attendance.length > 5 && (
-                <div style={{ padding: "8px 20px", fontSize: 12, color: "#9ca3af", borderTop: "1px solid #f3f4f6" }}>
-                  외 {attendance.length - 5}명 — <Link href="/attendance-monitor" style={{ color: "#1d4ed8", fontWeight: 600 }}>전체 보기</Link>
-                </div>
+              <span className="dir-card-title">오늘 예약</span>
+              {reservations !== null && (
+                <span className="dir-card-sub">
+                  {reservations.filter(r => !["CANCELLED","NOSHOW"].includes(r.status)).length}건 예정
+                </span>
               )}
-            </>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <Link href="/naver-calendar" style={{ textDecoration: "none" }}>
+                <button className="dir-hdr-btn" style={{ border: "1px solid #0f2044", background: "#0f2044", color: "#fff" }}>+ 예약 등록</button>
+              </Link>
+              <Link href="/naver-calendar" style={{ textDecoration: "none" }}>
+                <button className="dir-hdr-btn" style={{ border: "1px solid #e2e5eb", background: "#fff", color: "#374151" }}>캘린더</button>
+              </Link>
+            </div>
+          </div>
+          {reservErr ? (
+            <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13, color: "#dc2626" }}>예약 조회 실패</span>
+              <button onClick={() => loadReservations(isAdminOrOwner(user?.role) ? (selBranch !== "전체" ? selBranch : undefined) : user?.branch_name)}
+                style={{ height: 28, padding: "0 10px", fontSize: 12, border: "1px solid #e2e5eb", borderRadius: 5, background: "#fff", cursor: "pointer" }}>재시도</button>
+            </div>
+          ) : reservations === null ? (
+            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>불러오는 중...</div>
+          ) : reservations.length === 0 ? (
+            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 예정된 예약이 없습니다</div>
+          ) : (
+            reservations.slice(0, 5).map((r: any) => {
+              const st = STATUS_STYLE[r.status] || { bg: "#f3f4f6", color: "#6b7280", label: r.status };
+              const isClosed = r.status === "CANCELLED" || r.status === "NOSHOW";
+              return (
+                <Link key={r.reservation_id} href={`/naver-calendar?id=${r.reservation_id}`} style={{ textDecoration: "none" }}>
+                  <div className="resv-row" style={{ opacity: isClosed ? 0.5 : 1 }}>
+                    <span className="resv-time">{(r.reservation_time || "").slice(0, 5)}</span>
+                    <span className="resv-name">{r.customer_name}</span>
+                    <span className="resv-product">{r.reservation_product || "—"}</span>
+                    <span className="resv-badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                  </div>
+                </Link>
+              );
+            })
           )}
         </div>
 
+        {/* 공지·일정 */}
         <div className="dir-card" style={{ marginBottom: 0 }}>
           <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -442,6 +390,70 @@ export default function DirectorDashboardPage() {
                 );
               })}
             </>
+          )}
+        </div>
+      </div>
+
+      {/* ── 최근 입장 회원 (좁음) + 오늘 출석 목록 (넓음) ── */}
+      <div className="dir-att-col">
+        {/* 최근 입장 회원 */}
+        <div className="dir-card" style={{ marginBottom: 0 }}>
+          <div className="dir-card-header">
+            <div className="dir-dot" style={{ background: "#10b981" }} />
+            <span className="dir-card-title">최근 입장</span>
+          </div>
+          {loading ? (
+            <div style={{ padding: "24px 20px", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
+          ) : attendance.length === 0 ? (
+            <div style={{ padding: "24px 20px", color: "#9ca3af", fontSize: 13, textAlign: "center" }}>아직 입장 없음</div>
+          ) : (() => {
+            const latest = attendance[0];
+            const time = latest.checkin_time
+              ? new Date(latest.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
+              : "";
+            return (
+              <div style={{ padding: "20px 20px 24px" }}>
+                <div style={{ fontSize: 11, color: "#10b981", fontWeight: 700, letterSpacing: ".06em", marginBottom: 4 }}>입장</div>
+                <div className="dir-latest-name">{latest.name}</div>
+                <div className="dir-latest-time">{time}</div>
+                {latest.product_name && <div className="dir-latest-product">{latest.product_name}</div>}
+                {latest.branch_name && <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>{latest.branch_name}</div>}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* 오늘 출석 전체 목록 */}
+        <div className="dir-card" style={{ marginBottom: 0 }}>
+          <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="dir-dot" style={{ background: "#0f2044" }} />
+              <span className="dir-card-title">오늘 출석</span>
+              <span className="dir-card-sub">총 {attendance.length}명</span>
+            </div>
+            <button className="dir-hdr-btn" style={{ border: "1px solid #e2e5eb", background: "#fff", color: "#374151" }}
+              onClick={() => loadData(user, selBranch)}>↻ 갱신</button>
+          </div>
+          {loading ? (
+            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>로딩 중...</div>
+          ) : attendance.length === 0 ? (
+            <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 출석 없음</div>
+          ) : (
+            <div style={{ maxHeight: 320, overflowY: "auto" }}>
+              {attendance.map((a: any, i: number) => {
+                const time = a.checkin_time
+                  ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
+                  : "";
+                return (
+                  <div key={i} className="dir-att-row">
+                    <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 20, textAlign: "right" }}>{i + 1}</span>
+                    <span style={{ fontWeight: 600, color: "#111827", flex: 1 }}>{a.name}</span>
+                    {a.branch_name && <span style={{ fontSize: 11, color: "#9ca3af" }}>{a.branch_name}</span>}
+                    <span style={{ color: "#6b7280", fontSize: 12, minWidth: 44, textAlign: "right" }}>{time}</span>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

@@ -267,19 +267,6 @@ export default function AppShell({
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
-              className="btn secondary"
-              onClick={() => {
-                window.open(
-                  "/attendance-monitor",
-                  "strong-monitor",
-                  "width=1400,height=900,menubar=no,toolbar=no,location=no,status=no"
-                );
-              }}
-            >
-              출석 모니터
-            </button>
-
-            <button
               className="btn"
               onClick={() => {
                 window.open(
