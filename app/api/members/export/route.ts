@@ -15,8 +15,8 @@ export async function GET(req: Request) {
       SELECT
         m.member_id, m.name, m.phone, m.birth_date, m.gender, m.address,
         m.product_name, m.start_date, m.end_date, m.remaining_count,
-        m.status, m.locker_no, m.uniform_yn, m.member_no, m.staff_name,
-        m.memo, m.join_date, m.sms_checkin, m.branch_name,
+        m.status, m.locker_no, m.has_uniform, m.member_no, m.staff_name,
+        m.memo, m.join_date, m.attendance_sms_enabled, m.branch_name,
         (SELECT MAX(a.checkin_time) FROM attendance a WHERE a.member_id = m.member_id AND a.result = 'SUCCESS') AS last_visit
       FROM members m
       WHERE 1=1
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
         상태: m.status || "",
         잔여일: remainDays,
         잔여횟수: m.remaining_count != null ? String(m.remaining_count) : "",
-        옷: m.uniform_yn === 1 || m.uniform_yn === "1" || m.uniform_yn === true ? "O" : "X",
+        옷: m.has_uniform === 1 || m.has_uniform === "1" || m.has_uniform === true ? "O" : "X",
         락카: m.locker_no || "X",
         "NO ": "",
         회원번호: m.member_no || m.phone?.slice(-4) || "",
@@ -75,7 +75,7 @@ export async function GET(req: Request) {
         등록: "",
         가입일: m.join_date ? String(m.join_date).slice(0, 10) : "",
         구분: "",
-        문자수신: m.sms_checkin ? "1" : "0",
+        문자수신: m.attendance_sms_enabled ? "1" : "0",
       };
     });
 
