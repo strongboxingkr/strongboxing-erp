@@ -20,7 +20,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "권한이 없습니다." }, { status: 403 });
     }
 
-    await pool.query(`DELETE FROM members WHERE member_id = ?`, [member_id]);
+    const conn = await (pool as any).getConnection();
+    try {
+      await conn.beginTransaction();
+      await conn.query(`DELETE FROM attendance WHERE member_id = ?`, [member_id]);
+      await conn.query(`DELETE FROM payments WHERE member_id = ?`, [member_id]);
+      await conn.query(`DELETE FROM member_histories WHERE member_id = ?`, [member_id]);
+      await conn.query(`DELETE FROM member_holds WHERE member_id = ?`, [member_id]);
+      await conn.query(`DELETE FROM members WHERE member_id = ?`, [member_id]);
+      await conn.commit();
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
 
     return NextResponse.json({
       success: true,
