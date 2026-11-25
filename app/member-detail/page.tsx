@@ -510,7 +510,7 @@ export default function MemberDetailPage() {
   const [editForm, setEditForm] = useState<any>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [showReregModal, setShowReregModal] = useState(false);
-  const [reregForm, setReregForm] = useState<any>({ product_name: "", final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), start_date: "", end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
+  const [reregForm, setReregForm] = useState<any>({ product_name: "", weekly_limit: null as number | null, final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), start_date: "", end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [holdForm, setHoldForm] = useState({ hold_start: "", hold_end: "", reason: "" });
   const [holdSaving, setHoldSaving] = useState(false);
@@ -874,7 +874,7 @@ export default function MemberDetailPage() {
                 <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30 }}
                   onClick={() => {
                     const m = data.member;
-                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", checkin_code: m.checkin_code || "", member_no: m.member_no || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_no || "", coach_name: m.staff_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.checkin_sms_enabled ?? m.attendance_sms_enabled ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_uniform ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || "", notes: m.memo || "" });
+                    setEditForm({ branch_name: m.branch_name || "", name: m.name || "", phone: m.phone || "", checkin_code: m.checkin_code || "", member_no: m.member_no || "", gender: m.gender || "", birth_date: m.birth_date?.slice(0,10) || "", locker_number: m.locker_no || "", coach_name: m.staff_name || "", product_name: m.product_name || "", pass_type: m.pass_type || "PERIOD", weekly_limit: m.weekly_limit ?? null, start_date: m.start_date?.slice(0,10) || "", end_date: m.end_date?.slice(0,10) || "", remaining_count: m.remaining_count ?? 0, has_sms: m.checkin_sms_enabled ?? m.attendance_sms_enabled ?? 0, has_exit_sms: m.has_exit_sms ?? 0, has_sportswear: m.has_uniform ?? 0, has_locker: m.has_locker ?? 0, locker_end_date: m.locker_end_date?.slice(0,10) || m.end_date?.slice(0,10) || "", notes: m.memo || "" });
                     setShowEditModal(true);
                   }}>회원정보 수정</button>
               </div>
@@ -1404,12 +1404,25 @@ export default function MemberDetailPage() {
               <button onClick={() => setShowReregModal(false)} style={{ background: "none", border: "none", fontSize: 20, color: "#9ca3af", cursor: "pointer" }}>✕</button>
             </div>
             <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14, overflowY: "auto", flex: 1 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>상품 선택 <span style={{ color: "#dc2626" }}>*</span></div>
-                <select className="input" value={reregForm.product_name} onChange={e => setReregForm({ ...reregForm, product_name: e.target.value })}>
-                  <option value="">상품 선택</option>
-                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
-                </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>프로그램 <span style={{ color: "#dc2626" }}>*</span></div>
+                  <select className="input" value={reregForm.product_name} onChange={e => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                    <option value="">선택</option>
+                    {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>주N회 제한</div>
+                  <select className="input" value={reregForm.weekly_limit ?? ""} onChange={e => setReregForm({ ...reregForm, weekly_limit: e.target.value === "" ? null : Number(e.target.value) })}>
+                    <option value="">무제한</option>
+                    <option value="1">주1회</option>
+                    <option value="2">주2회</option>
+                    <option value="3">주3회</option>
+                    <option value="4">주4회</option>
+                    <option value="5">주5회</option>
+                  </select>
+                </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
@@ -1506,6 +1519,7 @@ export default function MemberDetailPage() {
                   start_date: reregForm.start_date || reregForm.payment_date,
                   payment_method: reregForm.payment_method,
                   product_name: reregForm.product_name,
+                  weekly_limit: reregForm.weekly_limit,
                   amount: Number(reregForm.final_amount),
                   discount_amount: 0,
                   final_amount: Number(reregForm.final_amount),
@@ -1627,14 +1641,30 @@ export default function MemberDetailPage() {
             {/* 회원권 정보 */}
             <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>회원권 정보</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
-              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>회원권</div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>프로그램</div>
                 <select className="input" value={editForm.product_name} onChange={e => {
                   const name = e.target.value;
-                  const passType = name.includes("일일권") ? "DAILY" : name.includes("횟수") || name.includes("회권") ? "COUNT" : "PERIOD";
+                  const prod = products.find((p: any) => p.option_name === name);
+                  const passType = prod?.option_value === "DAILY" ? "DAILY" : editForm.weekly_limit != null ? "COUNT" : "PERIOD";
                   setEditForm({...editForm, product_name: name, pass_type: passType});
                 }}>
                   <option value="">선택</option>
-                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                  {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                </select>
+              </div>
+              <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>주N회 제한</div>
+                <select className="input" value={editForm.weekly_limit ?? ""} onChange={e => {
+                  const val = e.target.value === "" ? null : Number(e.target.value);
+                  const prod = products.find((p: any) => p.option_name === editForm.product_name);
+                  const passType = prod?.option_value === "DAILY" ? "DAILY" : val != null ? "COUNT" : "PERIOD";
+                  setEditForm({...editForm, weekly_limit: val, pass_type: passType});
+                }}>
+                  <option value="">무제한</option>
+                  <option value="1">주1회</option>
+                  <option value="2">주2회</option>
+                  <option value="3">주3회</option>
+                  <option value="4">주4회</option>
+                  <option value="5">주5회</option>
                 </select>
               </div>
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>시작일</div>
@@ -1694,6 +1724,7 @@ export default function MemberDetailPage() {
                   staff_name: editForm.coach_name,
                   product_name: editForm.product_name,
                   pass_type: editForm.pass_type,
+                  weekly_limit: editForm.weekly_limit,
                   start_date: editForm.start_date,
                   end_date: editForm.end_date,
                   remaining_count: editForm.remaining_count,

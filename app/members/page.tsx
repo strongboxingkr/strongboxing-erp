@@ -101,13 +101,14 @@ export default function MembersPage() {
   });
 
   const [reregForm, setReregForm] = useState<{
-    product_name: string; payment_date: string; start_date: string;
+    product_name: string; weekly_limit: number | null; payment_date: string; start_date: string;
     payment_method: string; amount: string; discount_amount: string;
     final_amount: string; memo: string;
     extend_locker?: boolean; locker_end_date?: string;
     use_date?: string; end_date?: string;
   }>({
     product_name: "",
+    weekly_limit: null,
     payment_date: today,
     start_date: today,
     payment_method: "CARD",
@@ -508,6 +509,7 @@ export default function MembersPage() {
       end_date: endDate || null,
       payment_method: reregForm.payment_method,
       product_name: reregForm.product_name,
+      weekly_limit: reregForm.weekly_limit,
       amount: Number(reregForm.amount) || Number(reregForm.final_amount),
       discount_amount: Number(reregForm.discount_amount) || 0,
       final_amount: Number(reregForm.final_amount),
@@ -1211,15 +1213,28 @@ ${
             {/* 폼 본문 */}
             <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", flex: 1 }}>
 
-              {/* 상품 선택 — 전체 너비 */}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>상품 선택 <span style={{ color: "#dc2626" }}>*</span></div>
-                <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
-                  <option value="">상품 선택</option>
-                  {products.map((p: any) => (
-                    <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
-                  ))}
-                </select>
+              {/* 프로그램 + 주N회 — 2열 그리드 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>프로그램 <span style={{ color: "#dc2626" }}>*</span></div>
+                  <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                    <option value="">선택</option>
+                    {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => (
+                      <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>주N회 제한</div>
+                  <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.weekly_limit ?? ""} onChange={e => setReregForm({ ...reregForm, weekly_limit: e.target.value === "" ? null : Number(e.target.value) })}>
+                    <option value="">무제한</option>
+                    <option value="1">주1회</option>
+                    <option value="2">주2회</option>
+                    <option value="3">주3회</option>
+                    <option value="4">주4회</option>
+                    <option value="5">주5회</option>
+                  </select>
+                </div>
               </div>
 
               {/* 시작일 / 결제일 */}

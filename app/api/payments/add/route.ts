@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       idempotency_key, // 클라이언트 발급 UUID (선택)
       extend_locker,   // true: 라커 종료일을 회원권 종료일에 맞춰 갱신 (회원에게 라커가 있을 때만)
       locker_end_date, // 별도 라커 종료일 지정 시 사용; 없으면 계산된 end_date 사용
+      weekly_limit,    // 주N회 제한 (null=무제한)
     } = body;
 
     if (!member_id) {
@@ -315,13 +316,16 @@ export async function POST(req: Request) {
           [payRes.insertId]
         );
 
-        await conn.query(
-          `UPDATE members
-           SET product_name = ?, pass_type = ?, remaining_count = ?,
-               start_date = ?, end_date = ?, status = 'ACTIVE'
-           WHERE member_id = ?`,
-          [product_name, pass_type, remaining_count, start_date, end_date, member_id]
-        );
+        const wkLimit = Object.prototype.hasOwnProperty.call(body, "weekly_limit") ? (weekly_limit ?? null) : undefined;
+        const memberUpdateParams: any[] = [product_name, pass_type];
+        let memberUpdateSql = `UPDATE members SET product_name = ?, pass_type = ?`;
+        if (wkLimit !== undefined) {
+          memberUpdateSql += `, weekly_limit = ?`;
+          memberUpdateParams.push(wkLimit);
+        }
+        memberUpdateSql += `, remaining_count = ?, start_date = ?, end_date = ?, status = 'ACTIVE' WHERE member_id = ?`;
+        memberUpdateParams.push(remaining_count, start_date, end_date, member_id);
+        await conn.query(memberUpdateSql, memberUpdateParams);
 
         // 라커 기간 연장: extend_locker=true 이고 회원에게 라커가 있을 때만
         // 임의 배정·이용료 임의 생성 없음; 종료일만 갱신
