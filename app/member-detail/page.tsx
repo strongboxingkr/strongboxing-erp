@@ -1332,7 +1332,7 @@ export default function MemberDetailPage() {
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn" disabled={editSaving} onClick={async () => {
                 setEditSaving(true);
-                const res = await apiFetch("/api/members/edit", { method: "POST", body: JSON.stringify({ ...editForm, member_id: data.member.member_id }) });
+                const res = await apiFetch("/api/members/update", { method: "POST", body: JSON.stringify({ ...editForm, member_id: data.member.member_id, payment_changed: false }) });
                 const json = await res.json();
                 setEditSaving(false);
                 if (json.success) { setShowEditModal(false); location.reload(); }
