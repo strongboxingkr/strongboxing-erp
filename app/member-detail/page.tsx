@@ -219,16 +219,14 @@ function AttendanceCalendar({
         Object.entries(grouped)
           .sort(([a], [b]) => b.localeCompare(a))
           .forEach(([dateStr, { ins, outs }]) => {
-            const max = Math.max(ins.length, outs.length) || 1;
-            for (let i = 0; i < max; i++) {
-              const inRec = ins[i];
-              const outRec = outs[i];
-              rows.push({
-                dateStr,
-                inTime: inRec ? new Date(inRec.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "—",
-                outTime: outRec ? new Date(outRec.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "—",
-              });
-            }
+            // 입장은 첫 번째, 퇴장은 마지막 1개만 표시 (중복 방지)
+            const inRec = ins[0];
+            const outRec = outs[outs.length - 1];
+            rows.push({
+              dateStr,
+              inTime: inRec ? new Date(inRec.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "—",
+              outTime: outRec ? new Date(outRec.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "—",
+            });
           });
 
         return (
