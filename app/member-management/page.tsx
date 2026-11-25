@@ -96,7 +96,7 @@ function MemberManagementInner() {
         r.pass_type === "DATE" &&
         r.end_date &&
         r.end_date.slice(0, 10) >= todayStr &&
-        r.end_date.slice(0, 10) <= limitDateStr
+        (expiryDays === 0 ? r.end_date.slice(0, 10) === todayStr : r.end_date.slice(0, 10) <= limitDateStr)
       );
     } else if (tab === "횟수 부족") {
       filtered = all.filter(r =>
@@ -199,29 +199,31 @@ function MemberManagementInner() {
       </div>
 
       {/* 조회 기준 필터 */}
-      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", marginBottom: 10, padding: "8px 12px", background: "#f8faff", border: "1px solid #e2e5eb", borderRadius: 8, fontSize: 13 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ color: "#6b7280", whiteSpace: "nowrap" }}>기간권 만료</span>
-          <select
-            value={expiryDays}
-            onChange={e => setExpiryDays(Number(e.target.value))}
-            style={{ height: 30, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, background: "#fff" }}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 10, padding: "10px 12px", background: "#f8faff", border: "1px solid #e2e5eb", borderRadius: 8, fontSize: 13 }}>
+        <span style={{ color: "#6b7280", whiteSpace: "nowrap", fontWeight: 600 }}>기간권 만료</span>
+        {[0, 3, 7, 10, 14, 20, 30].map(d => (
+          <button key={d}
+            onClick={() => setExpiryDays(d === 0 ? 0 : d)}
+            style={{
+              height: 30, padding: "0 11px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              background: expiryDays === (d === 0 ? 0 : d) ? "#0f2044" : "#fff",
+              color: expiryDays === (d === 0 ? 0 : d) ? "#fff" : "#374151",
+              border: expiryDays === (d === 0 ? 0 : d) ? "1px solid #0f2044" : "1px solid #d1d5db",
+            }}
           >
-            {[1, 3, 7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d}일 이내</option>)}
-          </select>
-        </div>
-        <div style={{ width: 1, height: 20, background: "#e2e5eb" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ color: "#6b7280", whiteSpace: "nowrap" }}>횟수권 잔여</span>
-          <select
-            value={countThreshold}
-            onChange={e => setCountThreshold(Number(e.target.value))}
-            style={{ height: 30, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, background: "#fff" }}
-          >
-            {[1, 2, 3, 5, 10].map(n => <option key={n} value={n}>{n}회 이하</option>)}
-          </select>
-        </div>
-        <span style={{ color: "#9ca3af", fontSize: 12 }}>휴회·삭제·미래 시작 회원 제외</span>
+            {d === 0 ? "오늘" : `${d}일`}
+          </button>
+        ))}
+        <div style={{ width: 1, height: 20, background: "#e2e5eb", margin: "0 4px" }} />
+        <span style={{ color: "#6b7280", whiteSpace: "nowrap", fontWeight: 600 }}>횟수권 잔여</span>
+        <select
+          value={countThreshold}
+          onChange={e => setCountThreshold(Number(e.target.value))}
+          style={{ height: 30, padding: "0 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, background: "#fff" }}
+        >
+          {[1, 2, 3, 5, 10].map(n => <option key={n} value={n}>{n}회 이하</option>)}
+        </select>
+        <span style={{ color: "#9ca3af", fontSize: 12, marginLeft: 4 }}>휴회·삭제·미래 시작 회원 제외</span>
       </div>
 
       {/* 탭 + 목록 */}
@@ -277,10 +279,14 @@ function MemberManagementInner() {
                       </span>
                     </td>
                     <td>
-                      <button className="mm-detail-btn"
-                        onClick={() => setModalRow(r)}>
-                        상세
-                      </button>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <a href={`/member-detail?member_id=${r.member_id}&tab=PAY`} style={{ textDecoration: "none" }}>
+                          <button style={{ height: 28, padding: "0 10px", fontSize: 12, fontWeight: 700, border: "1px solid #dc2626", borderRadius: 5, background: "#fff", color: "#dc2626", cursor: "pointer" }}>
+                            재등록
+                          </button>
+                        </a>
+                        <button className="mm-detail-btn" onClick={() => setModalRow(r)}>상세</button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -339,6 +345,9 @@ function MemberManagementInner() {
               </div>
               <div className="mm-modal-footer">
                 <button className="btn secondary" style={{ height: 34, fontSize: 13, padding: "0 14px" }} onClick={() => setModalRow(null)}>닫기</button>
+                <a href={`/member-detail?member_id=${r.member_id}&tab=PAY`} style={{ textDecoration: "none" }}>
+                  <button style={{ height: 34, fontSize: 13, padding: "0 14px", fontWeight: 700, border: "1px solid #dc2626", borderRadius: 7, background: "#fff", color: "#dc2626", cursor: "pointer" }}>재등록</button>
+                </a>
                 <a href={`/members?member_id=${r.member_id}`} style={{ textDecoration: "none" }}>
                   <button className="btn" style={{ height: 34, fontSize: 13, padding: "0 14px" }}>회원 수정</button>
                 </a>
