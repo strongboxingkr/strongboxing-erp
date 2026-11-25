@@ -22,6 +22,14 @@ export async function GET(req: Request) {
     let typeClause = "";
     let dateClause = "AND DATE(created_at) = CURDATE()";
 
+    // dateClause params first (matches SQL order: date → branch → type)
+    if (dateFrom && dateTo) {
+      dateClause = "AND DATE(created_at) BETWEEN ? AND ?";
+      params.push(dateFrom, dateTo);
+    } else if (dateFrom) {
+      dateClause = "AND DATE(created_at) >= ?";
+      params.push(dateFrom);
+    }
     if (branch) {
       branchClause = "AND branch_name = ?";
       params.push(branch);
@@ -33,13 +41,6 @@ export async function GET(req: Request) {
         typeClause = "AND target_type = ?";
         params.push(targetType);
       }
-    }
-    if (dateFrom && dateTo) {
-      dateClause = "AND DATE(created_at) BETWEEN ? AND ?";
-      params.push(dateFrom, dateTo);
-    } else if (dateFrom) {
-      dateClause = "AND DATE(created_at) >= ?";
-      params.push(dateFrom);
     }
 
     const [rows]: any = await pool.query(`
