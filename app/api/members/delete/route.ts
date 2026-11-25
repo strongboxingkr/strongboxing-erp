@@ -20,14 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: "권한이 없습니다." }, { status: 403 });
     }
 
-    await pool.query(
-      `
-      UPDATE members
-      SET status = 'DELETED'
-      WHERE member_id = ?
-      `,
-      [member_id]
-    );
+    await pool.query(`DELETE FROM members WHERE member_id = ?`, [member_id]);
 
     return NextResponse.json({
       success: true,
