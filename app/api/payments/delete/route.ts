@@ -165,7 +165,6 @@ export async function DELETE(req: Request) {
             `UPDATE members
              SET status = 'EXPIRED',
                  product_name = NULL,
-                 pass_type = NULL,
                  remaining_count = 0,
                  start_date = NULL,
                  end_date = NULL
