@@ -10,11 +10,20 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const branch_name = searchParams.get("branch_name") || user.branch_name || "";
+    const member_id = searchParams.get("member_id");
 
-    const [rows]: any = await pool.query(
-      `SELECT * FROM lockers WHERE branch_name = ? ORDER BY locker_zone, locker_no`,
-      [branch_name]
-    );
+    let rows: any[];
+    if (member_id) {
+      [rows] = await pool.query(
+        `SELECT * FROM lockers WHERE member_id = ? ORDER BY locker_zone, locker_no`,
+        [member_id]
+      ) as any;
+    } else {
+      [rows] = await pool.query(
+        `SELECT * FROM lockers WHERE branch_name = ? ORDER BY locker_zone, locker_no`,
+        [branch_name]
+      ) as any;
+    }
 
     return NextResponse.json({ success: true, rows });
   } catch (error) {

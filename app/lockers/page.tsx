@@ -15,6 +15,7 @@ export default function LockersPage() {
   const [modal, setModal] = useState<any>(null);
   const [form, setForm] = useState({ member_name: "", gender: "", start_date: "", end_date: "", memo: "", has_luggage: 0 });
   const [zoneForm, setZoneForm] = useState({ zone_name: "", start_no: "", end_no: "", sort_order: "0", cols: "10" });
+  const [gridZoom, setGridZoom] = useState<"compact" | "normal" | "large">("normal");
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
@@ -146,7 +147,7 @@ export default function LockersPage() {
   return (
     <AppShell title="락커 관리">
       {/* 상단 필터 */}
-      <div className="card" style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="card" style={{ marginBottom: 10, padding: "10px 16px", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
         {(user?.role === "ADMIN" || user?.role === "OWNER") && (
           <select className="input" style={{ width: 140 }} value={branch} onChange={(e) => { setBranch(e.target.value); setSelectedZone(null); }}>
             <option value="">지점 선택</option>
@@ -176,6 +177,25 @@ export default function LockersPage() {
                 <span style={{ fontSize: 13, color: "var(--muted)" }}>
                   사용중 <strong style={{ color: "var(--accent)" }}>{usedCount}</strong> / {zoneNumbers.length}
                 </span>
+              )}
+              {tab === "grid" && (
+                <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
+                  {(["compact", "normal", "large"] as const).map((s, i) => (
+                    <button
+                      key={s}
+                      onClick={() => setGridZoom(s)}
+                      style={{
+                        padding: "4px 10px", fontSize: 12, border: "none", cursor: "pointer",
+                        borderLeft: i > 0 ? "1px solid var(--line)" : "none",
+                        background: gridZoom === s ? "var(--accent)" : "var(--bg)",
+                        color: gridZoom === s ? "#fff" : "var(--muted)",
+                        fontWeight: gridZoom === s ? 700 : 400,
+                      }}
+                    >
+                      {s === "compact" ? "축소" : s === "normal" ? "기본" : "확대"}
+                    </button>
+                  ))}
+                </div>
               )}
               {isAdmin && (
                 <button
@@ -296,7 +316,10 @@ export default function LockersPage() {
 
       {/* 락커 그리드 - 전체 구역 한 화면에 */}
       {tab === "grid" && branch && zones.length > 0 && (
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <div style={{
+          display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-start",
+          zoom: gridZoom === "compact" ? 0.82 : gridZoom === "large" ? 1.1 : 1,
+        }}>
           {zones.map((zone) => {
             const total = zone.end_no - zone.start_no + 1;
             const COLS = zone.cols || 10;
@@ -316,17 +339,17 @@ export default function LockersPage() {
             });
             const zoneUsed = lockers.filter((l) => l.locker_zone === zone.zone_name && l.member_name).length;
             return (
-              <div key={zone.zone_id} style={{ flex: "1 1 400px", minWidth: 340 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <div style={{ fontWeight: 900, fontSize: 18, background: "var(--accent)", color: "#fff", width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div key={zone.zone_id} style={{ flex: "1 1 360px", minWidth: 300 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 900, fontSize: 15, background: "var(--accent)", color: "#fff", width: 26, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {zone.zone_name.charAt(0)}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{zone.zone_name}</div>
-                    <div style={{ fontSize: 12, color: "var(--muted)" }}>사용 {zoneUsed} / {nums.length}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{zone.zone_name}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>사용 {zoneUsed} / {nums.length}</div>
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: 6 }}>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, 1fr)`, gap: 4 }}>
                   {nums.map((no, idx) => {
                     if (no === null) return <div key={`empty-${idx}`} />;
                     const locker = getLocker(no, zone.zone_name);
@@ -341,23 +364,23 @@ export default function LockersPage() {
                         key={no}
                         onClick={() => { setSelectedZone(zone); openModal(no); }}
                         style={{
-                          padding: "10px 6px",
-                          borderRadius: 8,
+                          padding: "7px 4px",
+                          borderRadius: 6,
                           cursor: "pointer",
                           border: `2px solid ${borderColor}`,
                           background: bgColor,
                           textAlign: "center",
-                          minHeight: 72,
+                          minHeight: 60,
                           transition: "transform 0.1s",
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
                         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       >
-                        <div style={{ fontSize: 14, fontWeight: 900, color: textColor }}>{no}</div>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: textColor }}>{no}</div>
                         {used && (
                           <>
-                            <div style={{ fontSize: 10, fontWeight: 700, marginTop: 3, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locker.member_name}</div>
-                            <div style={{ fontSize: 9, color: hasLuggage ? "#ec4899" : expired ? "#ef4444" : "var(--muted)", marginTop: 1 }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, marginTop: 2, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locker.member_name}</div>
+                            <div style={{ fontSize: 8, color: hasLuggage ? "#ec4899" : expired ? "#ef4444" : "var(--muted)", marginTop: 1 }}>
                               {locker.end_date?.slice(0, 10)}
                             </div>
                           </>
@@ -419,9 +442,14 @@ export default function LockersPage() {
                 </label>
               )}
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+            <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
               {modal.existing?.member_name && (
-                <button className="btn secondary" style={{ color: "#ef4444" }} onClick={release}>비우기</button>
+                <button className="btn secondary" style={{ color: "#ef4444", border: "1px solid #fca5a5" }} onClick={release}>락커 빼기</button>
+              )}
+              {modal.existing?.member_id && (
+                <a href={`/member-detail?member_id=${modal.existing.member_id}`} target="_blank" style={{ textDecoration: "none" }}>
+                  <button className="btn secondary" style={{ color: "#2563eb", border: "1px solid #bfdbfe" }}>회원정보 보기</button>
+                </a>
               )}
               <button className="btn secondary" style={{ marginLeft: "auto" }} onClick={() => setModal(null)}>취소</button>
               <button className="btn" onClick={assign}>저장</button>

@@ -21,6 +21,7 @@ function AttendanceCalendar({
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-based
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"month" | "year">("month");
 
   // 날짜별 출석 맵
   const byDate: Record<string, any[]> = {};
@@ -68,9 +69,67 @@ function AttendanceCalendar({
           </span>
           <button onClick={nextMonth} style={btnStyle}>›</button>
         </div>
-        <span style={{ fontSize: 13, color: "#6b7280" }}>이번 달 출석 <strong style={{ color: "#2563eb" }}>{monthTotal}</strong>회</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, color: "#6b7280" }}>
+            {viewMode === "month" ? <>이번 달 출석 <strong style={{ color: "#2563eb" }}>{monthTotal}</strong>회</> : <>{year}년 총 출석 <strong style={{ color: "#2563eb" }}>{Object.entries(byDate).filter(([d]) => d.startsWith(`${year}-`)).reduce((s, [, arr]) => s + arr.filter((c: any) => c.result === "SUCCESS").length, 0)}</strong>회</>}
+          </span>
+          <button onClick={() => setViewMode(v => v === "month" ? "year" : "month")}
+            style={{ fontSize: 11, padding: "2px 8px", border: "1px solid #d1d5db", borderRadius: 5, background: "#fff", cursor: "pointer", color: "#374151" }}>
+            {viewMode === "month" ? "연간 뷰" : "월별 뷰"}
+          </button>
+        </div>
       </div>
 
+      {/* 연간 뷰 */}
+      {viewMode === "year" && (
+        <div style={{ padding: "14px 16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+            {Array.from({ length: 12 }, (_, mi) => {
+              const prefix = `${year}-${pad(mi + 1)}`;
+              const monthDays: Record<number, number> = {};
+              Object.entries(byDate).filter(([d]) => d.startsWith(prefix)).forEach(([d, arr]) => {
+                const day = Number(d.slice(8, 10));
+                monthDays[day] = (monthDays[day] || 0) + arr.filter((c: any) => c.result === "SUCCESS").length;
+              });
+              const total = Object.values(monthDays).reduce((a, b) => a + b, 0);
+              const daysInMon = new Date(year, mi + 1, 0).getDate();
+              const firstDow = new Date(year, mi, 1).getDay();
+              const cells2: (number | null)[] = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMon }, (_, i) => i + 1)];
+              while (cells2.length % 7 !== 0) cells2.push(null);
+              return (
+                <div key={mi} style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+                  <div style={{ padding: "6px 10px", background: "#f8fafc", borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>{mi + 1}월</span>
+                    {total > 0 && <span style={{ fontSize: 11, color: "#2563eb", fontWeight: 600 }}>{total}회</span>}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "4px 2px 2px" }}>
+                    {["일","월","화","수","목","금","토"].map((d, i) => (
+                      <div key={d} style={{ textAlign: "center", fontSize: 9, color: i === 0 ? "#ef4444" : i === 6 ? "#3b82f6" : "#9ca3af", paddingBottom: 2 }}>{d}</div>
+                    ))}
+                    {cells2.map((day, i) => {
+                      if (!day) return <div key={i} style={{ minHeight: 20 }} />;
+                      const cnt = monthDays[day] || 0;
+                      const dow = i % 7;
+                      return (
+                        <div key={i} style={{ textAlign: "center", fontSize: 10, minHeight: 20, lineHeight: "20px",
+                          color: cnt > 0 ? "#fff" : dow === 0 ? "#ef4444" : dow === 6 ? "#3b82f6" : "#374151",
+                          background: cnt > 0 ? "#2563eb" : undefined, borderRadius: cnt > 0 ? "50%" : undefined,
+                          margin: cnt > 0 ? "auto" : undefined, width: cnt > 0 ? 18 : undefined, height: cnt > 0 ? 18 : undefined,
+                          display: cnt > 0 ? "flex" : undefined, alignItems: cnt > 0 ? "center" : undefined, justifyContent: cnt > 0 ? "center" : undefined,
+                        }}>
+                          {day}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {viewMode === "month" && (<>
       <div style={{ padding: "0 0 0" }}>
         {/* 요일 헤더 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
@@ -186,7 +245,7 @@ function AttendanceCalendar({
         </div>
       )}
 
-      {checkins.length === 0 && (
+      {checkins.length === 0 && viewMode === "month" && (
         <div style={{ color: "#9ca3af", padding: "20px 16px", fontSize: 14 }}>출석 기록이 없습니다.</div>
       )}
 
@@ -257,6 +316,7 @@ function AttendanceCalendar({
           </div>
         );
       })()}
+      </>)}
     </div>
   );
 }
@@ -451,7 +511,11 @@ export default function MemberDetailPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [showReregModal, setShowReregModal] = useState(false);
   const [reregForm, setReregForm] = useState<any>({ product_name: "", final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), start_date: "", end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
+  const [showHoldModal, setShowHoldModal] = useState(false);
+  const [holdForm, setHoldForm] = useState({ hold_start: "", hold_end: "", reason: "" });
+  const [holdSaving, setHoldSaving] = useState(false);
   const [reregSaving, setReregSaving] = useState(false);
+  const [memberLockers, setMemberLockers] = useState<any[]>([]);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const [uploading, setUploading] =
@@ -622,6 +686,7 @@ export default function MemberDetailPage() {
       loadCheckins(memberId);
       loadHistories(memberId);
       loadPayments(memberId);
+      apiFetch(`/api/lockers?member_id=${memberId}`).then(r => r.json()).then(d => setMemberLockers(d.rows || []));
 
     } else {
       alert(
@@ -848,6 +913,7 @@ export default function MemberDetailPage() {
                 ["INFO", "기본정보"],
                 ["PAY", "결제내역"],
                 ["ATT", "출석기록"],
+                ["LOCKER", "락커"],
                 ["NOTE", "상담/메모"],
                 ["FILE", "입관서/파일"],
                 ["HISTORY", "변경이력"],
@@ -928,7 +994,15 @@ export default function MemberDetailPage() {
             <div className="card" style={{ borderRadius: 12, marginBottom: 18, padding: 0, overflow: "visible" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", borderBottom: "1px solid #e5e7eb" }}>
                 <span style={{ fontWeight: 700, fontSize: 15 }}>결제내역</span>
-                <button className="btn" style={{ fontSize: 13, padding: "5px 14px", borderRadius: 6 }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" }); setAddPayModal(true); }}>+ 결제 추가</button>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {data?.member?.status !== "REST" && (
+                    <button className="btn secondary" style={{ fontSize: 13, padding: "5px 14px", borderRadius: 6, color: "#d97706", border: "1px solid #fde68a" }}
+                      onClick={() => { const today = new Date().toISOString().slice(0,10); setHoldForm({ hold_start: today, hold_end: today, reason: "" }); setShowHoldModal(true); }}>
+                      정지(휴회)
+                    </button>
+                  )}
+                  <button className="btn" style={{ fontSize: 13, padding: "5px 14px", borderRadius: 6 }} onClick={() => { setAddPayForm({ product_name: "", final_amount: "", payment_method: "CARD", payment_date: new Date().toISOString().slice(0,10), memo: "" }); setAddPayModal(true); }}>+ 결제 추가</button>
+                </div>
               </div>
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -990,6 +1064,47 @@ export default function MemberDetailPage() {
               </div>
             </div>
           )}
+          {tab === "LOCKER" && (
+            <div className="card" style={{ borderRadius: 8, marginBottom: 12, padding: "16px 18px" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>락커 현황</div>
+              {memberLockers.length === 0 ? (
+                <div style={{ color: "#9ca3af", fontSize: 14 }}>배정된 락커가 없습니다.</div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #e5e7eb" }}>
+                        <th style={{ padding: "8px 14px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>구역</th>
+                        <th style={{ padding: "8px 14px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>번호</th>
+                        <th style={{ padding: "8px 14px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>시작일</th>
+                        <th style={{ padding: "8px 14px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>종료일</th>
+                        <th style={{ padding: "8px 14px", textAlign: "left", color: "#6b7280", fontWeight: 600 }}>메모</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {memberLockers.map((l: any, i: number) => {
+                        const today = new Date().toISOString().slice(0, 10);
+                        const isExpired = l.end_date && l.end_date.slice(0, 10) < today;
+                        return (
+                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", opacity: isExpired ? 0.6 : 1 }}>
+                            <td style={{ padding: "10px 14px" }}>{l.locker_zone || "—"}</td>
+                            <td style={{ padding: "10px 14px", fontWeight: 700 }}>{l.locker_no}</td>
+                            <td style={{ padding: "10px 14px" }}>{l.start_date?.slice(0, 10) || "—"}</td>
+                            <td style={{ padding: "10px 14px" }}>
+                              {l.end_date?.slice(0, 10) || "—"}
+                              {isExpired && <span style={{ marginLeft: 6, fontSize: 11, color: "#ef4444", fontWeight: 600 }}>만료</span>}
+                            </td>
+                            <td style={{ padding: "10px 14px", color: "#6b7280" }}>{l.memo || ""}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {tab === "NOTE" && (
             <div className="card" style={{ borderRadius: 8, marginBottom: 12, padding: "16px 18px" }}>
               {/* 회원 메모 */}
@@ -1368,6 +1483,48 @@ export default function MemberDetailPage() {
                 if (json.success) { alert("재등록 완료!"); setShowReregModal(false); location.reload(); }
                 else alert(json.message || "재등록 실패");
               }}>{reregSaving ? "처리 중..." : "재등록 저장"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 정지(휴회) 모달 */}
+      {showHoldModal && data?.member && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowHoldModal(false); }}>
+          <div style={{ background: "#fff", borderRadius: 12, width: "100%", maxWidth: 420, padding: 28, boxShadow: "0 8px 40px rgba(0,0,0,.18)" }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>정지(휴회) 등록</div>
+            <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 20 }}>{data.member.name} · 만료일: {data.member.end_date?.slice(0,10) || "-"}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>휴회 시작일 <span style={{ color: "#dc2626" }}>*</span></div>
+                <input className="input" type="date" value={holdForm.hold_start} onChange={e => setHoldForm({ ...holdForm, hold_start: e.target.value })} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>휴회 종료일 <span style={{ color: "#dc2626" }}>*</span></div>
+                <input className="input" type="date" value={holdForm.hold_end} onChange={e => setHoldForm({ ...holdForm, hold_end: e.target.value })} />
+                {holdForm.hold_start && holdForm.hold_end && holdForm.hold_end >= holdForm.hold_start && (
+                  <div style={{ fontSize: 12, color: "#2563eb", marginTop: 4 }}>
+                    {Math.floor((new Date(holdForm.hold_end).getTime() - new Date(holdForm.hold_start).getTime()) / 86400000) + 1}일 정지 → 만료일 자동 연장
+                  </div>
+                )}
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>사유</div>
+                <input className="input" placeholder="휴회 사유 (선택)" value={holdForm.reason} onChange={e => setHoldForm({ ...holdForm, reason: e.target.value })} />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "flex-end" }}>
+              <button className="btn secondary" onClick={() => setShowHoldModal(false)}>취소</button>
+              <button className="btn" style={{ background: "#d97706" }} disabled={holdSaving} onClick={async () => {
+                if (!holdForm.hold_start || !holdForm.hold_end) { alert("휴회 시작일과 종료일을 입력해주세요"); return; }
+                setHoldSaving(true);
+                const res = await apiFetch("/api/members/hold", { method: "POST", body: JSON.stringify({ member_id: data.member.member_id, hold_start: holdForm.hold_start, hold_end: holdForm.hold_end, reason: holdForm.reason }) });
+                const json = await res.json();
+                setHoldSaving(false);
+                if (json.success) { alert(`휴회 등록 완료. 만료일: ${json.old_end_date?.slice(0,10)} → ${json.new_end_date?.slice(0,10)}`); setShowHoldModal(false); load(); }
+                else alert(json.message || "휴회 처리 실패");
+              }}>{holdSaving ? "처리 중..." : "정지 등록"}</button>
             </div>
           </div>
         </div>
