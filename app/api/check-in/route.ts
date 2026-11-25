@@ -352,8 +352,8 @@ export async function POST(req: Request) {
       await withMemberChange({ type: "ATTENDANCE", source: "check-in" }, async (conn) => {
         await conn.query(`UPDATE members SET remaining_count = remaining_count - 1 WHERE member_id = ?`, [member.member_id]);
         await conn.query(
-          `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, result, memo) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [member.member_id, member.branch_name, member.name, member.pass_type, 1, "SUCCESS", memo || "출석 완료"]
+          `INSERT INTO attendance (member_id, branch_name, member_name, pass_type, used_count, remaining_count_after, result, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [member.member_id, member.branch_name, member.name, member.pass_type, 1, remainingCount - 1, "SUCCESS", memo || "출석 완료"]
         );
       });
 
