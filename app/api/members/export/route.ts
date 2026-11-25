@@ -88,9 +88,9 @@ export async function GET(req: Request) {
 
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
-    const branchLabel = branch_name || (user.branch_name || "전체");
+    const branchLabel = branch_name || user.branch_name || "전체";
     const dateLabel = todayStr.replace(/-/g, "");
-    const filename = encodeURIComponent(`회원목록_${dateLabel}.xlsx`);
+    const filename = encodeURIComponent(`회원목록_${dateLabel}_${branchLabel}.xlsx`);
 
     return new NextResponse(buf, {
       headers: {
