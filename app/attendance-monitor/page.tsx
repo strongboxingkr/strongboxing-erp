@@ -212,10 +212,6 @@ export default function AttendanceMonitorPage() {
             <div style={{ fontSize: 40, fontWeight: 900, color: "#3b82f6" }}>{checkoutCount}</div>
             <div style={{ fontSize: 13, color: "#64748b" }}>퇴장</div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 40, fontWeight: 900, color: "#f8fafc" }}>{inGymCount}</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>현재 내장</div>
-          </div>
         </div>
       </div>
 
