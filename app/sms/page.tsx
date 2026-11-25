@@ -102,7 +102,13 @@ const getUnsupportedVars = (msg: string): string[] => {
 
 export default function SmsPage() {
   const [user, setUser] = useState<any>(null);
-  const [tab, setTab] = useState<"send" | "auto">("auto");
+  const [tab, setTab] = useState<"send" | "auto" | "checkin">("auto");
+  const [checkinLogs, setCheckinLogs] = useState<any[]>([]);
+  const [checkinLoading, setCheckinLoading] = useState(false);
+  const [checkinBranch, setCheckinBranch] = useState("");
+  const [checkinDateFrom, setCheckinDateFrom] = useState(() => new Date().toISOString().slice(0, 10));
+  const [checkinDateTo, setCheckinDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [checkinType, setCheckinType] = useState("ALL");
   const [branchName, setBranchName] = useState("");
   const [targetType, setTargetType] = useState("BRANCH_MEMBERS");
   const [targets, setTargets] = useState<any[]>([]);
@@ -368,7 +374,7 @@ export default function SmsPage() {
       <style>{isMobileStyle}</style>
       {/* 탭 */}
       <div style={{ display: "flex", borderBottom: "2px solid #E5E7EB", marginBottom: 24, gap: 0 }}>
-        {[{ key: "auto", label: "자동발송 설정" }, { key: "send", label: "문자 발송" }].map((t) => (
+        {[{ key: "auto", label: "자동발송 설정" }, { key: "send", label: "문자 발송" }, { key: "checkin", label: "입퇴장 문자" }].map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
@@ -793,6 +799,126 @@ export default function SmsPage() {
             <button className="btn" disabled={loading} onClick={() => sendSms(false)} style={{ width: "100%", fontSize: 18 }}>단체문자 발송</button>
             <p style={{ color: "#888", fontSize: 13, lineHeight: 1.6 }}>단체문자 발송 전 테스트 발송을 먼저 권장합니다.</p>
           </div>
+        </div>
+      )}
+
+      {/* ── 입퇴장 문자 탭 ── */}
+      {tab === "checkin" && (
+        <div>
+          {/* 필터 */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, alignItems: "center" }}>
+            {user && (user.role === "ADMIN" || user.role === "OWNER") && (
+              <select
+                className="input"
+                style={{ height: 34, padding: "0 8px", fontSize: 13, width: 120 }}
+                value={checkinBranch}
+                onChange={(e) => setCheckinBranch(e.target.value)}
+              >
+                <option value="">전체 지점</option>
+                {branches.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            )}
+            <select
+              className="input"
+              style={{ height: 34, padding: "0 8px", fontSize: 13, width: 110 }}
+              value={checkinType}
+              onChange={(e) => setCheckinType(e.target.value)}
+            >
+              <option value="ALL">전체</option>
+              <option value="ATTENDANCE">입장</option>
+              <option value="CHECKOUT">퇴장</option>
+            </select>
+            <input
+              type="date"
+              className="input"
+              style={{ height: 34, padding: "0 8px", fontSize: 13, width: 140 }}
+              value={checkinDateFrom}
+              onChange={(e) => setCheckinDateFrom(e.target.value)}
+            />
+            <span style={{ fontSize: 13, color: "#6b7280" }}>~</span>
+            <input
+              type="date"
+              className="input"
+              style={{ height: 34, padding: "0 8px", fontSize: 13, width: 140 }}
+              value={checkinDateTo}
+              onChange={(e) => setCheckinDateTo(e.target.value)}
+            />
+            <button
+              className="btn"
+              style={{ height: 34, fontSize: 13, padding: "0 16px" }}
+              disabled={checkinLoading}
+              onClick={async () => {
+                setCheckinLoading(true);
+                try {
+                  const params = new URLSearchParams();
+                  const b = (user?.role === "ADMIN" || user?.role === "OWNER") ? checkinBranch : (user?.branch_name || "");
+                  if (b) params.set("branch_name", b);
+                  if (checkinType !== "ALL") params.set("target_type", checkinType);
+                  params.set("date_from", checkinDateFrom);
+                  params.set("date_to", checkinDateTo);
+                  const res = await apiFetch(`/api/sms/logs?${params.toString()}`);
+                  const data = await res.json();
+                  setCheckinLogs(data.rows || []);
+                } catch { setCheckinLogs([]); }
+                setCheckinLoading(false);
+              }}
+            >
+              {checkinLoading ? "조회중..." : "조회"}
+            </button>
+          </div>
+
+          {/* 테이블 */}
+          <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid var(--line, #e5e7eb)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "var(--surface2, #f9fafb)", borderBottom: "1px solid var(--line, #e5e7eb)" }}>
+                  {["발송시각", "지점", "유형", "회원명", "수신번호", "메시지", "상태"].map((h) => (
+                    <th key={h} style={{ padding: "10px 12px", fontWeight: 600, textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {checkinLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>
+                      {checkinLoading ? "조회중..." : "조회 버튼을 눌러 확인하세요."}
+                    </td>
+                  </tr>
+                ) : checkinLogs.map((log: any) => (
+                  <tr key={log.sms_id} style={{ borderBottom: "1px solid var(--line, #f3f4f6)" }}>
+                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>
+                      {log.created_at ? String(log.created_at).slice(0, 16).replace("T", " ") : ""}
+                    </td>
+                    <td style={{ padding: "9px 12px" }}>{log.branch_name || ""}</td>
+                    <td style={{ padding: "9px 12px" }}>
+                      <span style={{
+                        display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+                        background: log.target_type === "ATTENDANCE" ? "#dcfce7" : "#fee2e2",
+                        color: log.target_type === "ATTENDANCE" ? "#15803d" : "#b91c1c",
+                      }}>
+                        {log.target_type === "ATTENDANCE" ? "입장" : log.target_type === "CHECKOUT" ? "퇴장" : log.target_type}
+                      </span>
+                    </td>
+                    <td style={{ padding: "9px 12px" }}>{log.receiver_name || ""}</td>
+                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{log.receiver_phone || ""}</td>
+                    <td style={{ padding: "9px 12px", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={log.message}>{log.message || ""}</td>
+                    <td style={{ padding: "9px 12px" }}>
+                      <span style={{
+                        display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+                        background: (log.send_status === "SENT" || log.send_status === "SUCCESS") ? "#dbeafe" : "#fee2e2",
+                        color: (log.send_status === "SENT" || log.send_status === "SUCCESS") ? "#1d4ed8" : "#b91c1c",
+                      }}>
+                        {log.send_status === "SENT" || log.send_status === "SUCCESS" ? "발송" : "실패"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {checkinLogs.length > 0 && (
+            <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 8 }}>{checkinLogs.length}건</p>
+          )}
         </div>
       )}
     </AppShell>

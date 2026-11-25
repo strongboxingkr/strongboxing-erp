@@ -845,6 +845,19 @@ ${
             {uploading ? "업로드중..." : "엑셀업로드"}
             <input hidden type="file" accept=".xlsx,.xls" onChange={uploadExcel} />
           </label>
+          <a
+            className="btn secondary"
+            style={{ height: 32, fontSize: 13, padding: "0 14px", display: "flex", alignItems: "center", textDecoration: "none" }}
+            href={`/api/members/export${
+              (() => {
+                const b = isAdminOrOwner ? branch : (user?.branch_name || "");
+                return b ? `?branch_name=${encodeURIComponent(b)}` : "";
+              })()
+            }`}
+            download
+          >
+            엑셀다운
+          </a>
           <button className="btn secondary" style={{ height: 32, fontSize: 13, padding: "0 12px" }} onClick={() => loadMembers(user)}>
             새로고침
           </button>

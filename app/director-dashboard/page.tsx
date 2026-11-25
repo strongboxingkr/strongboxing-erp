@@ -167,6 +167,11 @@ export default function DirectorDashboardPage() {
   const handleBranchChange = (b: string) => {
     setSelBranch(b);
     loadData(user, b);
+    if (showSms) {
+      loadSmsLogs(b !== "전체" ? b : undefined);
+    } else {
+      setSmsLogs([]);
+    }
   };
 
   const branchLabel = (() => {
