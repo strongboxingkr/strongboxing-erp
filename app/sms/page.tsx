@@ -374,7 +374,7 @@ export default function SmsPage() {
       <style>{isMobileStyle}</style>
       {/* 탭 */}
       <div style={{ display: "flex", borderBottom: "2px solid #E5E7EB", marginBottom: 24, gap: 0 }}>
-        {[{ key: "auto", label: "자동발송 설정" }, { key: "send", label: "문자 발송" }, { key: "checkin", label: "입퇴장 문자" }].map((t) => (
+        {[{ key: "auto", label: "자동발송 설정" }, { key: "send", label: "문자 발송" }, { key: "checkin", label: "자동문자내역" }].map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key as any)}
@@ -827,6 +827,7 @@ export default function SmsPage() {
               <option value="ALL">전체</option>
               <option value="ATTENDANCE">입장</option>
               <option value="CHECKOUT">퇴장</option>
+              <option value="AUTO">자동문자</option>
             </select>
             <input
               type="date"
@@ -893,10 +894,10 @@ export default function SmsPage() {
                     <td style={{ padding: "9px 12px" }}>
                       <span style={{
                         display: "inline-block", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
-                        background: log.target_type === "ATTENDANCE" ? "#dcfce7" : "#fee2e2",
-                        color: log.target_type === "ATTENDANCE" ? "#15803d" : "#b91c1c",
+                        background: log.target_type === "ATTENDANCE" ? "#dcfce7" : log.target_type === "CHECKOUT" ? "#fee2e2" : "#dbeafe",
+                        color: log.target_type === "ATTENDANCE" ? "#15803d" : log.target_type === "CHECKOUT" ? "#b91c1c" : "#1d4ed8",
                       }}>
-                        {log.target_type === "ATTENDANCE" ? "입장" : log.target_type === "CHECKOUT" ? "퇴장" : log.target_type}
+                        {log.target_type === "ATTENDANCE" ? "입장" : log.target_type === "CHECKOUT" ? "퇴장" : (ruleTypeLabel[log.target_type] || log.target_type)}
                       </span>
                     </td>
                     <td style={{ padding: "9px 12px" }}>{log.receiver_name || ""}</td>

@@ -27,8 +27,12 @@ export async function GET(req: Request) {
       params.push(branch);
     }
     if (targetType) {
-      typeClause = "AND target_type = ?";
-      params.push(targetType);
+      if (targetType === "AUTO") {
+        typeClause = "AND target_type NOT IN ('ATTENDANCE', 'CHECKOUT')";
+      } else {
+        typeClause = "AND target_type = ?";
+        params.push(targetType);
+      }
     }
     if (dateFrom && dateTo) {
       dateClause = "AND DATE(created_at) BETWEEN ? AND ?";
