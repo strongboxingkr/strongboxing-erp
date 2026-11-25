@@ -16,12 +16,23 @@ const getStatusColor = (status: string) => {
   return "#9ca3af";
 };
 
+const SOURCE_INFO: Record<string, { label: string; color: string }> = {
+  "네이버": { label: "네이버", color: "#22c55e" },
+  "NAVER": { label: "네이버", color: "#22c55e" },
+  "naver": { label: "네이버", color: "#22c55e" },
+  "홈페이지": { label: "홈페이지", color: "#3b82f6" },
+  "HOMEPAGE": { label: "홈페이지", color: "#3b82f6" },
+  "homepage": { label: "홈페이지", color: "#3b82f6" },
+  "전화문의": { label: "전화", color: "#f59e0b" },
+  "카카오": { label: "카카오", color: "#f59e0b" },
+  "직접등록": { label: "직접등록", color: "#8b5cf6" },
+};
+
 const getSourceInfo = (r: any) => {
+  if (r._source && SOURCE_INFO[r._source]) return SOURCE_INFO[r._source];
   const memo = String(r.memo || "");
-  const product = String(r.reservation_product || "");
-  if (memo.includes("출처: 홈페이지 예약") || product.includes("홈페이지")) {
-    return { label: "홈페이지", color: "#3b82f6" };
-  }
+  if (memo.includes("출처: 홈페이지 예약")) return { label: "홈페이지", color: "#3b82f6" };
+  if (r.source_type && SOURCE_INFO[r.source_type]) return SOURCE_INFO[r.source_type];
   return { label: "네이버", color: "#22c55e" };
 };
 
@@ -87,15 +98,43 @@ export default function NaverReservationsPage() {
   };
 
   const loadReservations = async (currentUser = user) => {
+    const branchParam = (currentUser && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER")
+      ? currentUser.branch_name
+      : (branch !== "전체" ? branch : "");
+
     let url = "/api/naver-reservations";
-    if (currentUser && currentUser.role !== "ADMIN" && currentUser.role !== "OWNER") {
-      url += `?branch_name=${encodeURIComponent(currentUser.branch_name)}`;
-    } else if (branch !== "전체") {
-      url += `?branch_name=${encodeURIComponent(branch)}`;
-    }
+    if (branchParam) url += `?branch_name=${encodeURIComponent(branchParam)}`;
     const res = await apiFetch(url);
     const data = await res.json();
-    setRows(data.rows || []);
+    const naverRows = (data.rows || []).map((r: any) => ({ ...r, _source: r.source_type || "네이버" }));
+
+    // calendar_events 도 함께 조회
+    let calUrl = "/api/calendar-events?include_cancelled=true";
+    if (branchParam) calUrl += `&branch_name=${encodeURIComponent(branchParam)}`;
+    try {
+      const calRes = await apiFetch(calUrl);
+      const calData = await calRes.json();
+      const calRows = (calData.rows || []).map((e: any) => ({
+        reservation_id: `cal_${e.event_id}`,
+        _cal_event_id: e.event_id,
+        branch_name: e.branch_name,
+        customer_name: e.customer_name,
+        phone: e.phone || "",
+        reservation_date: e.start_datetime?.slice(0, 10) || "",
+        reservation_time: e.start_datetime?.slice(11, 16) || "",
+        reservation_product: e.purpose || "",
+        status: e.status,
+        memo: e.memo || "",
+        source_type: e.source || "직접등록",
+        is_read: "Y",
+        created_at: e.created_at,
+        _source: e.source || "직접등록",
+        _readonly: true,
+      }));
+      setRows([...naverRows, ...calRows]);
+    } catch {
+      setRows(naverRows);
+    }
   };
 
   const syncGmail = async () => {
@@ -467,7 +506,15 @@ ${r.customer_name}님 예약이 확정되었습니다.
                 ))}
               </div>
 
+              {/* calendar_events 항목: 읽기 전용 안내 */}
+              {selected._readonly && (
+                <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "8px 12px", marginBottom: 14, fontSize: 12, color: "#0369a1" }}>
+                  예약 캘린더에서 등록된 항목입니다. 수정은 <a href="/naver-calendar" style={{ color: "#0369a1", fontWeight: 700 }}>예약 캘린더</a>에서 하세요.
+                </div>
+              )}
+
               {/* 이름 보완 */}
+              {!selected._readonly && (
               <div style={{ marginBottom: 14 }}>
                 <div className="field-label">이름</div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -484,8 +531,10 @@ ${r.customer_name}님 예약이 확정되었습니다.
                   <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>이름이 마스킹됨 — 직접 입력 후 저장하세요</div>
                 )}
               </div>
+              )}
 
               {/* 연락처 보완 */}
+              {!selected._readonly && (
               <div style={{ marginBottom: 14 }}>
                 <div className="field-label">전화번호</div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -500,6 +549,7 @@ ${r.customer_name}님 예약이 확정되었습니다.
                 </div>
                 {!selected.phone && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>연락처 미입력 — 저장 후 반영됩니다</div>}
               </div>
+              )}
 
               {/* 고객 요청사항 — 있을 때만 표시 */}
               {hasInquiry && (
@@ -516,7 +566,8 @@ ${r.customer_name}님 예약이 확정되었습니다.
                 <textarea className="input" value={editOpsMemo} onChange={(e) => setEditOpsMemo(e.target.value)} rows={3} style={{ fontSize: 13, resize: "vertical" }} placeholder="상담 내용, 특이사항 등" />
               </div>
 
-              {/* 상태 변경 */}
+              {/* 상태 변경 — readonly 아닐 때만 */}
+              {!selected._readonly && (
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600, marginBottom: 8 }}>
                   예약 상태
@@ -537,8 +588,10 @@ ${r.customer_name}님 예약이 확정되었습니다.
                   ))}
                 </div>
               </div>
+              )}
 
-              {/* 메모 저장 버튼 */}
+              {/* 메모 저장 버튼 — readonly 아닐 때만 */}
+              {!selected._readonly && (
               <button className="btn secondary" style={{ width: "100%", height: 36, fontSize: 13, marginBottom: 14 }}
                 onClick={async () => {
                   await updateStatus(selected, selected.status, editOpsMemo, editPhone);
@@ -546,6 +599,7 @@ ${r.customer_name}님 예약이 확정되었습니다.
                 }}>
                 운영 메모 저장
               </button>
+              )}
 
               {/* 메일 원문 접기 */}
               <details>

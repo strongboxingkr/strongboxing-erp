@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
     // payments 테이블
     const [payRows]: any = await pool.query(
-      `SELECT DATE_FORMAT(payment_date, '%m/%d') AS date, DATE(payment_date) AS raw_date, IFNULL(SUM(final_amount), 0) AS sales
+      `SELECT DATE_FORMAT(DATE(payment_date), '%m/%d') AS date, IFNULL(SUM(final_amount), 0) AS sales
        FROM payments
        WHERE payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
        ${branchFilter}
