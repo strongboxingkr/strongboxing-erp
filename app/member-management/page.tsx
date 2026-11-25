@@ -53,7 +53,7 @@ function MemberManagementInner() {
 
   const isAdminOrOwner = user?.role === "ADMIN" || user?.role === "OWNER";
 
-  const load = useCallback(async (currentUser = user, currentBranch = branch) => {
+  const load = useCallback(async (currentUser = user, currentBranch = branch, days = expiryDays, threshold = countThreshold) => {
     setLoading(true);
     let url = "/api/member-management";
     const params: string[] = [];
@@ -62,12 +62,14 @@ function MemberManagementInner() {
     } else if (currentBranch !== "전체") {
       params.push(`branch_name=${encodeURIComponent(currentBranch)}`);
     }
-    if (params.length) url += "?" + params.join("&");
+    params.push(`days=${days}`);
+    params.push(`count_threshold=${threshold}`);
+    url += "?" + params.join("&");
     const res = await apiFetch(url);
     const data = await res.json();
     setRows(data.rows || []);
     setLoading(false);
-  }, [user, branch]);
+  }, [user, branch, expiryDays, countThreshold]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -81,6 +83,10 @@ function MemberManagementInner() {
     if (user) load(user, branch);
   }, [branch]);
 
+  useEffect(() => {
+    if (user) load(user, branch, expiryDays, countThreshold);
+  }, [expiryDays, countThreshold]);
+
   const handleMemberClick = (member_id: number) => {
     router.push(`/members?member_id=${member_id}`);
   };
@@ -93,7 +99,7 @@ function MemberManagementInner() {
     let filtered = all;
     if (tab === "만료 예정") {
       filtered = all.filter(r =>
-        r.pass_type === "DATE" &&
+        r.pass_type === "PERIOD" &&
         r.end_date &&
         r.end_date.slice(0, 10) >= todayStr &&
         (expiryDays === 0 ? r.end_date.slice(0, 10) === todayStr : r.end_date.slice(0, 10) <= limitDateStr)
@@ -107,7 +113,7 @@ function MemberManagementInner() {
       );
     } else if (tab === "만료·소진") {
       filtered = all.filter(r =>
-        (r.pass_type === "DATE" && r.end_date && r.end_date.slice(0, 10) < todayStr) ||
+        (r.pass_type === "PERIOD" && r.end_date && r.end_date.slice(0, 10) < todayStr) ||
         (r.pass_type === "COUNT" && (r.remaining_count === 0 || r.remaining_count === null))
       );
     }
@@ -124,10 +130,10 @@ function MemberManagementInner() {
 
   const tabCounts: Record<Tab, number> = {
     "전체": filterRows(rows).length,
-    "만료 예정": rows.filter(r => r.pass_type === "DATE" && r.end_date && r.end_date.slice(0, 10) >= todayStr && r.end_date.slice(0, 10) <= limitDateStr).length,
+    "만료 예정": rows.filter(r => r.pass_type === "PERIOD" && r.end_date && r.end_date.slice(0, 10) >= todayStr && r.end_date.slice(0, 10) <= limitDateStr).length,
     "횟수 부족": rows.filter(r => r.pass_type === "COUNT" && r.remaining_count !== null && r.remaining_count > 0 && r.remaining_count <= countThreshold).length,
     "만료·소진": rows.filter(r =>
-      (r.pass_type === "DATE" && r.end_date && r.end_date.slice(0, 10) < todayStr) ||
+      (r.pass_type === "PERIOD" && r.end_date && r.end_date.slice(0, 10) < todayStr) ||
       (r.pass_type === "COUNT" && (r.remaining_count === 0 || r.remaining_count === null))
     ).length,
   };
@@ -256,7 +262,7 @@ function MemberManagementInner() {
             <tbody>
               {displayRows.map(r => {
                 const { bg, color } = getAlertBadgeStyle(r.alert_type);
-                const isDate = r.pass_type === "DATE";
+                const isDate = r.pass_type === "PERIOD";
                 return (
                   <tr key={r.member_id}>
                     <td>
@@ -298,7 +304,7 @@ function MemberManagementInner() {
       {/* ── 회원 정보 모달 ── */}
       {modalRow && (() => {
         const r = modalRow;
-        const isDate = r.pass_type === "PERIOD" || r.pass_type === "DATE";
+        const isDate = r.pass_type === "PERIOD" || r.pass_type === "PERIOD";
         const { bg, color } = getAlertBadgeStyle(r.alert_type);
         return (
           <div className="mm-modal-bg" onClick={() => setModalRow(null)}>
