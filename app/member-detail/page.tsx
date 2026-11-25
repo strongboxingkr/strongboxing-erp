@@ -1443,15 +1443,54 @@ export default function MemberDetailPage() {
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>메모 <span style={{ fontWeight: 400, color: "#9ca3af" }}>(선택)</span></div>
                 <textarea className="input" placeholder="메모" rows={2} style={{ resize: "vertical" }} value={reregForm.memo} onChange={e => setReregForm({ ...reregForm, memo: e.target.value })} />
               </div>
-              {data.member.locker_no && (
-                <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 6 }}>현재 락커: <strong>{data.member.locker_no}</strong></div>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
-                    <input type="checkbox" checked={reregForm.extend_locker} onChange={e => setReregForm({ ...reregForm, extend_locker: e.target.checked })} />
-                    락커 기간도 함께 연장
-                  </label>
-                </div>
-              )}
+              {/* 락커 섹션 */}
+              <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#374151", marginBottom: 10 }}>락커 등록</div>
+                {data.member.locker_no ? (
+                  <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 8 }}>현재 락커: <strong>{data.member.locker_no}</strong></div>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
+                      <input type="checkbox" checked={reregForm.extend_locker} onChange={e => setReregForm({ ...reregForm, extend_locker: e.target.checked })} />
+                      락커 기간도 함께 연장
+                    </label>
+                    {reregForm.extend_locker && (
+                      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>락커 종료일</div>
+                          <input className="input" type="date" value={reregForm.locker_end_date} onChange={e => setReregForm({ ...reregForm, locker_end_date: e.target.value })} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, marginBottom: 10 }}>
+                      <input type="checkbox" checked={!!reregForm.new_locker} onChange={e => setReregForm({ ...reregForm, new_locker: e.target.checked ? { locker_no: "", locker_zone: "", start_date: reregForm.start_date || "", end_date: "" } : null })} />
+                      새 락커 함께 배정
+                    </label>
+                    {reregForm.new_locker && (
+                      <div style={{ display: "grid", gridTemplateColumns: "80px 100px 1fr 1fr", gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>구역</div>
+                          <input className="input" placeholder="A" value={reregForm.new_locker.locker_zone} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, locker_zone: e.target.value } })} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>번호</div>
+                          <input className="input" placeholder="1" value={reregForm.new_locker.locker_no} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, locker_no: e.target.value } })} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>시작일</div>
+                          <input className="input" type="date" value={reregForm.new_locker.start_date} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, start_date: e.target.value } })} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>종료일</div>
+                          <input className="input" type="date" value={reregForm.new_locker.end_date} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, end_date: e.target.value } })} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ padding: "12px 20px", borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 8, flexShrink: 0 }}>
               <button className="btn secondary" style={{ height: 38, fontSize: 14, padding: "0 18px" }} onClick={() => setShowReregModal(false)}>취소</button>
@@ -1479,8 +1518,20 @@ export default function MemberDetailPage() {
                 }
                 const res = await apiFetch("/api/payments/add", { method: "POST", body: JSON.stringify(payload) });
                 const json = await res.json();
+                if (json.success && reregForm.new_locker?.locker_no) {
+                  await apiFetch("/api/lockers/assign", { method: "POST", body: JSON.stringify({
+                    branch_name: m.branch_name,
+                    locker_zone: reregForm.new_locker.locker_zone || "A",
+                    locker_no: reregForm.new_locker.locker_no,
+                    member_id: m.member_id,
+                    member_name: m.name,
+                    gender: m.gender,
+                    start_date: reregForm.new_locker.start_date || null,
+                    end_date: reregForm.new_locker.end_date || null,
+                  }) });
+                }
                 setReregSaving(false);
-                if (json.success) { alert("재등록 완료!"); setShowReregModal(false); location.reload(); }
+                if (json.success) { alert("재등록 완료!" + (reregForm.new_locker?.locker_no ? " (락커 배정 포함)" : "")); setShowReregModal(false); location.reload(); }
                 else alert(json.message || "재등록 실패");
               }}>{reregSaving ? "처리 중..." : "재등록 저장"}</button>
             </div>
