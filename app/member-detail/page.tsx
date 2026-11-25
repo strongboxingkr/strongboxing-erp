@@ -1628,7 +1628,11 @@ export default function MemberDetailPage() {
             <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 8, letterSpacing: 1 }}>회원권 정보</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>회원권</div>
-                <select className="input" value={editForm.product_name} onChange={e => setEditForm({...editForm, product_name: e.target.value})}>
+                <select className="input" value={editForm.product_name} onChange={e => {
+                  const name = e.target.value;
+                  const passType = name.includes("일일권") ? "DAILY" : name.includes("횟수") || name.includes("회권") ? "COUNT" : "PERIOD";
+                  setEditForm({...editForm, product_name: name, pass_type: passType});
+                }}>
                   <option value="">선택</option>
                   {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                 </select>
@@ -1695,6 +1699,7 @@ export default function MemberDetailPage() {
                   remaining_count: editForm.remaining_count,
                   has_uniform: editForm.has_sportswear,
                   has_locker: editForm.has_locker,
+                  attendance_sms_enabled: editForm.has_sms,
                   checkin_sms_enabled: editForm.has_sms,
                   checkout_sms_enabled: editForm.has_exit_sms,
                   memo: editForm.notes,
