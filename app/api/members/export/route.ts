@@ -87,7 +87,7 @@ export async function GET(req: Request) {
 
     const branchLabel = branch_name || (user.branch_name || "전체");
     const dateLabel = todayStr.replace(/-/g, "");
-    const filename = encodeURIComponent(`ES_Member_list_${dateLabel}.xlsx`);
+    const filename = encodeURIComponent(`회원목록_${dateLabel}.xlsx`);
 
     return new NextResponse(buf, {
       headers: {
