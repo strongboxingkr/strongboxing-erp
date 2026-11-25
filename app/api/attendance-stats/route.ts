@@ -8,7 +8,7 @@ export async function GET(req: Request) {
 
     if (!user) return NextResponse.json({ success: false, message: "로그인이 필요합니다." }, { status: 401 });
 
-    if (!["ADMIN", "OWNER"].includes(user.role)) {
+    if (!["ADMIN", "OWNER", "DIRECTOR"].includes(user.role)) {
       return NextResponse.json({ success: false, message: "권한 없음" }, { status: 403 });
     }
 
