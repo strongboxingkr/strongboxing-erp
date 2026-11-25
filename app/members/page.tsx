@@ -1087,7 +1087,7 @@ ${
               {/* 수정 모드: 결제·재등록은 상세 페이지에서 */}
               {isEdit && (
                 <div style={{ padding: "10px 14px", background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8, fontSize: 13, color: "#6b7280" }}>
-                  💡 결제 수정·재등록은 <strong style={{ color: "#2563eb", cursor: "pointer" }} onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}>회원 상세</strong>에서 할 수 있어요.
+                  결제 수정·재등록은 <strong style={{ color: "#2563eb", cursor: "pointer" }} onClick={() => { location.href = `/member-detail?member_id=${form.member_id}`; }}>회원 상세</strong>에서 할 수 있어요.
                 </div>
               )}
             </div>
