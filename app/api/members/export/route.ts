@@ -17,8 +17,10 @@ export async function GET(req: Request) {
         m.product_name, m.start_date, m.end_date, m.remaining_count,
         m.status, m.locker_no, m.has_uniform, m.member_no, m.staff_name,
         m.memo, m.join_date, m.attendance_sms_enabled, m.branch_name,
+        l.locker_zone,
         (SELECT MAX(a.checkin_time) FROM attendance a WHERE a.member_id = m.member_id AND a.result = 'SUCCESS') AS last_visit
       FROM members m
+      LEFT JOIN lockers l ON l.branch_name = m.branch_name AND l.locker_no = m.locker_no AND l.member_id = m.member_id
       WHERE 1=1
     `;
     const params: any[] = [];
@@ -65,7 +67,7 @@ export async function GET(req: Request) {
         잔여일: remainDays,
         잔여횟수: m.remaining_count != null ? String(m.remaining_count) : "",
         옷: m.has_uniform === 1 || m.has_uniform === "1" || m.has_uniform === true ? "O" : "X",
-        락카: m.locker_no || "X",
+        락카: m.locker_no ? (m.locker_zone && m.locker_zone !== "A" ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "X",
         "NO ": "",
         회원번호: m.member_no || m.phone?.slice(-4) || "",
         회원번호1: "",
