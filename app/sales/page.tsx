@@ -326,13 +326,14 @@ function SalesInner() {
                 </div>
                 <div style={{ overflowX: "auto" }}>
                   <table className="sales-tbl">
-                    <thead><tr><th>회원</th><th>상품</th><th>결제</th><th className="sales-num">금액</th></tr></thead>
+                    <thead><tr><th>회원</th>{branch === "전체" && <th>지점</th>}<th>상품</th><th>결제</th><th className="sales-num">금액</th></tr></thead>
                     <tbody>
                       {monthlyDetail.rows?.map((r: any) => {
                         const mc = METHOD_COLOR[r.payment_method] || { bg: "#f3f4f6", color: "#374151" };
                         return (
                           <tr key={r.payment_id}>
                             <td style={{ fontWeight: 600 }}>{r.member_name || "-"}</td>
+                            {branch === "전체" && <td style={{ fontSize: 12, color: "#6b7280" }}>{r.branch_name || "-"}</td>}
                             <td style={{ fontSize: 13 }}>{r.product_name || "-"}</td>
                             <td><span style={{ padding: "2px 7px", borderRadius: 5, fontSize: 11, fontWeight: 700, background: mc.bg, color: mc.color }}>{METHOD[r.payment_method] || r.payment_method}</span></td>
                             <td className="sales-num" style={{ fontWeight: 700, color: "#d97706" }}>{fmt(r.final_amount)}</td>
