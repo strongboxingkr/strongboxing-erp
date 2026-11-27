@@ -436,46 +436,44 @@ export default function DirectorDashboardPage() {
                 ? `${display.end_date.slice(0, 10)} 까지`
                 : null;
             return (
-              <div style={{ padding: "24px 24px 28px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, color: isPinned ? "#6366f1" : "#10b981", fontWeight: 700, letterSpacing: ".06em" }}>
+              <div style={{ padding: "20px 20px 22px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, color: isPinned ? "#6366f1" : "#10b981", fontWeight: 700, letterSpacing: ".08em" }}>
                     {isPinned ? "선택한 회원" : "최근 입장"}
                   </div>
                   {isPinned && (
                     <button onClick={() => setPinnedMember(null)} style={{ fontSize: 10, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}>✕ 해제</button>
                   )}
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#111827", marginBottom: 4 }}>{display.name}</div>
-                <div style={{ fontSize: 15, color: "#6b7280", marginBottom: 12 }}>{time}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#111827", lineHeight: 1.15, marginBottom: 4 }}>{display.name}</div>
+                  <div style={{ fontSize: 13, color: "#9ca3af" }}>
+                    {time}{isAdminOrOwner(user?.role) && display.branch_name ? ` · ${display.branch_name}` : ""}
+                  </div>
+                </div>
+                <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                   {display.product_name && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>이용권</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{display.product_name}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>이용권</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{display.product_name}</span>
                     </div>
                   )}
                   {remaining && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>{display.pass_type === "COUNT" ? "잔여" : "만료"}</span>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: display.pass_type === "COUNT" && (display.remaining_count ?? 0) <= 2 ? "#ef4444" : "#111827" }}>{remaining}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{display.pass_type === "COUNT" ? "잔여" : "만료일"}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: display.pass_type === "COUNT" && (display.remaining_count ?? 0) <= 2 ? "#ef4444" : "#111827" }}>{remaining}</span>
                     </div>
                   )}
                   {display.phone && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>연락처</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>연락처</span>
                       <span style={{ fontSize: 13, color: "#374151" }}>{display.phone}</span>
-                    </div>
-                  )}
-                  {display.branch_name && (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 36 }}>지점</span>
-                      <span style={{ fontSize: 13, color: "#374151" }}>{display.branch_name}</span>
                     </div>
                   )}
                 </div>
                 {display.member_id && (
                   <a href={`/member-detail?member_id=${display.member_id}`}
-                    style={{ display: "block", marginTop: 16, padding: "8px 0", textAlign: "center", background: "#f3f4f6", borderRadius: 8, fontSize: 12, color: "#374151", fontWeight: 600, textDecoration: "none" }}>
+                    style={{ display: "block", marginTop: 12, padding: "8px 0", textAlign: "center", background: "#f3f4f6", borderRadius: 8, fontSize: 12, color: "#374151", fontWeight: 600, textDecoration: "none" }}>
                     상세보기 →
                   </a>
                 )}
@@ -512,14 +510,14 @@ export default function DirectorDashboardPage() {
                 return (
                   <div key={i} className="dir-att-row" style={{ ...(isAlert ? { background: "#fef2f2" } : undefined), cursor: "pointer" }}
                     onClick={() => setPinnedMember(a)}>
-                    <span style={{ fontSize: 11, color: isAlert ? "#ef4444" : "#9ca3af", minWidth: 20, textAlign: "right", marginRight: 6 }}>{i + 1}</span>
-                    <span style={{ fontWeight: 600, color: isAlert ? "#dc2626" : "#111827", flex: 1 }}>{a.name}</span>
+                    <span style={{ fontSize: 11, color: isAlert ? "#ef4444" : "#9ca3af", minWidth: 18, textAlign: "right", marginRight: 10 }}>{i + 1}</span>
+                    <span style={{ fontWeight: 600, color: isAlert ? "#dc2626" : "#111827", flex: 1, marginRight: 6 }}>{a.name}</span>
                     {isAlert && (
                       <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700, background: "#fee2e2", padding: "1px 5px", borderRadius: 4, whiteSpace: "nowrap" }}>
                         {isExpired ? "만료" : "잔여없음"}
                       </span>
                     )}
-                    {a.branch_name && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>{a.branch_name}</span>}
+                    {isAdminOrOwner(user?.role) && a.branch_name && <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4 }}>{a.branch_name}</span>}
                     <span style={{ color: isAlert ? "#ef4444" : "#6b7280", fontSize: 12, minWidth: 44, textAlign: "right" }}>{time}</span>
                   </div>
                 );
