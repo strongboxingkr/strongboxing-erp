@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "next dev",
-    "build": "NODE_OPTIONS='--max-old-space-size=3072' next build --webpack",
+    "build": "NODE_OPTIONS='--max-old-space-size=3072' next build --webpack && node -e \"const c=require('crypto'),fs=require('fs');const id=c.randomBytes(16).toString('hex'),sk=c.randomBytes(32).toString('hex'),ek=c.randomBytes(32).toString('hex'),p={previewModeId:id,previewModeSigningKey:sk,previewModeEncryptionKey:ek};fs.writeFileSync('.next/prerender-manifest.json',JSON.stringify({version:4,routes:{},dynamicRoutes:{},notFoundRoutes:[],preview:p}));fs.writeFileSync('.next/server/preview-props.json',JSON.stringify(p));\"",
     "start": "next start",
     "lint": "next lint"
   },
