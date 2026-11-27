@@ -516,6 +516,8 @@ export default function MemberDetailPage() {
   const [holdSaving, setHoldSaving] = useState(false);
   const [reregSaving, setReregSaving] = useState(false);
   const [memberLockers, setMemberLockers] = useState<any[]>([]);
+  const [availableLockers, setAvailableLockers] = useState<{ locker_zone: string | null; locker_no: number }[]>([]);
+  const [showLockerPicker, setShowLockerPicker] = useState<"edit" | "rereg" | null>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const [uploading, setUploading] =
@@ -694,6 +696,27 @@ export default function MemberDetailPage() {
           "조회 실패"
       );
     }
+  };
+
+  const loadAvailableLockers = async (branchName: string) => {
+    const [lockersRes, zonesRes] = await Promise.all([
+      apiFetch(`/api/lockers?branch_name=${encodeURIComponent(branchName)}`),
+      apiFetch(`/api/locker-zones?branch_name=${encodeURIComponent(branchName)}`),
+    ]);
+    const lockersJson = await lockersRes.json();
+    const zonesJson = await zonesRes.json();
+    const occupied = new Set(
+      (lockersJson.rows || []).filter((r: any) => r.member_id).map((r: any) => Number(r.locker_no))
+    );
+    const zones: any[] = zonesJson.rows || [];
+    const multiZone = zones.length > 1;
+    const empty: { locker_zone: string | null; locker_no: number }[] = [];
+    for (const zone of zones) {
+      for (let no = Number(zone.start_no); no <= Number(zone.end_no); no++) {
+        if (!occupied.has(no)) empty.push({ locker_zone: multiZone ? zone.zone_name : null, locker_no: no });
+      }
+    }
+    setAvailableLockers(empty);
   };
 
   const saveMemo = async () => {
@@ -1487,22 +1510,46 @@ export default function MemberDetailPage() {
                 ) : (
                   <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e5e7eb" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14, marginBottom: 10 }}>
-                      <input type="checkbox" checked={!!reregForm.new_locker} onChange={e => setReregForm({ ...reregForm, new_locker: e.target.checked ? { locker_no: "", locker_zone: "", start_date: reregForm.start_date || "", end_date: "" } : null })} />
+                      <input type="checkbox" checked={!!reregForm.new_locker} onChange={e => {
+                        const checked = e.target.checked;
+                        setReregForm({ ...reregForm, new_locker: checked ? { locker_no: "", locker_zone: "", start_date: reregForm.start_date || "", end_date: "" } : null });
+                        if (checked && data?.member?.branch_name) {
+                          loadAvailableLockers(data.member.branch_name).then(() => setShowLockerPicker("rereg"));
+                        } else {
+                          setShowLockerPicker(null);
+                        }
+                      }} />
                       새 락커 함께 배정
                     </label>
                     {reregForm.new_locker && (
-                      <div style={{ display: "grid", gridTemplateColumns: "80px 100px 1fr 1fr", gap: 8 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>구역</div>
-                          <input className="input" placeholder="A" value={reregForm.new_locker.locker_zone} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, locker_zone: e.target.value } })} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>번호</div>
-                          <input className="input" placeholder="1" value={reregForm.new_locker.locker_no} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, locker_no: e.target.value } })} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>시작일</div>
-                          <input className="input" type="date" value={reregForm.new_locker.start_date} onChange={e => setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, start_date: e.target.value } })} />
+                          <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>락커 선택</div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <input className="input" placeholder="번호 직접 입력" value={reregForm.new_locker.locker_no} onChange={e => { setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, locker_no: e.target.value, locker_zone: "" } }); setShowLockerPicker(null); }} />
+                            <button type="button" className="btn secondary" style={{ fontSize: 12, height: 38, padding: "0 10px", whiteSpace: "nowrap" }}
+                              onClick={() => {
+                                if (showLockerPicker === "rereg") { setShowLockerPicker(null); return; }
+                                loadAvailableLockers(data.member.branch_name).then(() => setShowLockerPicker("rereg"));
+                              }}>빈 락커</button>
+                          </div>
+                          {showLockerPicker === "rereg" && (
+                            <div style={{ marginTop: 6, maxHeight: 160, overflowY: "auto", border: "1px solid #e5e7eb", borderRadius: 6, background: "#fff" }}>
+                              {availableLockers.length === 0
+                                ? <div style={{ padding: "8px 12px", fontSize: 12, color: "#9ca3af" }}>빈 락커 없음</div>
+                                : availableLockers.map(l => (
+                                  <div key={`${l.locker_zone}-${l.locker_no}`}
+                                    style={{ padding: "7px 12px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid #f3f4f6" }}
+                                    onClick={() => {
+                                      const locker_no = l.locker_zone ? `${l.locker_zone}-${l.locker_no}` : String(l.locker_no);
+                                      setReregForm({ ...reregForm, new_locker: { ...reregForm.new_locker, locker_no, locker_zone: l.locker_zone || "" } });
+                                      setShowLockerPicker(null);
+                                    }}>
+                                    {l.locker_zone ? `${l.locker_zone}-${l.locker_no}` : l.locker_no}번
+                                  </div>
+                                ))}
+                            </div>
+                          )}
                         </div>
                         <div>
                           <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 3 }}>종료일</div>
@@ -1727,15 +1774,6 @@ export default function MemberDetailPage() {
                     <input type="number" placeholder="0" value={editForm.remaining_count} onChange={e => setEditForm({...editForm, remaining_count: Number(e.target.value)})} />
                   </div>
                 </div>
-                {editForm.has_locker === 1 && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, marginTop: 4 }}>
-                    <span style={{ fontSize: 13, color: "var(--muted)", whiteSpace: "nowrap" }}>라커 종료일</span>
-                    <div className="emd-field" style={{ margin: 0, flex: "0 0 auto" }}>
-                      <input type="date" style={{ width: 160 }} value={editForm.locker_end_date} onChange={e => setEditForm({...editForm, locker_end_date: e.target.value})} />
-                    </div>
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>라커번호: {editForm.locker_number || "미지정"}</span>
-                  </div>
-                )}
               </div>
 
               {/* 이용 옵션 */}
@@ -1758,10 +1796,50 @@ export default function MemberDetailPage() {
                     <input type="checkbox" checked={!!editForm.has_locker} onChange={e => {
                       const checked = e.target.checked;
                       setEditForm({...editForm, has_locker: checked ? 1 : 0, locker_number: checked ? editForm.locker_number : ""});
+                      if (checked && data?.member?.branch_name) {
+                        loadAvailableLockers(data.member.branch_name).then(() => setShowLockerPicker("edit"));
+                      } else {
+                        setShowLockerPicker(null);
+                      }
                     }} />
                     라카 사용
                   </label>
                 </div>
+                {!!editForm.has_locker && (
+                  <div style={{ marginTop: 10, padding: "10px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 번호</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <input className="emd-field" style={{ width: 90, height: 36, padding: "0 10px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, background: "var(--bg)", color: "var(--fg)" }}
+                          placeholder="예) 27" value={editForm.locker_number || ""}
+                          onChange={e => { setEditForm({...editForm, locker_number: e.target.value}); setShowLockerPicker(null); }} />
+                        <button type="button" className="btn secondary" style={{ fontSize: 12, height: 36, padding: "0 10px", whiteSpace: "nowrap" }}
+                          onClick={() => {
+                            if (showLockerPicker === "edit") { setShowLockerPicker(null); return; }
+                            loadAvailableLockers(data.member.branch_name).then(() => setShowLockerPicker("edit"));
+                          }}>빈 락커</button>
+                      </div>
+                      {showLockerPicker === "edit" && (
+                        <div style={{ marginTop: 6, maxHeight: 160, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg)" }}>
+                          {availableLockers.length === 0
+                            ? <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--muted)" }}>빈 락커 없음</div>
+                            : availableLockers.map(l => (
+                              <div key={`${l.locker_zone}-${l.locker_no}`}
+                                style={{ padding: "7px 12px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid var(--line)" }}
+                                onClick={() => { setEditForm({...editForm, locker_number: l.locker_zone ? `${l.locker_zone}-${l.locker_no}` : String(l.locker_no)}); setShowLockerPicker(null); }}>
+                                {l.locker_zone ? `${l.locker_zone}-${l.locker_no}` : l.locker_no}번
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 종료일</div>
+                      <input type="date" style={{ height: 36, padding: "0 10px", fontSize: 14, border: "1px solid #d1d5db", borderRadius: 6, background: "var(--bg)", color: "var(--fg)" }}
+                        value={editForm.locker_end_date || ""} onChange={e => setEditForm({...editForm, locker_end_date: e.target.value})} />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 메모 */}
