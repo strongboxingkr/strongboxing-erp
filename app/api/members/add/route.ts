@@ -84,6 +84,23 @@ export async function POST(req: Request) {
 
     const finalMemberNo = member_no || String(noRows[0].next_member_no);
 
+    // "A구역-60" or "A-60" → { zone: "A구역", no: 60 }, "60" → { zone: null, no: 60 }
+    const parseLocker = (v: string | null) => {
+      if (!v) return { zone: null, no: null };
+      const s = String(v).trim();
+      const dash = s.lastIndexOf("-");
+      if (dash > 0) {
+        const no = parseInt(s.slice(dash + 1));
+        const zone = s.slice(0, dash);
+        if (!isNaN(no)) return { zone, no };
+      }
+      const no = parseInt(s);
+      return { zone: null, no: isNaN(no) ? null : no };
+    };
+    const parsedLocker = parseLocker(locker_no);
+    const lockerNoInt = parsedLocker.no;
+    const lockerZone = parsedLocker.zone || "A";
+
     const conn = await (pool as any).getConnection();
     let memberId: number;
 
@@ -91,10 +108,10 @@ export async function POST(req: Request) {
       await conn.beginTransaction();
 
       // 라커 중복 배정 방지: 대상 라커가 다른 회원에게 배정돼 있으면 거부
-      if (locker_no) {
+      if (lockerNoInt) {
         const [occupied]: any = await conn.query(
           `SELECT member_id FROM lockers WHERE branch_name=? AND locker_no=? AND member_id IS NOT NULL FOR UPDATE`,
-          [branch_name, locker_no]
+          [branch_name, lockerNoInt]
         );
         if (occupied.length > 0) {
           await conn.rollback();
@@ -113,7 +130,7 @@ export async function POST(req: Request) {
           branch_name, name, phone, emergency_contact || null, checkin_code,
           product_name || null, pass_type || "PERIOD",
           weekly_limit ?? null, remaining_count || 0,
-          start_date || null, end_date || null, memo || "", locker_no || null,
+          start_date || null, end_date || null, memo || "", lockerNoInt || null,
           finalMemberNo, gender || null, birth_date || null, address || null,
           join_date || start_date || null, staff_name || null,
           checkin_sms_enabled || 0, checkout_sms_enabled || 0, has_uniform || 0, has_locker || 0,
@@ -123,14 +140,14 @@ export async function POST(req: Request) {
       memberId = result.insertId;
 
       // 라커 배정: lockers 테이블도 같은 트랜잭션에서 동기화
-      if (locker_no) {
+      if (lockerNoInt) {
         await conn.query(
           `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date, phone, member_no)
-           VALUES (?, 'A', ?, ?, ?, ?, ?, ?, ?, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE member_id=VALUES(member_id), member_name=VALUES(member_name),
              gender=VALUES(gender), start_date=VALUES(start_date), end_date=VALUES(end_date),
              phone=VALUES(phone), member_no=VALUES(member_no)`,
-          [branch_name, locker_no, memberId, name, gender || null, start_date || null, locker_end_date || end_date || null, String(phone || "").replace(/[^0-9]/g, "") || null, finalMemberNo || null]
+          [branch_name, lockerZone, lockerNoInt, memberId, name, gender || null, start_date || null, locker_end_date || end_date || null, String(phone || "").replace(/[^0-9]/g, "") || null, finalMemberNo || null]
         );
       }
 
