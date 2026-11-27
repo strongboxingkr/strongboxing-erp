@@ -1186,7 +1186,7 @@ ${
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>프로그램 <span style={{ color: "#dc2626" }}>*</span></div>
                   <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
                     <option value="">선택</option>
-                    {products.map((p: any) => (
+                    {products.filter((p: any) => p.option_value === "PERIOD").map((p: any) => (
                       <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
                     ))}
                   </select>
