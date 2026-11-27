@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       await conn.query(`DELETE FROM payments WHERE member_id = ?`, [member_id]);
       await conn.query(`DELETE FROM member_histories WHERE member_id = ?`, [member_id]);
       await conn.query(`DELETE FROM member_holds WHERE member_id = ?`, [member_id]);
+      await conn.query(`UPDATE lockers SET member_id=NULL,member_name=NULL,gender=NULL,start_date=NULL,end_date=NULL,phone=NULL,member_no=NULL WHERE member_id=?`, [member_id]);
       await conn.query(`DELETE FROM members WHERE member_id = ?`, [member_id]);
       await conn.commit();
     } catch (e) {
