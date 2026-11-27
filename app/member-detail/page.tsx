@@ -1854,6 +1854,13 @@ export default function MemberDetailPage() {
             {/* 하단 버튼 */}
             <div style={{ padding: "14px 24px", borderTop: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8, flexShrink: 0, background: "var(--bg)" }}>
               <button className="btn secondary" style={{ fontSize: 13, height: 36, padding: "0 16px" }} onClick={() => setShowEditModal(false)}>취소</button>
+              <button className="btn secondary" style={{ fontSize: 13, height: 36, padding: "0 16px", color: "#ef4444" }} onClick={async () => {
+                if (!confirm(`${data.member.name} 회원을 삭제 처리할까요?`)) return;
+                const res = await apiFetch("/api/members/delete", { method: "POST", body: JSON.stringify({ member_id: data.member.member_id }) });
+                const json = await res.json();
+                if (json.success) { alert("회원 삭제 완료"); location.href = "/members"; }
+                else alert(json.message || "회원 삭제 실패");
+              }}>삭제</button>
               <div style={{ marginLeft: "auto" }}>
                 <button className="btn" disabled={editSaving} style={{ fontSize: 13, height: 36, padding: "0 20px", fontWeight: 700 }} onClick={async () => {
                   setEditSaving(true);
