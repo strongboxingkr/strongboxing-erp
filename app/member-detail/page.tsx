@@ -586,7 +586,7 @@ export default function MemberDetailPage() {
   };
 
   useEffect(() => {
-    apiFetch("/api/settings?option_type=PRODUCT").then(r => r.json()).then(d => setProducts(d.rows || []));
+    apiFetch("/api/settings?option_type=PASS_PRODUCT").then(r => r.json()).then(d => setProducts(d.rows || []));
     apiFetch("/api/settings?option_type=BRANCH").then(r => r.json()).then(d => setBranches(d.rows || []));
   }, []);
 
@@ -1649,7 +1649,7 @@ export default function MemberDetailPage() {
                   setEditForm({...editForm, product_name: name, pass_type: passType});
                 }}>
                   <option value="">선택</option>
-                  {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                 </select>
               </div>
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>주N회 제한</div>
