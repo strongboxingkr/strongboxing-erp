@@ -709,7 +709,7 @@ ${
 
   const getRemainingDisplay = (m: any) => {
     if (m.status === "REST") return { text: "휴회중", color: "#f59e0b" };
-    if (m.pass_type === "COUNT") {
+    if (m.pass_type === "COUNT" || m.weekly_limit != null) {
       const count = Number(m.remaining_count ?? 0);
       return count > 0
         ? { text: `${count}회`, color: "#60a5fa" }
