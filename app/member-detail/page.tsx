@@ -1647,7 +1647,7 @@ export default function MemberDetailPage() {
                   setEditForm({...editForm, product_name: name, pass_type: passType});
                 }}>
                   <option value="">선택</option>
-                  {products.filter((p: any) => p.option_value === "PERIOD").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                  {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                 </select>
               </div>
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>주N회 제한</div>
