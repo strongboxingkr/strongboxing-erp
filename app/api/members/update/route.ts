@@ -10,12 +10,6 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const hasCountCorrection = Object.prototype.hasOwnProperty.call(body, "previous_remaining_count");
-    if (hasCountCorrection && (!Number.isSafeInteger(body.remaining_count) || body.remaining_count < 0 ||
-        !Number.isSafeInteger(body.previous_remaining_count) || body.previous_remaining_count < 0)) {
-      return NextResponse.json({ success: false, message: "잔여횟수를 0 이상의 정수로 입력해주세요." }, { status: 400 });
-    }
-
     const {
       member_id,
       branch_name,
@@ -122,19 +116,9 @@ export async function POST(req: Request) {
     await withMemberChange(
       { type: "CORRECTION", reason: "회원 정보 수정", source: "members/update", actor: staff_name || "직원" },
       async (conn) => {
-        if (hasCountCorrection) {
-          const [lockedRows]: any = await conn.query(
-            "SELECT remaining_count FROM members WHERE member_id = ? FOR UPDATE",
-            [member_id],
-          );
-          if (!lockedRows.length || Number(lockedRows[0].remaining_count ?? 0) !== body.previous_remaining_count) {
-            throw new Error("REMAINING_COUNT_CHANGED");
-          }
-        }
-
         await conn.query(
           `UPDATE members SET branch_name=?,name=?,phone=?,phone_last4=?,checkin_code=?,product_name=?,
-           pass_type=?,weekly_limit=?,remaining_count=COALESCE(?,remaining_count),start_date=?,end_date=?,status=?,memo=?,locker_no=?,member_no=?,
+           pass_type=?,weekly_limit=?,remaining_count=?,start_date=?,end_date=?,status=?,memo=?,locker_no=?,member_no=?,
            gender=?,birth_date=?,emergency_contact=?,address=?,join_date=?,staff_name=?,
            attendance_sms_enabled=?,checkin_sms_enabled=?,checkout_sms_enabled=?,has_uniform=?,has_locker=?
            WHERE member_id=?`,
@@ -142,7 +126,7 @@ export async function POST(req: Request) {
             finalBranch, finalName, phone || oldMember.phone, phoneLast4, finalCheckinCode,
             product_name || oldMember.product_name, pass_type || oldMember.pass_type || "PERIOD",
             Object.prototype.hasOwnProperty.call(body, "weekly_limit") ? (weekly_limit ?? null) : oldMember.weekly_limit,
-            hasCountCorrection || body.payment_changed ? (remaining_count ?? null) : null, finalStartDate, finalEndDate, finalStatus,
+            body.payment_changed ? (remaining_count ?? oldMember.remaining_count) : oldMember.remaining_count, finalStartDate, finalEndDate, finalStatus,
             memo ?? oldMember.memo, finalLockerNo, member_no ?? oldMember.member_no, finalGender,
             toDate(birth_date || oldMember.birth_date), emergency_contact ?? oldMember.emergency_contact,
             address ?? oldMember.address, toDate(join_date || oldMember.join_date),
@@ -242,9 +226,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "회원 수정 완료" });
   } catch (error: any) {
     console.error(error);
-    if (error?.message === "REMAINING_COUNT_CHANGED") {
-      return NextResponse.json({ success: false, message: "잔여횟수가 변경되었습니다. 화면을 새로고침한 뒤 다시 수정해주세요." }, { status: 409 });
-    }
     if (error?.message === "LOCKER_OCCUPIED") {
       return NextResponse.json({ success: false, message: "해당 락커는 이미 다른 회원에게 배정되어 있습니다." });
     }

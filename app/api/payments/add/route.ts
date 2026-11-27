@@ -174,15 +174,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const productType: string = product.option_value || "";
-    const hasWeeklyLimit = Object.prototype.hasOwnProperty.call(body, "weekly_limit");
-    const wkLimit = hasWeeklyLimit ? (weekly_limit ?? null) : undefined;
-    if (productType !== "DAILY" && wkLimit != null && ![1, 2, 3].includes(wkLimit)) {
-      return NextResponse.json({ success: false, message: "주간 이용 횟수는 1회, 2회, 3회 중 선택해주세요." }, { status: 400 });
-    }
-
-    const isWeeklyPass = productType === "PERIOD" && wkLimit != null;
-    const pass_type = isWeeklyPass ? "COUNT" : productType;
+    const pass_type: string = product.option_value || "";
     if (pass_type !== "PERIOD" && pass_type !== "COUNT" && pass_type !== "DAILY") {
       return NextResponse.json({
         success: false,
@@ -243,8 +235,7 @@ export async function POST(req: Request) {
 
     // ── 기존 PERIOD / COUNT 처리 ──────────────────────────────────
     const duration_months = Number(product.duration_months || 0);
-    // Weekly period products use the same four-week allowance as member registration.
-    const count_value = isWeeklyPass ? wkLimit * duration_months * 4 : Number(product.count_value || 0);
+    const count_value = Number(product.count_value || 0);
 
     if (pass_type === "PERIOD" && duration_months <= 0) {
       return NextResponse.json({
@@ -325,6 +316,7 @@ export async function POST(req: Request) {
           [payRes.insertId]
         );
 
+        const wkLimit = Object.prototype.hasOwnProperty.call(body, "weekly_limit") ? (weekly_limit ?? null) : undefined;
         const memberUpdateParams: any[] = [product_name, pass_type];
         let memberUpdateSql = `UPDATE members SET product_name = ?, pass_type = ?`;
         if (wkLimit !== undefined) {

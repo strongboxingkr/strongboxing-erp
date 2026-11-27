@@ -287,7 +287,6 @@ export default function MembersPage() {
 
     setReregForm({
       product_name: m.product_name || "",
-      weekly_limit: null,
       payment_date: today,
       start_date: today,
       payment_method: "CARD",
@@ -472,7 +471,6 @@ export default function MembersPage() {
     const autoStart = m.end_date && m.end_date.slice(0, 10) > today ? m.end_date.slice(0, 10) : today;
     setReregForm({
       product_name: m.product_name || "",
-      weekly_limit: null,
       payment_date: today,
       start_date: autoStart,
       payment_method: "CARD",
