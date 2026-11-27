@@ -1620,7 +1620,7 @@ ${
                 </div>
 
                 <div style={{ fontSize: 12, color: m.locker_no ? "#e2e8f0" : "#4b5563" }}>
-                  {m.locker_no ? (m.locker_zone ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "없음"}
+                  {m.locker_no ? (m.locker_zone && m.locker_zone !== "락카" ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "없음"}
                 </div>
 
                 <div style={{ fontSize: 12, color: "#9ca3af" }}>{m.checkin_code || "-"}</div>
