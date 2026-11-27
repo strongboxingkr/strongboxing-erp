@@ -262,7 +262,7 @@ function MemberManagementInner() {
             <tbody>
               {displayRows.map(r => {
                 const { bg, color } = getAlertBadgeStyle(r.alert_type);
-                const isDate = r.pass_type === "PERIOD";
+                const isDate = r.pass_type === "PERIOD" || (r.pass_type === "COUNT" && !!r.end_date);
                 return (
                   <tr key={r.member_id}>
                     <td>
@@ -304,7 +304,7 @@ function MemberManagementInner() {
       {/* ── 회원 정보 모달 ── */}
       {modalRow && (() => {
         const r = modalRow;
-        const isDate = r.pass_type === "PERIOD" || r.pass_type === "PERIOD";
+        const isDate = r.pass_type === "PERIOD" || (r.pass_type === "COUNT" && !!r.end_date);
         const { bg, color } = getAlertBadgeStyle(r.alert_type);
         return (
           <div className="mm-modal-bg" onClick={() => setModalRow(null)}>
