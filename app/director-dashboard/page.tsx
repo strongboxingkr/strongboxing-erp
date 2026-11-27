@@ -466,10 +466,32 @@ export default function DirectorDashboardPage() {
                       <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{display.product_name}</span>
                     </div>
                   )}
+                  {(display.start_date || display.end_date) && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>사용기간</span>
+                      <span style={{ fontSize: 12, color: "#374151" }}>
+                        {display.start_date?.slice(0, 10) || "—"} ~ {display.end_date?.slice(0, 10) || "—"}
+                      </span>
+                    </div>
+                  )}
                   {remaining && (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{display.pass_type === "COUNT" ? "잔여" : "만료일"}</span>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>{display.pass_type === "COUNT" ? "잔여" : "잔여"}</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: display.pass_type === "COUNT" && (display.remaining_count ?? 0) <= 2 ? "#ef4444" : "#111827" }}>{remaining}</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>옷</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: display.clothes_locker ? "#16a34a" : "#9ca3af" }}>{display.clothes_locker ? "O" : "X"}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>락카</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: display.locker_no ? "#16a34a" : "#9ca3af" }}>{display.locker_no || "X"}</span>
+                  </div>
+                  {display.staff_name && (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>담당자</span>
+                      <span style={{ fontSize: 13, color: "#374151" }}>{display.staff_name}</span>
                     </div>
                   )}
                   {display.phone && (

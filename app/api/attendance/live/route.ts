@@ -45,7 +45,11 @@ export async function GET(req: Request) {
         m.product_name,
         m.pass_type,
         m.remaining_count,
-        m.end_date
+        m.start_date,
+        m.end_date,
+        m.clothes_locker,
+        m.locker_no,
+        m.staff_name
       FROM attendance a
       JOIN members m ON a.member_id = m.member_id
       INNER JOIN (
