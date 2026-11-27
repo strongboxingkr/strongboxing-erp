@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { apiFetch } from "@/lib/api";
 import Link from "next/link";
@@ -32,6 +32,8 @@ export default function DirectorDashboardPage() {
   const [loading, setLoading]     = useState(true);
   const [showExpiring, setShowExpiring] = useState(false);
   const [pinnedMember, setPinnedMember] = useState<any>(null);
+  const leftCardRef = useRef<HTMLDivElement>(null);
+  const [leftCardHeight, setLeftCardHeight] = useState<number | undefined>(undefined);
 
   // 공지·일정
   const [notices, setNotices]     = useState<any[]>([]);
@@ -165,6 +167,12 @@ export default function DirectorDashboardPage() {
     loadData(u);
   }, []);
 
+  useEffect(() => {
+    if (!loading && leftCardRef.current) {
+      setLeftCardHeight(leftCardRef.current.offsetHeight);
+    }
+  }, [loading, attendance, pinnedMember]);
+
   // 최근 입장 10초 자동 갱신
   useEffect(() => {
     if (!user) return;
@@ -240,8 +248,7 @@ export default function DirectorDashboardPage() {
         .dir-two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-two-col { grid-template-columns:1fr; } }
         /* 출석 섹션: 최근입장(좁음) + 출석목록(넓음) */
-        .dir-att-col { display:grid; grid-template-columns:3fr 2fr; gap:14px; margin-bottom:14px; align-items:stretch; }
-        .dir-att-col > .dir-card { display:flex; flex-direction:column; }
+        .dir-att-col { display:grid; grid-template-columns:3fr 2fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-att-col { grid-template-columns:1fr; } }
         /* 최근 입장 회원 카드 */
         .dir-latest-name { font-size:28px; font-weight:800; color:#0f2044; margin:4px 0; }
@@ -416,7 +423,7 @@ export default function DirectorDashboardPage() {
       {/* ── 최근 입장 회원 (좁음) + 오늘 출석 목록 (넓음) ── */}
       <div className="dir-att-col">
         {/* 최근 입장 회원 */}
-        <div className="dir-card" style={{ marginBottom: 0 }}>
+        <div ref={leftCardRef} className="dir-card" style={{ marginBottom: 0 }}>
           <div className="dir-card-header">
             <div className="dir-dot" style={{ background: "#10b981" }} />
             <span className="dir-card-title">최근 입장</span>
@@ -484,7 +491,7 @@ export default function DirectorDashboardPage() {
         </div>
 
         {/* 오늘 출석 전체 목록 */}
-        <div className="dir-card" style={{ marginBottom: 0 }}>
+        <div className="dir-card" style={{ marginBottom: 0, ...(leftCardHeight ? { height: leftCardHeight, display: "flex", flexDirection: "column" } : {}) }}>
           <div className="dir-card-header" style={{ justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div className="dir-dot" style={{ background: "#0f2044" }} />
@@ -499,7 +506,7 @@ export default function DirectorDashboardPage() {
           ) : attendance.length === 0 ? (
             <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 출석 없음</div>
           ) : (
-            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0, overflow: "auto" }}>
               {attendance.map((a: any, i: number) => {
                 const time = a.checkin_time
                   ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
