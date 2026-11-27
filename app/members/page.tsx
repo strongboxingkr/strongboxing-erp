@@ -1008,7 +1008,7 @@ ${
                   <div className="em-field">
                     <label className="em-label">횟수제한</label>
                     <select value={(form as any).weekly_limit ?? ""} onChange={(e) => handleWeeklyLimitChange(e.target.value)}>
-                      <option value="">제한없음</option>
+                      <option value="">--</option>
                       <option value="1">주1회</option>
                       <option value="2">주2회</option>
                       <option value="3">주3회</option>

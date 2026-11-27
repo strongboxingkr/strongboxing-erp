@@ -1688,7 +1688,7 @@ export default function MemberDetailPage() {
                       const passType = prod?.option_value === "DAILY" ? "DAILY" : val != null ? "COUNT" : "PERIOD";
                       setEditForm({...editForm, weekly_limit: val, pass_type: passType});
                     }}>
-                      <option value="">제한없음</option>
+                      <option value="">--</option>
                       <option value="1">주1회</option>
                       <option value="2">주2회</option>
                       <option value="3">주3회</option>
