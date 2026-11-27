@@ -251,8 +251,8 @@ export default function MembersPage() {
         user && user.role !== "ADMIN" && user.role !== "OWNER"
           ? user.branch_name
           : firstBranch?.option_name || "",
-      product_name: firstProduct?.option_name || "",
-      pass_type: firstProduct?.option_value || "PERIOD",
+      product_name: "",
+      pass_type: "PERIOD",
     });
 
     setMemberPayKey(crypto.randomUUID());
