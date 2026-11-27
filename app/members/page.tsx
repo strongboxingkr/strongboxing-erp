@@ -384,6 +384,11 @@ export default function MembersPage() {
       return;
     }
 
+    if (!targetForm.product_name) {
+      alert("프로그램을 선택해주세요.");
+      return;
+    }
+
     if (!isEdit && Number(targetForm.has_locker) === 1 && !targetForm.locker_no) {
       alert("락커 사용을 선택했으면 락커 번호를 입력해주세요.");
       return;
