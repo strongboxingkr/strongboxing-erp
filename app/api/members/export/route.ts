@@ -44,9 +44,9 @@ export async function GET(req: Request) {
     const sheetData = rows.map((m: any, idx: number) => {
       const endDate = m.end_date ? String(m.end_date).slice(0, 10) : "";
       let remainDays = "";
-      if (endDate) {
+      if (endDate && m.pass_type !== "COUNT") {
         const diff = Math.ceil((new Date(endDate).getTime() - today.getTime()) / 86400000);
-        remainDays = String(diff);
+        remainDays = diff > 0 ? String(diff) : "0";
       }
 
       const lastVisit = m.last_visit ? String(m.last_visit).slice(0, 10) : "";
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
         최종방문일: lastVisit,
         상태: m.status || "",
         잔여일: remainDays,
-        잔여횟수: m.remaining_count != null ? String(m.remaining_count) : "",
+        잔여횟수: m.pass_type === "COUNT" && m.remaining_count != null ? String(m.remaining_count) : "",
         옷: m.has_uniform === 1 || m.has_uniform === "1" || m.has_uniform === true ? "O" : "X",
         락카: m.locker_no ? (m.locker_zone && m.locker_zone !== "락카" ? `${m.locker_zone}-${m.locker_no}` : String(m.locker_no)) : "X",
         "NO ": "",
