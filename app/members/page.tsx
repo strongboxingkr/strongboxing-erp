@@ -1001,7 +1001,7 @@ ${
                     <label className="em-label">프로그램</label>
                     <select value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
                       <option value="">선택</option>
-                      {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                      {products.filter((p: any) => p.option_value !== "DAILY").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                     </select>
                   </div>
                   {form.pass_type !== "DAILY" && (
