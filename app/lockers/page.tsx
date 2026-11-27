@@ -61,7 +61,7 @@ export default function LockersPage() {
   };
 
   const getLocker = (no: number, zoneName: string) =>
-    lockers.find((l) => l.locker_no === no && l.locker_zone === zoneName);
+    lockers.find((l) => l.locker_no === no && (l.locker_zone == null || l.locker_zone === zoneName));
 
   const openModal = (no: number) => {
     const existing = getLocker(no, selectedZone.zone_name);
