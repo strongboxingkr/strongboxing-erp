@@ -290,6 +290,34 @@ export default function MobileBranchPage() {
         </div>
       </div>
 
+      {/* 긴급 알림 배지 */}
+      {(() => {
+        const nearExp = alerts.filter((m: any) => {
+          if (!m.end_date || m.pass_type === "COUNT") return false;
+          const diff = Math.ceil((new Date(m.end_date).getTime() - new Date(today).getTime()) / 86400000);
+          return diff >= 0 && diff <= 3;
+        });
+        const lowCnt = alerts.filter((m: any) => m.pass_type === "COUNT" && Number(m.remaining_count ?? 0) <= 1);
+        if (nearExp.length === 0 && lowCnt.length === 0) return null;
+        return (
+          <div style={{ padding: "10px 12px 0" }}>
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", display: "flex", gap: 16, flexWrap: "wrap" as const }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#dc2626" }}>⚠ 긴급</span>
+              {nearExp.length > 0 && (
+                <span style={{ fontSize: 12, color: "#7f1d1d", fontWeight: 600 }}>
+                  만료 3일 이내 <b style={{ color: "#dc2626" }}>{nearExp.length}명</b>
+                </span>
+              )}
+              {lowCnt.length > 0 && (
+                <span style={{ fontSize: 12, color: "#7f1d1d", fontWeight: 600 }}>
+                  횟수권 1회 이하 <b style={{ color: "#dc2626" }}>{lowCnt.length}명</b>
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 관리 필요 회원 */}
       <div style={{ padding: "12px 12px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>

@@ -49,6 +49,8 @@ export default function MobileOwnerPage() {
   const [chartRows, setChartRows] = useState<any[] | null>(null);
   const [chartError, setChartError] = useState(false);
   const [reservations, setReservations] = useState<any[]>([]);
+  const [nearExpiring, setNearExpiring] = useState<any[]>([]);
+  const [lowCount, setLowCount] = useState<any[]>([]);
   const [showMore, setShowMore] = useState(false);
 
   const [preset, setPreset] = useState(0);
@@ -99,6 +101,27 @@ export default function MobileOwnerPage() {
       setReservations((rJson.rows || []).filter(
         (r: any) => r.start_datetime?.slice(0, 10) === today && !["취소", "예약취소"].includes(r.status)
       ));
+    } catch {}
+
+    // 만료 3일 이내 + 횟수권 1회 이하
+    try {
+      const branchQ = branch !== "전체" ? `&branch_name=${encodeURIComponent(branch)}` : "";
+      const [expRes, cntRes] = await Promise.all([
+        apiFetch(`/api/members?status=ACTIVE&expiring=3${branchQ}`),
+        apiFetch(`/api/members?status=ACTIVE&pass_type=COUNT${branchQ}`),
+      ]);
+      const [expJson, cntJson] = await Promise.all([expRes.json(), cntRes.json()]);
+      if (reqId.current !== id) return;
+      const todayMs = new Date().setHours(0, 0, 0, 0);
+      const threeDaysMs = todayMs + 3 * 86400000;
+      const nearRows = (expJson.rows || []).filter((m: any) => {
+        if (!m.end_date) return false;
+        const e = new Date(m.end_date).setHours(0, 0, 0, 0);
+        return e >= todayMs && e <= threeDaysMs;
+      });
+      const lowRows = (cntJson.rows || []).filter((m: any) => Number(m.remaining_count ?? 0) <= 1);
+      setNearExpiring(nearRows);
+      setLowCount(lowRows);
     } catch {}
   }, [startDate, endDate, branch]);
 
@@ -285,6 +308,79 @@ export default function MobileOwnerPage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* ③-b 긴급 알림 */}
+        {(nearExpiring.length > 0 || lowCount.length > 0) && (
+          <div>
+            <div style={S.sectionHeader}>
+              <span style={{ ...S.sectionTitle, color: "#dc2626" }}>⚠ 긴급 알림</span>
+              <span style={{ fontSize: 11, color: "#94a3b8" }}>현재 기준</span>
+            </div>
+            <div style={S.card}>
+              {nearExpiring.length > 0 && (
+                <div>
+                  <div style={{ padding: "10px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>만료 3일 이내</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: "#dc2626", fontVariantNumeric: "tabular-nums" }}>
+                          {nearExpiring.length}<span style={{ fontSize: 12, fontWeight: 400, color: "#64748b" }}>명</span>
+                        </span>
+                        <Link href="/member-expiring" style={S.outlineBtn}>보기</Link>
+                      </div>
+                    </div>
+                    {branch === "전체" && (() => {
+                      const perBranch = BRANCH_ORDER.map((name) => ({
+                        name,
+                        count: nearExpiring.filter((m: any) => m.branch_name === name).length,
+                      })).filter((b) => b.count > 0);
+                      return perBranch.length > 0 ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", marginTop: 5 }}>
+                          {perBranch.map((b) => (
+                            <span key={b.name} style={{ fontSize: 12, color: "#64748b" }}>
+                              {b.name} <b style={{ color: "#374151" }}>{b.count}</b>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              )}
+              {nearExpiring.length > 0 && lowCount.length > 0 && <div style={S.divider} />}
+              {lowCount.length > 0 && (
+                <div>
+                  <div style={{ padding: "10px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>횟수권 1회 이하</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: "#d97706", fontVariantNumeric: "tabular-nums" }}>
+                          {lowCount.length}<span style={{ fontSize: 12, fontWeight: 400, color: "#64748b" }}>명</span>
+                        </span>
+                        <Link href="/members" style={S.outlineBtn}>보기</Link>
+                      </div>
+                    </div>
+                    {branch === "전체" && (() => {
+                      const perBranch = BRANCH_ORDER.map((name) => ({
+                        name,
+                        count: lowCount.filter((m: any) => m.branch_name === name).length,
+                      })).filter((b) => b.count > 0);
+                      return perBranch.length > 0 ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 10px", marginTop: 5 }}>
+                          {perBranch.map((b) => (
+                            <span key={b.name} style={{ fontSize: 12, color: "#64748b" }}>
+                              {b.name} <b style={{ color: "#374151" }}>{b.count}</b>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
