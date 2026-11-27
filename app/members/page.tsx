@@ -177,8 +177,9 @@ export default function MembersPage() {
     if (rows.length > 0) {
       setForm((prev) => ({
         ...prev,
-        product_name: prev.product_name || rows[0].option_name,
-        pass_type: rows[0].option_value || "PERIOD",
+        // 수정 모드일 때만 자동 설정 (신규 등록 시엔 사용자가 직접 선택)
+        product_name: isEdit ? (prev.product_name || rows[0].option_name) : prev.product_name,
+        pass_type: prev.pass_type || rows[0].option_value || "PERIOD",
       }));
     }
   };
