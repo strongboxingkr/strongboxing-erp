@@ -67,6 +67,18 @@ export async function POST(req: Request, context: any) {
           ]
         );
 
+        await conn.query(
+          `INSERT INTO pass_history (member_id, branch_name, member_name, action_type, pass_type, product_name, start_date, end_date, remaining_count, amount, staff_name, memo)
+           VALUES (?, ?, ?, 'RENEW', ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            memberId, member.branch_name, member.name,
+            pass_type, product_name || null,
+            start_date || null, end_date || null,
+            pass_type === "COUNT" ? (total_count || 0) : null,
+            final_amount || 0, finalStaffName, memo || null,
+          ]
+        );
+
         // 라커 기간 함께 연장: extend_locker=true 이고 회원권 종료일이 있을 때만
         // 라커가 없는 회원에게는 임의 배정하지 않음, 이용료 임의 생성 없음
         if (extend_locker && end_date && member.locker_no) {

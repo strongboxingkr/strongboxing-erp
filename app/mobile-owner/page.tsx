@@ -119,7 +119,11 @@ export default function MobileOwnerPage() {
         const e = new Date(m.end_date).setHours(0, 0, 0, 0);
         return e >= todayMs && e <= threeDaysMs;
       });
-      const lowRows = (cntJson.rows || []).filter((m: any) => Number(m.remaining_count ?? 0) <= 1);
+      const todayDate = new Date(new Date().setHours(0,0,0,0));
+      const lowRows = (cntJson.rows || []).filter((m: any) =>
+        Number(m.remaining_count ?? 0) <= 1 &&
+        (!m.end_date || new Date(m.end_date) >= todayDate)
+      );
       setNearExpiring(nearRows);
       setLowCount(lowRows);
     } catch {}
@@ -149,13 +153,14 @@ export default function MobileOwnerPage() {
 
   const checkItems = [
     {
-      label: "만료 7일 이내",
-      total: branch === "전체"
+      label: "만료 4~7일 이내",
+      total: Math.max(0, (branch === "전체"
         ? rawBranchSales.reduce((s: number, b: any) => s + Number(b.expiring_soon || 0), 0)
-        : Number(data?.alert_members || 0),
+        : Number(data?.alert_members || 0)) - nearExpiring.length),
       perBranch: branch === "전체" ? BRANCH_ORDER.map((name) => {
         const b = rawBranchSales.find((r: any) => r.branch_name === name);
-        return { name, count: Number(b?.expiring_soon || 0) };
+        const nearCount = nearExpiring.filter((m: any) => m.branch_name === name).length;
+        return { name, count: Math.max(0, Number(b?.expiring_soon || 0) - nearCount) };
       }) : [],
       href: "/member-expiring",
       urgent: false,

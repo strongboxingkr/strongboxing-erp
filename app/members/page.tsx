@@ -66,6 +66,17 @@ export default function MembersPage() {
   const [embedMode, setEmbedMode] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [availableLockers, setAvailableLockers] = useState<any[]>([]);
+  const [showLockerPicker, setShowLockerPicker] = useState(false);
+
+  const loadAvailableLockers = async (branchName: string) => {
+    try {
+      const res = await apiFetch(`/api/lockers?branch_name=${encodeURIComponent(branchName)}`);
+      const json = await res.json();
+      const empty = (json.rows || []).filter((r: any) => !r.member_id);
+      setAvailableLockers(empty);
+      setShowLockerPicker(true);
+    } catch {}
+  };
 
   const [showForm, setShowForm] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
@@ -356,6 +367,11 @@ export default function MembersPage() {
 
     if (!targetForm.branch_name) {
       alert("지점을 선택해주세요.");
+      return;
+    }
+
+    if (!isEdit && Number(targetForm.has_locker) === 1 && !targetForm.locker_no) {
+      alert("락커 사용을 선택했으면 락커 번호를 입력해주세요.");
       return;
     }
 
@@ -1084,12 +1100,34 @@ ${
                 </div>
 
                 {Number(form.has_locker) === 1 && (
-                  <div style={{ marginTop: 10, padding: "12px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                  <div style={{ marginTop: 10, padding: "12px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
                     <div>
-                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 번호</div>
-                      <input className="input" placeholder="예) 27" style={{ width: 100 }}
-                        value={form.locker_no}
-                        onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 번호 <span style={{ color: "#ef4444" }}>*</span></div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <input className="input" placeholder="예) 27" style={{ width: 80 }}
+                          value={form.locker_no}
+                          onChange={(e) => { setForm({ ...form, locker_no: e.target.value }); setShowLockerPicker(false); }} />
+                        <button type="button" className="btn secondary" style={{ fontSize: 12, height: 32, padding: "0 10px", whiteSpace: "nowrap" }}
+                          onClick={() => {
+                            const bn = (isAdminOrOwner ? form.branch_name : user?.branch_name) || "";
+                            if (!bn) { alert("지점을 먼저 선택해주세요."); return; }
+                            if (showLockerPicker) { setShowLockerPicker(false); return; }
+                            loadAvailableLockers(bn);
+                          }}>빈 락커</button>
+                      </div>
+                      {showLockerPicker && (
+                        <div style={{ marginTop: 6, maxHeight: 160, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg)" }}>
+                          {availableLockers.length === 0 ? (
+                            <div style={{ padding: "8px 12px", fontSize: 12, color: "var(--muted)" }}>빈 락커 없음</div>
+                          ) : availableLockers.map((l: any) => (
+                            <div key={`${l.locker_zone}-${l.locker_no}`}
+                              style={{ padding: "7px 12px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid var(--line)" }}
+                              onClick={() => { setForm({ ...form, locker_no: l.locker_zone && l.locker_zone !== "락카" ? `${l.locker_zone}-${l.locker_no}` : String(l.locker_no) }); setShowLockerPicker(false); }}>
+                              {l.locker_zone && l.locker_zone !== "락카" ? `${l.locker_zone}-${l.locker_no}` : l.locker_no}번
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 만료일</div>

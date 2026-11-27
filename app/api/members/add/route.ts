@@ -162,6 +162,18 @@ export async function POST(req: Request) {
       ]
     );
 
+      await conn.query(
+        `INSERT INTO pass_history (member_id, branch_name, member_name, action_type, pass_type, product_name, start_date, end_date, remaining_count, amount, staff_name, memo)
+         VALUES (?, ?, ?, 'REGISTER', ?, ?, ?, ?, ?, NULL, ?, ?)`,
+        [
+          memberId, branch_name, name,
+          pass_type || "PERIOD", product_name || null,
+          start_date || null, end_date || null,
+          pass_type === "COUNT" ? (remaining_count || 0) : null,
+          staff_name || "관리자", memo || null,
+        ]
+      );
+
       await conn.commit();
     } catch (e) {
       await conn.rollback();

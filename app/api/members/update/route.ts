@@ -220,6 +220,28 @@ export async function POST(req: Request) {
            VALUES (?,?,?,?,?,?,?)`,
           [member_id, finalName, "UPDATE", "회원정보 수정", JSON.stringify(oldMember), JSON.stringify(body), staff_name || "관리자"]
         );
+
+        const passChanged =
+          (pass_type && pass_type !== oldMember.pass_type) ||
+          (product_name && product_name !== oldMember.product_name) ||
+          (start_date && start_date !== (oldMember.start_date ? String(oldMember.start_date).slice(0,10) : null)) ||
+          (end_date && end_date !== (oldMember.end_date ? String(oldMember.end_date).slice(0,10) : null)) ||
+          (remaining_count !== undefined && remaining_count !== null && remaining_count !== oldMember.remaining_count);
+
+        if (passChanged) {
+          await conn.query(
+            `INSERT INTO pass_history (member_id, branch_name, member_name, action_type, pass_type, product_name, start_date, end_date, remaining_count, amount, staff_name, memo)
+             VALUES (?, ?, ?, 'CHANGE', ?, ?, ?, ?, ?, NULL, ?, ?)`,
+            [
+              member_id, finalBranch, finalName,
+              pass_type || oldMember.pass_type,
+              product_name || oldMember.product_name || null,
+              finalStartDate, finalEndDate,
+              (pass_type || oldMember.pass_type) === "COUNT" ? (remaining_count ?? oldMember.remaining_count ?? null) : null,
+              staff_name || "관리자", memo ?? oldMember.memo ?? null,
+            ]
+          );
+        }
       }
     );
 
