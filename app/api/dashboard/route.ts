@@ -92,6 +92,7 @@ export async function GET(req: Request) {
       SELECT COUNT(*) AS new_members
       FROM members
       WHERE DATE(created_at) BETWEEN ? AND ?
+      AND status != 'DELETED'
       ${branchFilter}
       `,
       [startDate, endDate, ...branchParams]
@@ -223,6 +224,7 @@ export async function GET(req: Request) {
       SELECT branch_name, COUNT(*) AS new_members
       FROM members
       WHERE DATE(created_at) BETWEEN ? AND ?
+      AND status != 'DELETED'
       GROUP BY branch_name
       `,
       [startDate, endDate]
