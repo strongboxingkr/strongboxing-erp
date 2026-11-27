@@ -1409,7 +1409,7 @@ export default function MemberDetailPage() {
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>프로그램 <span style={{ color: "#dc2626" }}>*</span></div>
                   <select className="input" value={reregForm.product_name} onChange={e => setReregForm({ ...reregForm, product_name: e.target.value })}>
                     <option value="">선택</option>
-                    {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                    {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                   </select>
                 </div>
                 <div>

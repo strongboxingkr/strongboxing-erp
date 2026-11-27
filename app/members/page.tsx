@@ -1001,7 +1001,7 @@ ${
                     <label className="em-label">프로그램</label>
                     <select value={form.product_name} onChange={(e) => handleProductChange(e.target.value)}>
                       <option value="">선택</option>
-                      {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
+                      {products.map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                     </select>
                   </div>
                   {form.pass_type !== "DAILY" && (
@@ -1074,64 +1074,31 @@ ${
                       운동복 대여
                     </label>
                     <label className="em-opt-label">
-                      <input type="checkbox" checked={Number(form.has_locker) === 1} onChange={async (e) => {
+                      <input type="checkbox" checked={Number(form.has_locker) === 1} onChange={(e) => {
                         const checked = e.target.checked;
                         setForm({ ...form, has_locker: checked ? 1 : 0, locker_no: checked ? form.locker_no : "" });
-                        if (checked) {
-                          const branchName = form.branch_name || user?.branch_name || "";
-                          const res = await apiFetch(`/api/lockers?branch_name=${encodeURIComponent(branchName)}`);
-                          if (res.success) setAvailableLockers(res.rows.filter((r: any) => !r.member_id));
-                        } else {
-                          setAvailableLockers([]);
-                        }
                       }} />
                       라커 사용
                     </label>
                   </div>
                 </div>
 
-                {Number(form.has_locker) === 1 && availableLockers.length > 0 && (() => {
-                  const branchName = form.branch_name || user?.branch_name || "";
-                  const isCheolsan = branchName.includes("철산");
-                  const zones = isCheolsan
-                    ? ["A", "B"]
-                    : [...new Set(availableLockers.map((l: any) => l.locker_zone || ""))];
-                  return (
-                    <div style={{ marginTop: 10, padding: "12px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", marginBottom: 8 }}>빈 락커 선택</div>
-                      {zones.map((zone) => {
-                        const zoneLockers = isCheolsan
-                          ? availableLockers.filter((l: any) => (l.locker_zone || "") === zone)
-                          : availableLockers.filter((l: any) => (l.locker_zone || "") === zone);
-                        if (zoneLockers.length === 0) return null;
-                        return (
-                          <div key={zone} style={{ marginBottom: 8 }}>
-                            {(isCheolsan || zones.length > 1) && <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4 }}>{zone}구역</div>}
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                              {zoneLockers.map((l: any) => (
-                                <button key={l.locker_id} type="button"
-                                  style={{ padding: "4px 10px", fontSize: 12, borderRadius: 6, border: "1px solid var(--line)", background: form.locker_no === String(l.locker_no) ? "var(--accent)" : "var(--panel)", color: form.locker_no === String(l.locker_no) ? "#fff" : "var(--fg)", cursor: "pointer" }}
-                                  onClick={() => setForm({ ...form, locker_no: String(l.locker_no) })}>
-                                  {l.locker_no}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {form.locker_no && (
-                        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 12, color: "var(--muted)" }}>선택: <strong>{form.locker_no}번</strong></span>
-                          <span style={{ fontSize: 12, color: "var(--muted)" }}>|</span>
-                          <span style={{ fontSize: 12, color: "var(--muted)" }}>라커 만료일</span>
-                          <input type="date" style={{ fontSize: 12, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--line)", background: "var(--panel)", color: "var(--fg)" }}
-                            value={(form as any).locker_end_date || form.end_date}
-                            onChange={(e) => setForm({ ...form, locker_end_date: e.target.value } as any)} />
-                        </div>
-                      )}
+                {Number(form.has_locker) === 1 && (
+                  <div style={{ marginTop: 10, padding: "12px 14px", background: "var(--panel2)", border: "1px solid var(--line)", borderRadius: 8, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 번호</div>
+                      <input className="input" placeholder="예) 27" style={{ width: 100 }}
+                        value={form.locker_no}
+                        onChange={(e) => setForm({ ...form, locker_no: e.target.value })} />
                     </div>
-                  );
-                })()}
+                    <div>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>락커 만료일</div>
+                      <input type="date" className="input" style={{ width: 150 }}
+                        value={(form as any).locker_end_date || form.end_date}
+                        onChange={(e) => setForm({ ...form, locker_end_date: e.target.value } as any)} />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ── 메모 ── */}
@@ -1219,7 +1186,7 @@ ${
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>프로그램 <span style={{ color: "#dc2626" }}>*</span></div>
                   <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.product_name} onChange={(e) => setReregForm({ ...reregForm, product_name: e.target.value })}>
                     <option value="">선택</option>
-                    {products.filter((p: any) => p.option_value !== "COUNT").map((p: any) => (
+                    {products.map((p: any) => (
                       <option key={p.option_name} value={p.option_name}>{p.option_name}</option>
                     ))}
                   </select>
