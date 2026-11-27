@@ -1194,12 +1194,10 @@ ${
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>주N회 제한</div>
                   <select className="input" style={{ height: "auto", minHeight: 38, padding: "8px 10px", lineHeight: "1.4", fontSize: 14 }} value={reregForm.weekly_limit ?? ""} onChange={e => setReregForm({ ...reregForm, weekly_limit: e.target.value === "" ? null : Number(e.target.value) })}>
-                    <option value="">무제한</option>
+                    <option value="">--</option>
                     <option value="1">주1회</option>
                     <option value="2">주2회</option>
                     <option value="3">주3회</option>
-                    <option value="4">주4회</option>
-                    <option value="5">주5회</option>
                   </select>
                 </div>
               </div>

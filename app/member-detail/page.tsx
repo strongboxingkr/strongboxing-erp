@@ -1415,12 +1415,10 @@ export default function MemberDetailPage() {
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>주N회 제한</div>
                   <select className="input" value={reregForm.weekly_limit ?? ""} onChange={e => setReregForm({ ...reregForm, weekly_limit: e.target.value === "" ? null : Number(e.target.value) })}>
-                    <option value="">무제한</option>
+                    <option value="">--</option>
                     <option value="1">주1회</option>
                     <option value="2">주2회</option>
                     <option value="3">주3회</option>
-                    <option value="4">주4회</option>
-                    <option value="5">주5회</option>
                   </select>
                 </div>
               </div>
@@ -1659,12 +1657,10 @@ export default function MemberDetailPage() {
                   const passType = prod?.option_value === "DAILY" ? "DAILY" : val != null ? "COUNT" : "PERIOD";
                   setEditForm({...editForm, weekly_limit: val, pass_type: passType});
                 }}>
-                  <option value="">무제한</option>
+                  <option value="">--</option>
                   <option value="1">주1회</option>
                   <option value="2">주2회</option>
                   <option value="3">주3회</option>
-                  <option value="4">주4회</option>
-                  <option value="5">주5회</option>
                 </select>
               </div>
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>시작일</div>
