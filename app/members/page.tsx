@@ -179,7 +179,7 @@ export default function MembersPage() {
         ...prev,
         // 수정 모드일 때만 자동 설정 (신규 등록 시엔 사용자가 직접 선택)
         product_name: isEdit ? (prev.product_name || rows[0].option_name) : prev.product_name,
-        pass_type: prev.pass_type || rows[0].option_value || "PERIOD",
+        pass_type: isEdit ? (prev.pass_type || rows[0].option_value || "PERIOD") : prev.pass_type,
       }));
     }
   };
@@ -393,6 +393,11 @@ export default function MembersPage() {
     if (!isEdit && Number(targetForm.has_locker) === 1 && !targetForm.locker_no) {
       alert("락커 사용을 선택했으면 락커 번호를 입력해주세요.");
       return;
+    }
+
+    if (!isEdit && !Number((targetForm as any).payment_amount)) {
+      const go = window.confirm("결제금액이 입력되지 않았습니다.\n계속 저장하시겠습니까?\n(회원 상세내역 → 결제 탭에서 나중에 추가할 수 있습니다.)");
+      if (!go) return;
     }
 
     const url = isEdit ? "/api/members/update" : "/api/members/add";
