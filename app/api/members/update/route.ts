@@ -93,9 +93,14 @@ export async function POST(req: Request) {
     // 'B-52' 형식이면 zone과 번호 분리 (철산 락카)
     const parseLocker = (v: string | null) => {
       if (!v) return { zone: null, no: null };
-      const m = String(v).match(/^([A-Za-z])-(\d+)$/);
-      if (m) return { zone: m[1].toUpperCase(), no: parseInt(m[2]) };
-      return { zone: null, no: parseInt(v) || null };
+      const s = String(v).trim();
+      // "락카-52" or "락커-52" → no=52
+      const ko = s.match(/^[^\d]+-(\d+)$/);
+      if (ko) return { zone: null, no: parseInt(ko[1]) };
+      // "B-52" → zone="B", no=52
+      const en = s.match(/^([A-Za-z])-(\d+)$/);
+      if (en) return { zone: en[1].toUpperCase(), no: parseInt(en[2]) };
+      return { zone: null, no: parseInt(s) || null };
     };
     const finalBranch = branch_name || oldMember.branch_name;
     const finalName = name || oldMember.name;
