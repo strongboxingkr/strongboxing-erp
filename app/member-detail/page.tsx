@@ -868,7 +868,7 @@ export default function MemberDetailPage() {
                   onClick={() => {
                     const m = data.member;
                     const today = new Date().toISOString().slice(0,10);
-                    setReregForm({ product_name: m.product_name || "", final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: today, start_date: m.end_date ? m.end_date.slice(0,10) : today, end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
+                    setReregForm({ product_name: m.product_name || "", weekly_limit: null, final_amount: "", amount: "", discount_amount: 0, payment_method: "CARD", payment_date: today, start_date: m.end_date ? m.end_date.slice(0,10) : today, end_date: "", memo: "", extend_locker: false, locker_end_date: "" });
                     setShowReregModal(true);
                   }}>재등록</button>
                 <button className="btn secondary" style={{ fontSize: 12, padding: "4px 12px", height: 30 }}
@@ -1643,8 +1643,7 @@ export default function MemberDetailPage() {
                 <select className="input" value={editForm.product_name} onChange={e => {
                   const name = e.target.value;
                   const prod = products.find((p: any) => p.option_name === name);
-                  const passType = prod?.option_value === "DAILY" ? "DAILY" : editForm.weekly_limit != null ? "COUNT" : "PERIOD";
-                  setEditForm({...editForm, product_name: name, pass_type: passType});
+                  setEditForm({...editForm, product_name: name, pass_type: prod?.option_value || editForm.pass_type});
                 }}>
                   <option value="">선택</option>
                   {products.filter((p: any) => p.option_value === "PERIOD").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
@@ -1653,9 +1652,7 @@ export default function MemberDetailPage() {
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>주N회 제한</div>
                 <select className="input" value={editForm.weekly_limit ?? ""} onChange={e => {
                   const val = e.target.value === "" ? null : Number(e.target.value);
-                  const prod = products.find((p: any) => p.option_name === editForm.product_name);
-                  const passType = prod?.option_value === "DAILY" ? "DAILY" : val != null ? "COUNT" : "PERIOD";
-                  setEditForm({...editForm, weekly_limit: val, pass_type: passType});
+                  setEditForm({...editForm, weekly_limit: val});
                 }}>
                   <option value="">--</option>
                   <option value="1">주1회</option>
@@ -1679,7 +1676,7 @@ export default function MemberDetailPage() {
                 <input className="input" type="date" value={editForm.end_date} onChange={e => setEditForm({...editForm, end_date: e.target.value, locker_end_date: editForm.locker_end_date ? e.target.value : ""})} />
               </div>
               <div><div style={{ fontSize: 11, color: "#9ca3af", marginBottom: 3 }}>잔여횟수</div>
-                <input className="input" type="number" value={editForm.remaining_count} onChange={e => setEditForm({...editForm, remaining_count: Number(e.target.value)})} />
+                <input className="input" type="number" min={0} step={1} value={editForm.remaining_count} onChange={e => setEditForm({...editForm, remaining_count: e.target.value})} />
               </div>
             </div>
             {editForm.has_locker === 1 && (
@@ -1706,6 +1703,12 @@ export default function MemberDetailPage() {
 
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn" disabled={editSaving} onClick={async () => {
+                const previousCount = Number(data.member.remaining_count ?? 0);
+                const nextCount = Number(editForm.remaining_count);
+                if (String(editForm.remaining_count).trim() === "" || !Number.isSafeInteger(nextCount) || nextCount < 0) {
+                  alert("잔여횟수를 0 이상의 정수로 입력해주세요.");
+                  return;
+                }
                 setEditSaving(true);
                 const payload = {
                   member_id: data.member.member_id,
@@ -1723,7 +1726,7 @@ export default function MemberDetailPage() {
                   weekly_limit: editForm.weekly_limit,
                   start_date: editForm.start_date,
                   end_date: editForm.end_date,
-                  remaining_count: editForm.remaining_count,
+                  ...(nextCount !== previousCount ? { remaining_count: nextCount, previous_remaining_count: previousCount } : {}),
                   has_uniform: editForm.has_sportswear,
                   has_locker: editForm.has_locker,
                   attendance_sms_enabled: editForm.has_sms,
