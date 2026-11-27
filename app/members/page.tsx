@@ -77,14 +77,13 @@ export default function MembersPage() {
       const lockersJson = await lockersRes.json();
       const zonesJson = await zonesRes.json();
       const occupied = new Set(
-        (lockersJson.rows || []).filter((r: any) => r.member_id).map((r: any) => `${r.locker_zone || ""}:${r.locker_no}`)
+        (lockersJson.rows || []).filter((r: any) => r.member_id).map((r: any) => Number(r.locker_no))
       );
       const zones: any[] = zonesJson.rows || [];
       const empty: { locker_zone: string; locker_no: number }[] = [];
       for (const zone of zones) {
         for (let no = Number(zone.start_no); no <= Number(zone.end_no); no++) {
-          const key = `${zone.zone_name}:${no}`;
-          if (!occupied.has(key)) empty.push({ locker_zone: zone.zone_name, locker_no: no });
+          if (!occupied.has(no)) empty.push({ locker_zone: zone.zone_name, locker_no: no });
         }
       }
       setAvailableLockers(empty);
