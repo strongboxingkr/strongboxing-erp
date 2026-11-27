@@ -377,7 +377,7 @@ export async function POST(req: Request) {
 
     if (
       Number(member.checkin_sms_enabled || 0) === 1 &&
-      member.emergency_contact
+      member.phone
     ) {
       await sendAttendanceSms(member);
     }
@@ -481,7 +481,7 @@ async function sendAttendanceSms(member: any) {
     const [already]: any = await pool.query(
       `SELECT COUNT(*) AS cnt FROM sms_logs
        WHERE receiver_phone = ? AND target_type = 'ATTENDANCE' AND DATE(created_at) = CURDATE()`,
-      [String(member.emergency_contact || "").replace(/[^0-9]/g, "")]
+      [String(member.phone || "").replace(/[^0-9]/g, "")]
     );
     if (already[0].cnt > 0) return;
 
@@ -509,7 +509,7 @@ async function sendAttendanceSms(member: any) {
       minute: "2-digit",
     });
 
-    const to = cleanPhone(member.emergency_contact);
+    const to = cleanPhone(member.phone);
 
     if (to.length < 10) return;
 
@@ -540,7 +540,7 @@ ${member.name} 회원님이 ${timeText} 출석했습니다.`;
         member.branch_name,
         "ATTENDANCE",
         member.name,
-        member.emergency_contact,
+        member.phone,
         text,
         "SENT",
         "SOLAPI",

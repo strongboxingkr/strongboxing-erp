@@ -1158,7 +1158,6 @@ export default function MemberDetailPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0 24px" }}>
                 <Info label="성별" value={data.member.gender || "-"} />
                 <Info label="생년월일" value={data.member.birth_date?.slice(0, 10) || "-"} />
-                <Info label="비상연락처" value={data.member.emergency_contact || "-"} />
                 <Info label="가입일" value={data.member.join_date?.slice(0, 10) || "-"} />
                 <Info label="상태" value={
                   data.member.status === "ACTIVE" ? "정상"
@@ -1167,6 +1166,18 @@ export default function MemberDetailPage() {
                   : data.member.status || "-"
                 } />
                 <Info label="주소" value={data.member.address || "-"} wide />
+              </div>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)", display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  { label: "입장 문자", on: !!data.member.checkin_sms_enabled },
+                  { label: "퇴장 문자", on: !!data.member.checkout_sms_enabled },
+                  { label: "운동복 대여", on: !!data.member.has_uniform },
+                  { label: "락커 사용", on: !!data.member.has_locker },
+                ].map(({ label, on }) => (
+                  <span key={label} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 20, background: on ? "#eff6ff" : "var(--panel2)", color: on ? "#2563eb" : "var(--muted)", border: `1px solid ${on ? "#bfdbfe" : "var(--line)"}`, fontWeight: on ? 600 : 400 }}>
+                    {on ? "✓ " : ""}{label}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -1269,7 +1280,7 @@ export default function MemberDetailPage() {
                       payment_method: addPayForm.payment_method,
                       payment_date: addPayForm.payment_date,
                       memo: addPayForm.memo,
-                      payment_purpose: "GENERAL",
+                      payment_purpose: products.some((p: any) => p.option_name === addPayForm.product_name) ? "PASS" : "GENERAL",
                     }),
                   });
                   const json = await res.json();

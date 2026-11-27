@@ -343,7 +343,8 @@ export default function MembersPage() {
   };
 
   const handleProductChange = (productName: string) => {
-    const weeklyLimit = (form as any).weekly_limit ?? null;
+    const weeklyMatch = productName.match(/주(\d+)회/);
+    const weeklyLimit = weeklyMatch ? parseInt(weeklyMatch[1]) : ((form as any).weekly_limit ?? null);
     const { passType, remaining, endDate } = calcFromProductAndLimit(productName, weeklyLimit, form.start_date);
     setForm({
       ...form,
