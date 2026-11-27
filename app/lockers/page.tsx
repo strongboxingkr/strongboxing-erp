@@ -356,9 +356,9 @@ export default function LockersPage() {
                     const used = !!locker?.member_name;
                     const expired = used && locker.end_date && new Date(locker.end_date) < new Date();
                     const hasLuggage = expired && locker.has_luggage === 1;
-                    const borderColor = hasLuggage ? "#ec4899" : expired ? "#ef4444" : used ? "#3b82f6" : "var(--line)";
-                    const bgColor = hasLuggage ? "rgba(236,72,153,0.12)" : expired ? "rgba(239,68,68,0.1)" : used ? "rgba(59,130,246,0.12)" : "var(--panel)";
-                    const textColor = hasLuggage ? "#ec4899" : expired ? "#ef4444" : used ? "#3b82f6" : "var(--muted)";
+                    const borderColor = expired ? "#ec4899" : used ? "#3b82f6" : "var(--line)";
+                    const bgColor = expired ? "rgba(236,72,153,0.12)" : used ? "rgba(59,130,246,0.12)" : "var(--panel)";
+                    const textColor = expired ? "#ec4899" : used ? "#3b82f6" : "var(--muted)";
                     return (
                       <div
                         key={no}
