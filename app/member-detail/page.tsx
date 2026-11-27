@@ -926,6 +926,22 @@ export default function MemberDetailPage() {
                 <SumItem label="잔여" valueEl={(() => { const r = getRemaining(data.member); return <strong style={{ color: r.color, fontSize: 14 }}>{r.text}</strong>; })()} />
                 <SumItem label="락커" value={data.member.locker_no || "없음"} />
               </div>
+
+              <div className="sum-divider" style={{ width: 1, background: "#e5e7eb", alignSelf: "stretch", flexShrink: 0 }} />
+
+              {/* 이용 옵션 */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                {[
+                  { label: "입장문자", on: !!data.member.checkin_sms_enabled },
+                  { label: "퇴장문자", on: !!data.member.checkout_sms_enabled },
+                  { label: "운동복", on: !!data.member.has_uniform },
+                  { label: "락커", on: !!data.member.has_locker },
+                ].map(({ label, on }) => (
+                  <span key={label} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 20, background: on ? "#eff6ff" : "#f3f4f6", color: on ? "#2563eb" : "#9ca3af", border: `1px solid ${on ? "#bfdbfe" : "#e5e7eb"}`, fontWeight: on ? 600 : 400, whiteSpace: "nowrap" }}>
+                    {on ? "✓ " : ""}{label}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -1189,18 +1205,6 @@ export default function MemberDetailPage() {
                   : data.member.status || "-"
                 } />
                 <Info label="주소" value={data.member.address || "-"} wide />
-              </div>
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)", display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {[
-                  { label: "입장 문자", on: !!data.member.checkin_sms_enabled },
-                  { label: "퇴장 문자", on: !!data.member.checkout_sms_enabled },
-                  { label: "운동복 대여", on: !!data.member.has_uniform },
-                  { label: "락커 사용", on: !!data.member.has_locker },
-                ].map(({ label, on }) => (
-                  <span key={label} style={{ fontSize: 12, padding: "3px 10px", borderRadius: 20, background: on ? "#eff6ff" : "var(--panel2)", color: on ? "#2563eb" : "var(--muted)", border: `1px solid ${on ? "#bfdbfe" : "var(--line)"}`, fontWeight: on ? 600 : 400 }}>
-                    {on ? "✓ " : ""}{label}
-                  </span>
-                ))}
               </div>
             </div>
           )}
