@@ -125,11 +125,12 @@ export async function POST(req: Request) {
       // 라커 배정: lockers 테이블도 같은 트랜잭션에서 동기화
       if (locker_no) {
         await conn.query(
-          `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date)
-           VALUES (?, 'A', ?, ?, ?, ?, ?, ?)
+          `INSERT INTO lockers (branch_name, locker_zone, locker_no, member_id, member_name, gender, start_date, end_date, phone, member_no)
+           VALUES (?, 'A', ?, ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE member_id=VALUES(member_id), member_name=VALUES(member_name),
-             gender=VALUES(gender), start_date=VALUES(start_date), end_date=VALUES(end_date)`,
-          [branch_name, locker_no, memberId, name, gender || null, start_date || null, locker_end_date || end_date || null]
+             gender=VALUES(gender), start_date=VALUES(start_date), end_date=VALUES(end_date),
+             phone=VALUES(phone), member_no=VALUES(member_no)`,
+          [branch_name, locker_no, memberId, name, gender || null, start_date || null, locker_end_date || end_date || null, String(phone || "").replace(/[^0-9]/g, "") || null, finalMemberNo || null]
         );
       }
 

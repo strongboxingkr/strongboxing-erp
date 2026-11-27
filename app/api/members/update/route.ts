@@ -162,22 +162,26 @@ export async function POST(req: Request) {
           const lockerZone = zoneRows.length > 0 ? zoneRows[0].locker_zone : "A";
 
           // locker_end_date 명시 여부에 따라 end_date 갱신 여부 결정
+          const finalPhone = String(phone || oldMember.phone || "").replace(/[^0-9]/g, "") || null;
+          const finalMemberNo = member_no || oldMember.member_no || null;
           if (hasLockerEndDate) {
             await conn.query(
-              `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
-               VALUES (?,?,?,?,?,?,?,?)
+              `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date,phone,member_no)
+               VALUES (?,?,?,?,?,?,?,?,?,?)
                ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
-                 gender=VALUES(gender),start_date=VALUES(start_date),end_date=VALUES(end_date)`,
-              [finalBranch, lockerZone, finalLockerNo, member_id, finalName, finalGender, finalStartDate, locker_end_date || null]
+                 gender=VALUES(gender),start_date=VALUES(start_date),end_date=VALUES(end_date),
+                 phone=VALUES(phone),member_no=VALUES(member_no)`,
+              [finalBranch, lockerZone, finalLockerNo, member_id, finalName, finalGender, finalStartDate, locker_end_date || null, finalPhone, finalMemberNo]
             );
           } else {
             // end_date 갱신 없이 식별 정보만 갱신 (기존 락커 종료일 유지)
             await conn.query(
-              `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date)
-               VALUES (?,?,?,?,?,?,?,NULL)
+              `INSERT INTO lockers (branch_name,locker_zone,locker_no,member_id,member_name,gender,start_date,end_date,phone,member_no)
+               VALUES (?,?,?,?,?,?,?,NULL,?,?)
                ON DUPLICATE KEY UPDATE member_id=VALUES(member_id),member_name=VALUES(member_name),
-                 gender=VALUES(gender),start_date=VALUES(start_date)`,
-              [finalBranch, lockerZone, finalLockerNo, member_id, finalName, finalGender, finalStartDate]
+                 gender=VALUES(gender),start_date=VALUES(start_date),
+                 phone=VALUES(phone),member_no=VALUES(member_no)`,
+              [finalBranch, lockerZone, finalLockerNo, member_id, finalName, finalGender, finalStartDate, finalPhone, finalMemberNo]
             );
           }
         } else if (oldMember.locker_no && locker_no === null) {
