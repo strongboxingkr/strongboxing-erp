@@ -60,8 +60,14 @@ export default function LockersPage() {
     setLockers(data.rows || []);
   };
 
-  const getLocker = (no: number, zoneName: string) =>
-    lockers.find((l) => l.locker_no === no && (l.locker_zone == null || l.locker_zone === zoneName));
+  const getLocker = (no: number, zoneName: string) => {
+    const zone = zones.find((z: any) => z.zone_name === zoneName);
+    return lockers.find((l) => {
+      if (l.locker_no !== no) return false;
+      if (l.locker_zone == null) return zone ? no >= Number(zone.start_no) && no <= Number(zone.end_no) : true;
+      return l.locker_zone === zoneName;
+    });
+  };
 
   const openModal = (no: number) => {
     const existing = getLocker(no, selectedZone.zone_name);
