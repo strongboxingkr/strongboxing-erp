@@ -80,10 +80,11 @@ export default function MembersPage() {
         (lockersJson.rows || []).filter((r: any) => r.member_id).map((r: any) => Number(r.locker_no))
       );
       const zones: any[] = zonesJson.rows || [];
-      const empty: { locker_zone: string; locker_no: number }[] = [];
+      const multiZone = zones.length > 1;
+      const empty: { locker_zone: string | null; locker_no: number }[] = [];
       for (const zone of zones) {
         for (let no = Number(zone.start_no); no <= Number(zone.end_no); no++) {
-          if (!occupied.has(no)) empty.push({ locker_zone: zone.zone_name, locker_no: no });
+          if (!occupied.has(no)) empty.push({ locker_zone: multiZone ? zone.zone_name : null, locker_no: no });
         }
       }
       setAvailableLockers(empty);
@@ -1135,8 +1136,8 @@ ${
                           ) : availableLockers.map((l: any) => (
                             <div key={`${l.locker_zone}-${l.locker_no}`}
                               style={{ padding: "7px 12px", fontSize: 13, cursor: "pointer", borderBottom: "1px solid var(--line)" }}
-                              onClick={() => { setForm({ ...form, locker_no: l.locker_zone && l.locker_zone !== "락카" ? `${l.locker_zone}-${l.locker_no}` : String(l.locker_no) }); setShowLockerPicker(false); }}>
-                              {l.locker_zone && l.locker_zone !== "락카" ? `${l.locker_zone}-${l.locker_no}` : l.locker_no}번
+                              onClick={() => { setForm({ ...form, locker_no: l.locker_zone ? `${l.locker_zone}-${l.locker_no}` : String(l.locker_no) }); setShowLockerPicker(false); }}>
+                              {l.locker_zone ? `${l.locker_zone}-${l.locker_no}` : l.locker_no}번
                             </div>
                           ))}
                         </div>
