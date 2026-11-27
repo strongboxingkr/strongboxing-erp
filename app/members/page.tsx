@@ -70,9 +70,23 @@ export default function MembersPage() {
 
   const loadAvailableLockers = async (branchName: string) => {
     try {
-      const res = await apiFetch(`/api/lockers?branch_name=${encodeURIComponent(branchName)}`);
-      const json = await res.json();
-      const empty = (json.rows || []).filter((r: any) => !r.member_id);
+      const [lockersRes, zonesRes] = await Promise.all([
+        apiFetch(`/api/lockers?branch_name=${encodeURIComponent(branchName)}`),
+        apiFetch(`/api/locker-zones?branch_name=${encodeURIComponent(branchName)}`),
+      ]);
+      const lockersJson = await lockersRes.json();
+      const zonesJson = await zonesRes.json();
+      const occupied = new Set(
+        (lockersJson.rows || []).filter((r: any) => r.member_id).map((r: any) => `${r.locker_zone || ""}:${r.locker_no}`)
+      );
+      const zones: any[] = zonesJson.rows || [];
+      const empty: { locker_zone: string; locker_no: number }[] = [];
+      for (const zone of zones) {
+        for (let no = Number(zone.start_no); no <= Number(zone.end_no); no++) {
+          const key = `${zone.zone_name}:${no}`;
+          if (!occupied.has(key)) empty.push({ locker_zone: zone.zone_name, locker_no: no });
+        }
+      }
       setAvailableLockers(empty);
       setShowLockerPicker(true);
     } catch {}
