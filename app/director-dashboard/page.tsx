@@ -240,7 +240,8 @@ export default function DirectorDashboardPage() {
         .dir-two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; align-items:start; }
         @media(max-width:720px){ .dir-two-col { grid-template-columns:1fr; } }
         /* 출석 섹션: 최근입장(좁음) + 출석목록(넓음) */
-        .dir-att-col { display:grid; grid-template-columns:3fr 2fr; gap:14px; margin-bottom:14px; align-items:start; }
+        .dir-att-col { display:grid; grid-template-columns:3fr 2fr; gap:14px; margin-bottom:14px; align-items:stretch; }
+        .dir-att-col > .dir-card { display:flex; flex-direction:column; }
         @media(max-width:720px){ .dir-att-col { grid-template-columns:1fr; } }
         /* 최근 입장 회원 카드 */
         .dir-latest-name { font-size:28px; font-weight:800; color:#0f2044; margin:4px 0; }
@@ -498,7 +499,7 @@ export default function DirectorDashboardPage() {
           ) : attendance.length === 0 ? (
             <div style={{ padding: "14px 20px", color: "#9ca3af", fontSize: 13 }}>오늘 출석 없음</div>
           ) : (
-            <div style={{ maxHeight: 480, overflowY: "auto" }}>
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
               {attendance.map((a: any, i: number) => {
                 const time = a.checkin_time
                   ? new Date(a.checkin_time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Seoul" })
@@ -510,7 +511,7 @@ export default function DirectorDashboardPage() {
                 return (
                   <div key={i} className="dir-att-row" style={{ ...(isAlert ? { background: "#fef2f2" } : undefined), cursor: "pointer" }}
                     onClick={() => setPinnedMember(a)}>
-                    <span style={{ fontSize: 11, color: isAlert ? "#ef4444" : "#9ca3af", minWidth: 18, textAlign: "right", marginRight: 10 }}>{i + 1}</span>
+                    <span style={{ fontSize: 11, color: isAlert ? "#ef4444" : "#9ca3af", minWidth: 18, textAlign: "right", marginRight: 10 }}>{attendance.length - i}</span>
                     <span style={{ fontWeight: 600, color: isAlert ? "#dc2626" : "#111827", flex: 1, marginRight: 6 }}>{a.name}</span>
                     {isAlert && (
                       <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700, background: "#fee2e2", padding: "1px 5px", borderRadius: 4, whiteSpace: "nowrap" }}>
