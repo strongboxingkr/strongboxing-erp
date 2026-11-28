@@ -47,11 +47,11 @@ export async function GET(req: Request) {
         m.remaining_count,
         m.start_date,
         m.end_date,
-        m.clothes_locker,
+        m.has_uniform,
         m.locker_no,
         m.staff_name
       FROM attendance a
-      JOIN members m ON a.member_id = m.member_id
+      LEFT JOIN members m ON a.member_id = m.member_id
       INNER JOIN (
         SELECT MAX(attendance_id) AS max_id
         FROM attendance
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
         COALESCE(a.branch_name, m.branch_name) AS branch_name,
         COUNT(DISTINCT a.member_id) AS count
       FROM attendance a
-      JOIN members m ON a.member_id = m.member_id
+      LEFT JOIN members m ON a.member_id = m.member_id
       WHERE DATE(a.checkin_time) = CURDATE()
         AND a.result IN ('SUCCESS', 'CHECK_OUT')
         ${branchCondition}
