@@ -83,7 +83,15 @@ export default function AttendancePage() {
     setCheckinLoading(false);
   };
 
-  const successRows = rows.filter(r => r.result === "SUCCESS" || r.result === "CHECK_OUT");
+  // 회원별 최근 1건만 (attendance_id DESC 순이므로 첫 번째가 최신)
+  const seen = new Set<number>();
+  const successRows = rows
+    .filter(r => r.result === "SUCCESS" || r.result === "CHECK_OUT")
+    .filter(r => {
+      if (seen.has(r.member_id)) return false;
+      seen.add(r.member_id);
+      return true;
+    });
   const isToday = date === today;
 
   return (
