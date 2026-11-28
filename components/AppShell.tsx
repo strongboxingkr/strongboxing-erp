@@ -19,9 +19,14 @@ const menuGroups = [
     items: [
       ["회원관리", "/members"],
       ["회원권 관리", "/member-management"],
-      ["출석현황", "/attendance"],
       ["재등록 관리", "/renewal"],
       ["기간 일괄 연장", "/bulk-extend"],
+    ],
+  },
+  {
+    title: "출석",
+    items: [
+      ["출석현황", "/attendance"],
     ],
   },
   {
