@@ -68,7 +68,8 @@ export default function DirectorDashboardPage() {
       ]);
 
       setSummary(sumJson.data);
-      setAttendance(attJson.rows || []);
+      if (attJson.success) setAttendance(attJson.rows || []);
+      else console.error("attendance/live error:", attJson);
 
 
       const today0 = new Date(); today0.setHours(0, 0, 0, 0);
@@ -482,7 +483,7 @@ export default function DirectorDashboardPage() {
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 11, color: "#9ca3af" }}>옷</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: display.clothes_locker ? "#16a34a" : "#9ca3af" }}>{display.clothes_locker ? "O" : "X"}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: display.has_uniform ? "#16a34a" : "#9ca3af" }}>{display.has_uniform ? "O" : "X"}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 11, color: "#9ca3af" }}>락카</span>

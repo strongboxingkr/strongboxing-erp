@@ -12,7 +12,8 @@ export async function GET(req: Request) {
 
     const branch_name = searchParams.get("branch_name");
     const today_only = searchParams.get("today_only") || "Y";
-    const limit = Number(searchParams.get("limit") || 10);
+    const date_filter = searchParams.get("date"); // 특정 날짜 조회 (YYYY-MM-DD)
+    const limit = Number(searchParams.get("limit") || 200);
 
     let sql = `
       SELECT 
@@ -42,7 +43,10 @@ export async function GET(req: Request) {
 
     const params: any[] = [];
 
-    if (today_only === "Y") {
+    if (date_filter) {
+      sql += ` AND DATE(a.checkin_time) = ? `;
+      params.push(date_filter);
+    } else if (today_only === "Y") {
       sql += ` AND DATE(a.checkin_time) = CURDATE() `;
     }
 

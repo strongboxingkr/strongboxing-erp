@@ -7,6 +7,13 @@ import { apiFetch } from "@/lib/api";
 const money = (v: any) =>
   `${Number(v || 0).toLocaleString()}원`;
 
+function addMonths(dateString: string, months: number) {
+  const date = new Date(dateString);
+  date.setMonth(date.getMonth() + months);
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
 // ── 출석 달력 컴포넌트 ──────────────────────────────────
 function AttendanceCalendar({
   checkins, memberId, passType, onDeleted,
@@ -1445,7 +1452,14 @@ export default function MemberDetailPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>프로그램 <span style={{ color: "#dc2626" }}>*</span></div>
-                  <select className="input" value={reregForm.product_name} onChange={e => setReregForm({ ...reregForm, product_name: e.target.value })}>
+                  <select className="input" value={reregForm.product_name} onChange={e => {
+                    const productName = e.target.value;
+                    const monthMatch = productName.match(/(\d+)\s*개월/);
+                    const months = monthMatch ? parseInt(monthMatch[1]) : 0;
+                    const startDate = reregForm.start_date || new Date().toISOString().slice(0,10);
+                    const endDate = months > 0 ? addMonths(startDate, months) : reregForm.end_date || "";
+                    setReregForm({ ...reregForm, product_name: productName, end_date: endDate });
+                  }}>
                     <option value="">선택</option>
                     {products.filter((p: any) => p.option_value === "PERIOD").map((p: any) => <option key={p.option_id} value={p.option_name}>{p.option_name}</option>)}
                   </select>
@@ -1463,9 +1477,22 @@ export default function MemberDetailPage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>시작일</div>
-                  <input className="input" type="date" value={reregForm.start_date} onChange={e => setReregForm({ ...reregForm, start_date: e.target.value })} />
+                  <input className="input" type="date" value={reregForm.start_date} onChange={e => {
+                    const newStart = e.target.value;
+                    const monthMatch = reregForm.product_name?.match(/(\d+)\s*개월/);
+                    const months = monthMatch ? parseInt(monthMatch[1]) : 0;
+                    const newEnd = months > 0 ? addMonths(newStart, months) : reregForm.end_date || "";
+                    setReregForm({ ...reregForm, start_date: newStart, end_date: newEnd });
+                  }} />
                   <div style={{ fontSize: 11, color: "#6b7280", marginTop: 3 }}>만료일 이후 선택 시 이어붙이기됩니다.</div>
                 </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>만료일</div>
+                  <input className="input" type="date" value={reregForm.end_date} onChange={e => setReregForm({ ...reregForm, end_date: e.target.value })} />
+                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 3 }}>프로그램 선택 시 자동 계산됩니다.</div>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>결제일</div>
                   <input className="input" type="date" value={reregForm.payment_date} onChange={e => setReregForm({ ...reregForm, payment_date: e.target.value })} />
